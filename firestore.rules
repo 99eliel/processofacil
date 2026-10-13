@@ -90,7 +90,12 @@ service cloud.firestore {
 
       match /configuracoes/{docId} {
         allow read: if companyOwner(empresaId) || isMember(empresaId);
-        allow create, update: if hasAnyProfile(empresaId, ['admin']);
+        allow create: if hasAnyProfile(empresaId, ['admin'])
+          || (
+            signedIn()
+            && getAfter(companyPath(empresaId)).data.ownerUid == request.auth.uid
+          );
+        allow update: if hasAnyProfile(empresaId, ['admin']);
         allow delete: if false;
       }
 
