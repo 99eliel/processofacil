@@ -4,6 +4,16 @@ O **Processo Fácil** é uma plataforma universal e configurável para empresas 
 
 A planilha da Koleni foi a origem do caso de uso e serve como **referência/template de confecção**, não como regra fixa do produto.
 
+## Firebase oficial
+
+O projeto Firebase oficial do sistema é:
+
+- **Project ID:** `processofacil-3f688`
+- **Auth Domain:** `processofacil-3f688.firebaseapp.com`
+- **Storage:** `processofacil-3f688.firebasestorage.app`
+
+Este é o backend oficial para Auth, Firestore, Storage e futuros recursos Firebase do Processo Fácil. O projeto antigo `cotacao-78d9f` não deve mais ser usado pelo sistema.
+
 ## Princípios da arquitetura
 
 - Multiempresa no mesmo ambiente, com isolamento por `empresaId`/tenant.
@@ -26,10 +36,11 @@ A planilha da Koleni foi a origem do caso de uso e serve como **referência/temp
 - `src/App.tsx`: interface da base universal.
 - `src/domain/types.ts`: modelos de domínio usados na V1.
 - `src/data.ts`: dados demonstrativos neutros, sem dependência de confecção.
-- `src/firebase/config.ts`: inicialização Firebase.
+- `src/firebase/config.ts`: inicialização do Firebase oficial.
 - `src/firebase/tenantRepository.ts`: helpers de persistência com caminhos isolados por empresa.
 - `firestore.rules`: regras iniciais de isolamento e perfis.
 - `firebase.json`: Firestore + Hosting.
+- `.firebaserc`: fixa o projeto Firebase oficial para deploys locais via Firebase CLI.
 
 ## Próximas entregas
 
@@ -54,5 +65,3 @@ Build:
 ```bash
 npm run build
 ```
-
-As credenciais Firebase podem ser fornecidas por variáveis `VITE_FIREBASE_*` (consulte `.env.example`).
