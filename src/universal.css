@@ -1,0 +1,93 @@
+/* Processo Fácil 0.3 — camada visual da arquitetura universal */
+.tenant-card { margin-top: 20px; display:flex; align-items:center; gap:9px; padding:10px; border:1px solid rgba(255,255,255,.1); border-radius:14px; background:rgba(255,255,255,.06); }
+.tenant-card .tenant-logo { width:34px; height:34px; border-radius:10px; background:rgba(255,255,255,.1); display:grid; place-items:center; color:#9dd8ff; flex:0 0 auto; }
+.tenant-card > div { flex:1; min-width:0; }
+.tenant-card small,.tenant-card strong { display:block; }
+.tenant-card small { color:#8fa8c4; font-size:8px; text-transform:uppercase; letter-spacing:.08em; font-weight:800; }
+.tenant-card strong { margin-top:2px; font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.universal-hero { background:linear-gradient(135deg,#0b1f4b 0%,#0f5f9a 55%,#087fb1 100%); }
+.secondary-button.compact,.primary-button.compact { padding:8px 10px; font-size:10px; }
+.architecture-list { display:grid; gap:8px; }
+.architecture-item { display:flex; gap:10px; padding:11px; border:1px solid #e9eef4; border-radius:14px; background:#fbfdff; }
+.architecture-item > span { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; background:#eaf4fb; color:#0a6ab0; flex:0 0 auto; }
+.architecture-item strong,.architecture-item small { display:block; }
+.architecture-item strong { font-size:11px; }
+.architecture-item small { margin-top:3px; color:#788b9e; font-size:9px; line-height:1.4; }
+.code-builder { margin-bottom:12px; }
+.segment-row { display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); }
+.segment-card { display:flex; align-items:center; gap:9px; padding:11px; border-radius:14px; background:#f7fafc; border:1px solid #e4ebf2; }
+.segment-card > span { width:28px; height:28px; border-radius:9px; display:grid; place-items:center; background:#0b1f4b; color:white; font-size:9px; font-weight:900; }
+.segment-card strong,.segment-card small { display:block; }
+.segment-card strong { font-size:11px; }
+.segment-card small { margin-top:2px; color:#7b8d9f; font-size:9px; }
+.helper-text { margin:11px 0 0; color:#75889a; font-size:10px; line-height:1.5; }
+.info-banner { display:flex; align-items:flex-start; gap:10px; border:1px solid #cfe6d9; background:#f2fbf6; color:#2b6d4e; border-radius:16px; padding:13px; margin-bottom:12px; }
+.info-banner > div { flex:1; }
+.info-banner strong,.info-banner span { display:block; }
+.info-banner strong { font-size:11px; }
+.info-banner span { margin-top:3px; color:#5b7c6c; font-size:9px; line-height:1.45; }
+.sheet-card { background:white; border:1px solid #e2e8f0; border-radius:19px; padding:16px; }
+.sheet-head { display:flex; align-items:flex-start; gap:10px; }
+.sheet-head > div { flex:1; min-width:0; }
+.sheet-icon { width:42px; height:42px; border-radius:12px; display:grid; place-items:center; background:#e4f5fa; color:#168692; flex:0 0 auto; }
+.sheet-head h3 { margin:3px 0 2px; font-size:14px; }
+.sheet-head small { color:#8192a2; font-size:9px; }
+.sheet-meta { display:grid; grid-template-columns:110px 110px minmax(0,1fr); gap:10px; margin-top:14px; padding-top:13px; border-top:1px solid #edf1f5; align-items:start; }
+.sheet-meta > div:not(.sheet-tags) span,.sheet-meta > div:not(.sheet-tags) strong { display:block; }
+.sheet-meta > div:not(.sheet-tags) span { color:#8595a5; text-transform:uppercase; font-size:8px; font-weight:800; }
+.sheet-meta > div:not(.sheet-tags) strong { margin-top:3px; font-size:11px; }
+.sheet-tags { display:flex; flex-wrap:wrap; gap:5px; }
+.sheet-tags span { padding:5px 7px; border-radius:999px; background:#eef4f8; color:#60768a; font-size:8px; font-weight:800; }
+.sheet-actions { display:flex; justify-content:flex-end; gap:7px; margin-top:12px; }
+.workflow-panel { overflow:hidden; }
+.workflow-list { display:grid; gap:8px; }
+.workflow-stage { display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:10px; align-items:center; padding:11px; border:1px solid #e5ebf1; border-radius:14px; background:#fbfcfe; }
+.stage-number { width:34px; height:34px; display:grid; place-items:center; border-radius:11px; background:#0a6ab0; color:white; font-size:10px; font-weight:900; }
+.stage-copy strong,.stage-copy small { display:block; }
+.stage-copy strong { font-size:11px; }
+.stage-copy small { margin-top:2px; color:#7a8c9d; font-size:9px; }
+.workflow-options { display:flex; gap:7px; flex-wrap:wrap; margin-top:13px; }
+.workflow-options span { display:inline-flex; align-items:center; gap:5px; padding:7px 9px; border-radius:999px; background:#edf7f2; color:#39735a; font-size:8px; font-weight:800; }
+.universal-op { display:block; }
+.op-footer { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-top:12px; padding-top:10px; border-top:1px solid #edf1f5; color:#7e90a2; font-size:9px; }
+.branch-list { display:flex; gap:6px; flex-wrap:wrap; margin:13px 0 9px; }
+.branch-list span { display:inline-flex; align-items:center; gap:5px; padding:7px 9px; background:#f1f5f8; border-radius:999px; color:#5e7488; font-size:9px; font-weight:800; }
+.profile-summary { display:flex; gap:10px; padding:11px; border-radius:14px; background:#f7fafc; margin-bottom:8px; }
+.profile-summary > span { width:38px; height:38px; border-radius:11px; display:grid; place-items:center; background:#eaf4fb; color:#0a6ab0; }
+.profile-summary strong,.profile-summary small { display:block; }
+.profile-summary strong { font-size:11px; }
+.profile-summary small { margin-top:3px; color:#788b9e; font-size:9px; line-height:1.4; }
+.toggle-grid { display:grid; gap:8px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+.toggle-card { width:100%; border:1px solid #e2e8f0; background:#f9fbfd; border-radius:15px; padding:12px; display:flex; align-items:center; gap:10px; text-align:left; color:#253d55; }
+.toggle-card.enabled { background:white; border-color:#b9d9ed; }
+.toggle-card > div { flex:1; min-width:0; }
+.toggle-card strong,.toggle-card small { display:block; }
+.toggle-card strong { font-size:10px; }
+.toggle-card small { margin-top:2px; font-size:8.5px; color:#8292a3; line-height:1.35; }
+.switch { width:38px; height:22px; border-radius:999px; background:#cad4de; padding:3px; transition:.18s; }
+.switch i { display:block; width:16px; height:16px; border-radius:50%; background:white; transition:.18s; box-shadow:0 1px 5px rgba(0,0,0,.12); }
+.toggle-card.enabled .switch { background:#0a6ab0; }
+.toggle-card.enabled .switch i { transform:translateX(16px); }
+.modal-backdrop { position:fixed; inset:0; z-index:120; background:rgba(8,20,37,.55); display:grid; place-items:center; padding:16px; backdrop-filter:blur(4px); }
+.wizard-modal { width:min(680px,100%); background:white; border-radius:22px; box-shadow:0 30px 80px rgba(5,20,40,.28); overflow:hidden; }
+.wizard-head { display:flex; justify-content:space-between; gap:12px; padding:20px 20px 12px; }
+.wizard-head h2 { margin:4px 0 0; font-size:22px; }
+.wizard-progress { height:5px; background:#e7edf3; }
+.wizard-progress i { display:block; height:100%; background:linear-gradient(90deg,#0a6ab0,#2fa3d8); transition:.2s; }
+.wizard-body { padding:22px 20px; min-height:250px; }
+.wizard-body h3 { margin:0 0 7px; font-size:18px; }
+.wizard-body p { margin:0; color:#718498; font-size:11px; line-height:1.55; }
+.wizard-options { display:grid; gap:8px; margin-top:18px; }
+.wizard-options div { display:flex; align-items:center; gap:8px; padding:11px; border-radius:13px; background:#f6f9fb; color:#425a70; font-size:10px; font-weight:800; }
+.wizard-options svg { color:#288f61; }
+.wizard-actions { display:flex; justify-content:space-between; gap:8px; padding:14px 20px 20px; border-top:1px solid #edf1f5; }
+.wizard-actions button:disabled { opacity:.4; cursor:not-allowed; }
+@media (max-width:719px) {
+  .topbar-actions .secondary-button { display:none; }
+  .sheet-meta { grid-template-columns:1fr 1fr; }
+  .sheet-tags { grid-column:1/-1; }
+  .workflow-stage { grid-template-columns:34px minmax(0,1fr); }
+  .workflow-stage > svg { display:none; }
+  .sheet-actions { justify-content:stretch; }
+  .sheet-actions button { flex:1; }
+}
