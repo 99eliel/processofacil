@@ -102,7 +102,7 @@ export default function App() {
 
       <div className="sidebar-footer">
         <div><span className="connection-dot" /> Firebase oficial conectado</div>
-        <small>processofacil-3f688 · v0.5.0</small>
+        <small>processofacil-3f688 · v0.6.0</small>
       </div>
     </aside>
 
