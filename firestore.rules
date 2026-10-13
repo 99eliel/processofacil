@@ -1,38 +1,58 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
-      return request.auth != null;
+    function signedIn() { return request.auth != null; }
+    function isSuperAdmin() { return signedIn() && request.auth.token.superadmin == true; }
+    function memberPath(empresaId) {
+      return /databases/$(database)/documents/empresas/$(empresaId)/membros/$(request.auth.uid);
+    }
+    function isMember(empresaId) {
+      return signedIn() && exists(memberPath(empresaId)) && get(memberPath(empresaId)).data.ativo == true;
+    }
+    function memberProfiles(empresaId) { return get(memberPath(empresaId)).data.perfis; }
+    function hasAnyProfile(empresaId, perfis) {
+      return isSuperAdmin() || (isMember(empresaId) && memberProfiles(empresaId).hasAny(perfis));
+    }
+    function canWriteOperational(empresaId) {
+      return hasAnyProfile(empresaId, ['admin','desenvolvimento','planejamento','ppcp','producao','qualidade']);
     }
 
-    function userDoc() {
-      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid));
-    }
+    match /empresas/{empresaId} {
+      allow create: if isSuperAdmin();
+      allow read: if isSuperAdmin() || isMember(empresaId);
+      allow update: if isSuperAdmin() || hasAnyProfile(empresaId, ['admin']);
+      allow delete: if false;
 
-    function sameCompany(data) {
-      return signedIn() && data.empresaId == userDoc().data.empresaId;
-    }
+      match /membros/{uid} {
+        allow read: if isSuperAdmin() || isMember(empresaId);
+        allow create, update: if isSuperAdmin() || hasAnyProfile(empresaId, ['admin']);
+        allow delete: if false;
+      }
 
-    function roleIn(roles) {
-      return signedIn() && userDoc().data.papel in roles;
+      match /configuracoes/{docId} {
+        allow read: if isMember(empresaId) || isSuperAdmin();
+        allow create, update: if hasAnyProfile(empresaId, ['admin']);
+        allow delete: if false;
+      }
+
+      match /{collectionName}/{docId} {
+        allow read: if isMember(empresaId) || isSuperAdmin();
+        allow create, update: if canWriteOperational(empresaId);
+        allow delete: if false;
+      }
+
+      match /{document=**} {
+        allow read: if isMember(empresaId) || isSuperAdmin();
+        allow write: if canWriteOperational(empresaId);
+      }
     }
 
     match /usuarios/{uid} {
-      allow read: if signedIn() && (uid == request.auth.uid || roleIn(['admin', 'gestor']));
-      allow create: if roleIn(['admin']);
-      allow update: if roleIn(['admin']) || (
-        uid == request.auth.uid &&
-        request.resource.data.papel == resource.data.papel &&
-        request.resource.data.empresaId == resource.data.empresaId
-      );
-      allow delete: if roleIn(['admin']);
+      allow read: if signedIn() && (request.auth.uid == uid || isSuperAdmin());
+      allow create, update: if signedIn() && (request.auth.uid == uid || isSuperAdmin());
+      allow delete: if false;
     }
 
-    match /{collection}/{docId} {
-      allow read: if sameCompany(resource.data);
-      allow create: if sameCompany(request.resource.data);
-      allow update: if sameCompany(resource.data) && sameCompany(request.resource.data);
-      allow delete: if sameCompany(resource.data) && roleIn(['admin', 'gestor']);
-    }
+    match /{document=**} { allow read, write: if false; }
   }
 }
