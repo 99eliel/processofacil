@@ -1,57 +1,84 @@
 # Processo Fácil
 
-O **Processo Fácil** é uma plataforma universal e configurável para empresas que precisam organizar cadastros, produtos, fichas técnicas, aprovações, produção e qualidade sem ficar presas a um único segmento.
+O **Processo Fácil** é uma plataforma universal, multiempresa e configurável para padronização, Ficha Técnica, fluxo operacional, produção e qualidade.
 
-A planilha da Koleni foi a origem do caso de uso e serve como **referência/template de confecção**, não como regra fixa do produto.
+A planilha da Koleni foi o caso real que originou a ideia e continua servindo como **referência/template de confecção**. Ela não define o núcleo do produto e nenhuma regra específica daquele processo deve ser obrigatória para outros clientes.
+
+## Status — v0.6.0
+
+A base atual já possui:
+
+- Firebase oficial `processofacil-3f688`;
+- autenticação por e-mail e senha;
+- recuperação de senha;
+- bootstrap seguro da primeira empresa;
+- arquitetura multiempresa com troca de empresa;
+- filiais/unidades;
+- perfis por empresa;
+- módulos ativáveis;
+- categorias em árvore;
+- unidades configuráveis;
+- fornecedores;
+- materiais reais no Firestore;
+- proteção contra códigos/descrições duplicados nos cadastros principais;
+- estratégia de código de produto manual, sequencial, segmentada ou externa;
+- produtos reais no Firestore;
+- Ficha Técnica com rascunho, histórico de revisão, construção e BOM;
+- revisão padrão protegida contra edição;
+- Workflow editável por empresa;
+- Ordem de Produção com vários produtos e variantes;
+- congelamento da revisão e do kit de materiais na liberação da OP;
+- necessidade bruta calculada a partir da BOM;
+- Qualidade com várias amostras, critérios numéricos e checklist;
+- reprovação da OP e retorno para retrabalho;
+- auditoria de ações críticas;
+- regras iniciais de Firestore e Storage isoladas por empresa;
+- índices iniciais do Firestore;
+- Error Boundary para evitar tela branca silenciosa;
+- CI com typecheck e build.
 
 ## Firebase oficial
-
-O projeto Firebase oficial do sistema é:
 
 - **Project ID:** `processofacil-3f688`
 - **Auth Domain:** `processofacil-3f688.firebaseapp.com`
 - **Storage:** `processofacil-3f688.firebasestorage.app`
 
-Este é o backend oficial para Auth, Firestore, Storage e futuros recursos Firebase do Processo Fácil. O projeto antigo `cotacao-78d9f` não deve mais ser usado pelo sistema.
+O projeto antigo `cotacao-78d9f` não deve mais ser usado.
 
-## Princípios da arquitetura
+Consulte [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) para ativação dos serviços e publicação das regras.
 
-- Multiempresa no mesmo ambiente, com isolamento por `empresaId`/tenant.
-- Um Firebase compartilhado entre os clientes.
-- Módulos ativáveis por empresa.
-- Filiais/unidades por empresa.
-- Perfis configuráveis; um usuário pode ter mais de um perfil.
-- Código de produto configurável por árvore/segmentos, com suporte futuro a outras estratégias.
-- Categorias e unidades configuráveis.
-- Ficha Técnica flexível: BOM, medidas, operações, checklist e outros blocos podem ser opcionais.
-- Editar uma FT publicada gera nova revisão; a revisão publicada anterior permanece preservada.
-- Workflow configurável por empresa, com aprovação paralela ou sequencial.
-- OP pode ter vários produtos e variantes e congela revisão/kit na liberação quando aplicável.
-- Qualidade configurável por critérios numéricos, checklist e severidade.
-- Exclusão lógica; registros críticos não são apagados fisicamente.
-- Auditoria e portabilidade de dados fazem parte da arquitetura.
+## Estrutura de dados
 
-## Estrutura atual
+```text
+usuarios/{uid}/empresas/{empresaId}
 
-- `src/App.tsx`: interface da base universal.
-- `src/domain/types.ts`: modelos de domínio usados na V1.
-- `src/data.ts`: dados demonstrativos neutros, sem dependência de confecção.
-- `src/firebase/config.ts`: inicialização do Firebase oficial.
-- `src/firebase/tenantRepository.ts`: helpers de persistência com caminhos isolados por empresa.
-- `firestore.rules`: regras iniciais de isolamento e perfis.
-- `firebase.json`: Firestore + Hosting.
-- `.firebaserc`: fixa o projeto Firebase oficial para deploys locais via Firebase CLI.
+empresas/{empresaId}/
+  membros/
+  configuracoes/
+  fornecedores/
+  categorias/
+  materiais/
+  produtos/
+    {produtoCodigo}/revisoes/
+  fichas/
+  ordensProducao/
+  inspecoes/
+  auditoria/
+  contadores/
+```
 
-## Próximas entregas
+Os documentos operacionais ficam sempre dentro da empresa. A segurança não depende apenas da interface: as regras do Firestore verificam a associação do usuário ao tenant.
 
-1. Auth e seleção real de empresa/perfis.
-2. Cadastro real de empresa, filiais e wizard persistido.
-3. Materiais, fornecedores, categorias e unidades no Firestore.
-4. Motor de estratégia de códigos.
-5. Produtos e Ficha Técnica configurável.
-6. Workflow/aprovações.
-7. Importador genérico Excel/CSV.
-8. OP e Qualidade.
+## Regras importantes já implementadas
+
+- exclusão física não é usada para dados críticos;
+- inspeções são imutáveis;
+- revisões publicadas/obsoletas não podem ser alteradas;
+- editar uma FT padrão cria uma nova revisão;
+- uma OP liberada usa snapshots de revisão e BOM;
+- alterações posteriores na FT não alteram uma OP já liberada;
+- cada empresa possui seus próprios módulos, unidades, categorias, código e workflow;
+- nenhum conceito de confecção é obrigatório no núcleo.
 
 ## Desenvolvimento
 
@@ -60,8 +87,35 @@ npm install
 npm run dev
 ```
 
-Build:
+Validação:
 
 ```bash
+npm run check
 npm run build
 ```
+
+## Implantação web
+
+O workflow `.github/workflows/deploy.yml` publica o conteúdo compilado de `dist` no GitHub Pages.
+
+No GitHub, configure:
+
+**Settings > Pages > Build and deployment > Source > GitHub Actions**
+
+Não use **Deploy from a branch**, pois esse modo tenta publicar os arquivos-fonte do Vite/Jekyll e pode resultar em tela branca.
+
+## Próximas evoluções
+
+A arquitetura já foi deixada preparada para as próximas camadas, principalmente:
+
+- upload e gerenciamento de imagens/anexos da FT;
+- grade e tabela de medidas totalmente configuráveis;
+- importador genérico Excel/CSV com mapeamento de colunas;
+- convites e administração avançada de usuários;
+- fornecedores alternativos completos por material;
+- comparação visual entre revisões;
+- PDF oficial de Ficha Técnica;
+- notificações;
+- PWA reinstalável após estabilização definitiva do deploy/cache;
+- dashboards e relatórios avançados;
+- estoque e necessidade líquida de compra como módulo futuro.
