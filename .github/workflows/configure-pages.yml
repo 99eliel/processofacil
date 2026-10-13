@@ -1,0 +1,21 @@
+name: Configure Pages Source
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/configure-pages.yml'
+
+permissions:
+  contents: read
+  pages: write
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use GitHub Actions as Pages source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api             --method PUT             "repos/${GITHUB_REPOSITORY}/pages"             -f build_type=workflow
