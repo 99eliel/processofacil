@@ -105,6 +105,20 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
+      match /inspecoes/{docId} {
+        allow read: if companyOwner(empresaId) || isMember(empresaId);
+        allow create: if canWriteOperational(empresaId);
+        allow update, delete: if false;
+      }
+
+      match /produtos/{produtoCodigo}/revisoes/{revisaoId} {
+        allow read: if companyOwner(empresaId) || isMember(empresaId);
+        allow create: if canWriteOperational(empresaId);
+        allow update: if canWriteOperational(empresaId)
+          && resource.data.status in ['rascunho', 'em_validacao'];
+        allow delete: if false;
+      }
+
       match /{collectionName}/{docId} {
         allow read: if companyOwner(empresaId) || isMember(empresaId);
         allow create, update: if canWriteOperational(empresaId);
@@ -113,7 +127,8 @@ service cloud.firestore {
 
       match /{collectionName}/{docId}/{document=**} {
         allow read: if companyOwner(empresaId) || isMember(empresaId);
-        allow create, update: if canWriteOperational(empresaId);
+        allow create, update: if collectionName != 'produtos'
+          && canWriteOperational(empresaId);
         allow delete: if false;
       }
     }
