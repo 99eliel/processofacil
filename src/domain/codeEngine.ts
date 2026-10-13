@@ -41,6 +41,7 @@ export function generateCode(strategy: CodeStrategy, input: GenerateCodeInput) {
         const raw = input.valores?.[segmento.id] ?? ''
         const value = normalizeCodeToken(raw)
         if (!value && segmento.obrigatorio) throw new Error(`Segmento obrigatório: ${segmento.nome}`)
+        if (!value && !segmento.obrigatorio) return ''
         if (value.length !== segmento.tamanho) {
           throw new Error(`${segmento.nome} deve ter exatamente ${segmento.tamanho} caracteres`)
         }
