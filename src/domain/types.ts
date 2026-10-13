@@ -239,6 +239,7 @@ export type ProductionOrderRecord = {
   prazo?: string
   status: 'rascunho' | 'liberada' | 'em_fluxo' | 'concluida' | 'cancelada' | 'reprovada'
   workflowStageId?: string | null
+  reprovadaNaEtapaId?: string | null
   itens: ProductionOrderItemRecord[]
   kit: FrozenKitLine[]
   historico: OrderHistoryEntry[]
