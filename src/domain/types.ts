@@ -244,3 +244,42 @@ export type ProductionOrderRecord = {
   historico: OrderHistoryEntry[]
   alteradoEm?: unknown
 }
+
+
+export type QualityCriterion = {
+  id: string
+  nome: string
+  tipo: 'numerico' | 'checklist'
+  nominal?: number
+  tolerancia?: number
+  severidade: 'critico' | 'maior' | 'menor'
+}
+
+export type QualityResult = {
+  criterioId: string
+  criterioNome: string
+  tipo: 'numerico' | 'checklist'
+  valor?: number
+  conforme: boolean
+  nominal?: number
+  tolerancia?: number
+  severidade: 'critico' | 'maior' | 'menor'
+}
+
+export type QualitySample = {
+  numero: number
+  resultados: QualityResult[]
+  aprovada: boolean
+}
+
+export type QualityInspection = {
+  id: string
+  opId: string
+  opNumero: string
+  criterios: QualityCriterion[]
+  amostras: QualitySample[]
+  resultadoGeral: 'aprovada' | 'reprovada'
+  observacao?: string
+  inspetorUid: string
+  criadoEm?: unknown
+}
