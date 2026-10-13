@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router-dom'
 import App from './App'
 import { AuthProvider } from './auth/AuthProvider'
 import AuthGate from './auth/AuthGate'
+import ErrorBoundary from './components/ErrorBoundary'
 import './styles.css'
 import './universal.css'
 
@@ -32,11 +33,13 @@ if (!root) throw new Error('Elemento #root não encontrado')
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <HashRouter>
-      <AuthProvider>
-        <AuthGate>
-          <App />
-        </AuthGate>
-      </AuthProvider>
+      <ErrorBoundary>
+        <AuthProvider>
+          <AuthGate>
+            <App />
+          </AuthGate>
+        </AuthProvider>
+      </ErrorBoundary>
     </HashRouter>
   </React.StrictMode>,
 )
