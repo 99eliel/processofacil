@@ -246,3 +246,33 @@
 @media (max-width:850px) {
   .ft-create-panel { grid-template-columns:1fr; }
 }
+
+
+/* Workflow configurável */
+.workflow-rule-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.rule-toggle { border:1px solid #e1e8ef; background:#f8fafc; border-radius:14px; padding:12px; display:flex; align-items:center; gap:10px; text-align:left; color:#61778b; }
+.rule-toggle.active { background:#eef8fc; border-color:#acd4e8; color:#1d668e; }
+.rule-toggle > div { flex:1; }
+.rule-toggle strong,.rule-toggle small { display:block; }
+.rule-toggle strong { font-size:10px; }
+.rule-toggle small { margin-top:3px; font-size:8.5px; line-height:1.4; color:#8192a2; }
+.rule-toggle.active .switch { background:#0a6ab0; }
+.rule-toggle.active .switch i { transform:translateX(16px); }
+.workflow-editor-list { display:grid; gap:8px; }
+.workflow-editor-stage { position:relative; display:grid; grid-template-columns:34px minmax(0,1fr) auto; gap:10px; align-items:center; border:1px solid #e5ebf1; background:#fbfcfe; border-radius:14px; padding:10px; }
+.workflow-editor-stage strong,.workflow-editor-stage small { display:block; }
+.workflow-editor-stage strong { font-size:10px; color:#2a435a; }
+.workflow-editor-stage small { margin-top:3px; font-size:8.5px; color:#7d8fa0; }
+.stage-actions { display:flex; gap:4px; }
+.stage-actions button { width:28px; height:28px; display:grid; place-items:center; border:1px solid #e0e7ee; background:white; border-radius:8px; color:#60778c; }
+.stage-actions button:disabled { opacity:.35; }
+.stage-arrow { position:absolute; left:18px; bottom:-14px; z-index:2; color:#aab9c6; background:white; border-radius:50%; padding:2px; }
+.workflow-new-stage { display:grid; grid-template-columns:1fr 1.3fr auto auto; gap:7px; align-items:center; margin-top:14px; padding-top:14px; border-top:1px solid #edf1f5; }
+.workflow-new-stage input[type="text"],.workflow-new-stage > input { width:100%; border:1px solid #dce5ed; border-radius:11px; padding:9px 10px; outline:0; font:inherit; font-size:10px; color:#294158; }
+.workflow-new-stage label { display:flex; align-items:center; gap:5px; color:#647a8e; font-size:9px; font-weight:800; white-space:nowrap; }
+@media (max-width:780px) {
+  .workflow-rule-grid { grid-template-columns:1fr; }
+  .workflow-new-stage { grid-template-columns:1fr; }
+  .workflow-editor-stage { grid-template-columns:34px minmax(0,1fr); }
+  .stage-actions { grid-column:2; }
+}
