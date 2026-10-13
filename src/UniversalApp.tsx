@@ -25,6 +25,7 @@ import ProductsPage from './pages/ProductsPage'
 import AdminPage from './pages/AdminPage'
 import TechnicalSheetsPage from './pages/TechnicalSheetsPage'
 import WorkflowPage from './pages/WorkflowPage'
+import ProductionOrdersPage from './pages/ProductionOrdersPage'
 import type { Material, ModuleKey, Product, TechnicalSheetSummary } from './domain/types'
 
 type Page = 'home' | 'materiais' | 'produtos' | 'fichas' | 'workflow' | 'ordens' | 'qualidade' | 'admin'
@@ -121,7 +122,7 @@ export default function App() {
       {page === 'produtos' && <ProductsPage notify={notify} />}
       {page === 'fichas' && <TechnicalSheetsPage notify={notify} />}
       {page === 'workflow' && <WorkflowPage notify={notify} />}
-      {page === 'ordens' && <PreparedModule icon={Factory} kicker="Planejamento" title="Ordens de Produção" text="A arquitetura prevê vários produtos, variantes e snapshots da revisão/kit na liberação. Ainda não há OPs fictícias: os dados aparecerão somente quando forem persistidos." />}
+      {page === 'ordens' && <ProductionOrdersPage notify={notify} />}
       {page === 'qualidade' && <PreparedModule icon={ShieldCheck} kicker="Controle" title="Qualidade" text="O módulo será ligado às revisões e OPs reais, com critérios numéricos, checklist, severidade, amostras individuais e retrabalho." />}
       {page === 'admin' && <AdminPage notify={notify} />}
     </main>
