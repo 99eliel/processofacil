@@ -6,14 +6,79 @@ export type ModuleKey =
   | 'ordens'
   | 'qualidade'
 
+export type CompanyBranch = {
+  id: string
+  nome: string
+  ativo?: boolean
+}
+
 export type Company = {
   id: string
   nome: string
   nomeFantasia: string
   documento: string
   logoUrl?: string
+  ownerUid?: string
   modulos: Record<ModuleKey, boolean>
-  filiais: { id: string; nome: string }[]
+  filiais: CompanyBranch[]
+  ativo?: boolean
+}
+
+export type CompanyMembership = {
+  empresaId: string
+  nomeFantasia: string
+  perfis: string[]
+  ativo: boolean
+}
+
+export type Supplier = {
+  id: string
+  nome: string
+  contato?: string
+  telefone?: string
+  email?: string
+  observacao?: string
+  ativo: boolean
+}
+
+export type Category = {
+  id: string
+  nome: string
+  parentId: string | null
+  nivel: number
+  prefixo?: string
+  ativo: boolean
+}
+
+export type UnitDefinition = {
+  id: string
+  simbolo: string
+  nome: string
+  ativo: boolean
+}
+
+export type MaterialSupplier = {
+  fornecedorId: string
+  nomeSnapshot: string
+  principal: boolean
+  referenciaFornecedor?: string
+}
+
+export type Material = {
+  id: string
+  codigo: string
+  codigoLegado?: string
+  descricao: string
+  buscaNormalizada?: string
+  categoriaId?: string
+  categoria: string
+  unidade: string
+  fornecedores: MaterialSupplier[] | string[]
+  custoUnitario?: number | null
+  leadTimeDias?: number | null
+  loteMinimo?: number | null
+  observacao?: string
+  ativo: boolean
 }
 
 export type CodeSegment = {
@@ -22,16 +87,6 @@ export type CodeSegment = {
   tamanho: number
   obrigatorio: boolean
   ordem: number
-}
-
-export type Material = {
-  id: string
-  codigo: string
-  descricao: string
-  categoria: string
-  unidade: string
-  fornecedores: string[]
-  ativo: boolean
 }
 
 export type Product = {
@@ -69,4 +124,15 @@ export type ProductionOrder = {
   status: string
   prazo: string
   progresso: number
+}
+
+export type CompanySettings = {
+  unidades: UnitDefinition[]
+  estrategiaCodigo: {
+    tipo: 'manual' | 'sequencial' | 'segmentado' | 'externo'
+    prefixo?: string
+    digitos?: number
+    segmentos?: CodeSegment[]
+  }
+  modulos: Record<ModuleKey, boolean>
 }
