@@ -229,3 +229,62 @@ export async function saveCompanySettings(
   })
   await batch.commit()
 }
+
+
+export async function updateCompanyProfile(
+  empresaId: string,
+  uid: string,
+  data: { nome: string; nomeFantasia: string; documento: string },
+) {
+  const companyRef = doc(db, 'empresas', empresaId)
+  const batch = writeBatch(db)
+  const now = serverTimestamp()
+  batch.update(companyRef, {
+    nome: data.nome.trim(),
+    nomeFantasia: data.nomeFantasia.trim() || data.nome.trim(),
+    documento: data.documento.trim(),
+    alteradoEm: now,
+    alteradoPor: uid,
+  })
+  batch.set(auditRef(empresaId), {
+    entidade: 'empresa',
+    entidadeId: empresaId,
+    acao: 'alterada',
+    resumo: 'Dados institucionais atualizados',
+    uid,
+    em: now,
+  })
+  await batch.commit()
+}
+
+export async function addCompanyBranch(
+  empresaId: string,
+  uid: string,
+  branches: Array<{ id: string; nome: string; ativo?: boolean }>,
+  branchName: string,
+) {
+  const normalizedName = branchName.trim()
+  if (!normalizedName) throw new Error('Informe o nome da filial.')
+  const id = normalizeSearch(normalizedName)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '') || `filial-${Date.now()}`
+  const next = [...branches, { id, nome: normalizedName, ativo: true }]
+  const companyRef = doc(db, 'empresas', empresaId)
+  const batch = writeBatch(db)
+  const now = serverTimestamp()
+  batch.update(companyRef, {
+    filiais: next,
+    alteradoEm: now,
+    alteradoPor: uid,
+  })
+  batch.set(auditRef(empresaId), {
+    entidade: 'empresa',
+    entidadeId: empresaId,
+    acao: 'filial_criada',
+    resumo: normalizedName,
+    uid,
+    em: now,
+  })
+  await batch.commit()
+}
