@@ -37,13 +37,17 @@ service cloud.firestore {
 
       match /{collectionName}/{docId} {
         allow read: if isMember(empresaId) || isSuperAdmin();
-        allow create, update: if canWriteOperational(empresaId);
+        allow create, update: if collectionName != 'membros'
+          && collectionName != 'configuracoes'
+          && canWriteOperational(empresaId);
         allow delete: if false;
       }
 
-      match /{document=**} {
+      match /{collectionName}/{docId}/{document=**} {
         allow read: if isMember(empresaId) || isSuperAdmin();
-        allow write: if canWriteOperational(empresaId);
+        allow write: if collectionName != 'membros'
+          && collectionName != 'configuracoes'
+          && canWriteOperational(empresaId);
       }
     }
 
