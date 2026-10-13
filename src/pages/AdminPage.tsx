@@ -23,6 +23,7 @@ import {
 } from '../firebase/catalogRepository'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import type { Category, CompanySettings, ModuleKey, Supplier, UnitDefinition } from '../domain/types'
+import AuditPanel from '../components/AuditPanel'
 
 const moduleLabels: Record<ModuleKey, { title: string; text: string }> = {
   materiais: { title: 'Materiais', text: 'Cadastro mestre, categorias, unidades e fornecedores.' },
@@ -33,7 +34,7 @@ const moduleLabels: Record<ModuleKey, { title: string; text: string }> = {
   qualidade: { title: 'Qualidade', text: 'Inspeções, critérios, tolerâncias e retrabalho.' },
 }
 
-type Tab = 'empresa' | 'cadastros' | 'modulos' | 'codigo'
+type Tab = 'empresa' | 'cadastros' | 'modulos' | 'codigo' | 'auditoria'
 
 export default function AdminPage({ notify }: { notify: (message: string) => void }) {
   const auth = useAuth()
@@ -229,6 +230,7 @@ export default function AdminPage({ notify }: { notify: (message: string) => voi
       <button className={tab === 'cadastros' ? 'active' : ''} onClick={() => setTab('cadastros')}><Boxes size={17} /> Cadastros base</button>
       <button className={tab === 'modulos' ? 'active' : ''} onClick={() => setTab('modulos')}><Layers3 size={17} /> Módulos</button>
       <button className={tab === 'codigo' ? 'active' : ''} onClick={() => setTab('codigo')}><GitBranch size={17} /> Código</button>
+      {canAdmin && <button className={tab === 'auditoria' ? 'active' : ''} onClick={() => setTab('auditoria')}><Users size={17} /> Auditoria</button>}
     </div>
 
     {tab === 'empresa' && <div className="two-columns">
@@ -293,6 +295,8 @@ export default function AdminPage({ notify }: { notify: (message: string) => voi
       <div className="toggle-grid">{(Object.keys(moduleLabels) as ModuleKey[]).map((key) => <button key={key} className={`toggle-card ${settings.modulos[key] ? 'enabled' : ''}`} onClick={() => canAdmin && toggleModule(key)}><span className="module-icon"><Settings2 size={19} /></span><div><strong>{moduleLabels[key].title}</strong><small>{moduleLabels[key].text}</small></div><span className="switch"><i /></span></button>)}</div>
       <div className="config-save-row"><button className="primary-button" onClick={() => saveSettings()} disabled={!canAdmin || busy}><Save size={16} /> Aplicar módulos</button></div>
     </section>}
+
+    {tab === 'auditoria' && canAdmin && <AuditPanel />}
 
     {tab === 'codigo' && <section className="panel">
       <div className="panel-head"><div><span className="section-kicker">Identificação de produtos</span><h3>Estratégia de código</h3></div><GitBranch size={20} /></div>
