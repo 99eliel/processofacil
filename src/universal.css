@@ -319,3 +319,24 @@
 @media (max-width:560px) {
   .quality-criterion-form { grid-template-columns:1fr; }
 }
+
+
+/* Auditoria e falha segura */
+.audit-list { display:grid; gap:0; }
+.audit-row { display:grid; grid-template-columns:12px minmax(0,1fr) auto; gap:10px; align-items:start; padding:11px 0; border-bottom:1px solid #edf1f5; }
+.audit-row:last-child { border-bottom:0; }
+.audit-dot { width:8px; height:8px; margin-top:4px; border-radius:50%; background:#0a6ab0; box-shadow:0 0 0 4px #eaf4fb; }
+.audit-row strong,.audit-row small,.audit-meta span { display:block; }
+.audit-row strong { font-size:10px; color:#2b435a; text-transform:capitalize; }
+.audit-row small { margin-top:3px; font-size:8.5px; color:#8192a2; }
+.audit-meta { text-align:right; }
+.audit-meta span { font-size:8.5px; color:#637a8f; }
+.audit-meta small { max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.compact-loading { min-height:120px; }
+.fatal-error-screen { min-height:100vh; display:grid; place-items:center; background:#f4f7fb; padding:20px; }
+.fatal-error-card { width:min(560px,100%); text-align:center; background:white; border:1px solid #e2e8f0; border-radius:24px; padding:30px; box-shadow:0 24px 70px rgba(20,45,80,.1); color:#203852; }
+.fatal-error-card > span { width:58px; height:58px; margin:0 auto 14px; border-radius:18px; display:grid; place-items:center; background:#fff1e7; color:#c06926; }
+.fatal-error-card h1 { margin:0 0 9px; font-size:24px; letter-spacing:-.035em; }
+.fatal-error-card p { color:#73879a; font-size:11px; line-height:1.55; }
+.fatal-error-card code { display:block; margin:14px 0; padding:10px; border-radius:11px; background:#f6f8fa; color:#7b4d4d; font-size:9px; overflow-wrap:anywhere; }
+.fatal-error-card button { border:0; border-radius:12px; padding:10px 14px; background:#0a6ab0; color:white; font-weight:800; display:inline-flex; align-items:center; gap:7px; }
