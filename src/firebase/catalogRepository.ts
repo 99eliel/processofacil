@@ -1,10 +1,13 @@
 import {
   collection,
   doc,
+  getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
+  where,
   writeBatch,
   type DocumentData,
   type Unsubscribe,
@@ -53,10 +56,17 @@ export async function createSupplier(
   const batch = writeBatch(db)
   const now = serverTimestamp()
   const nome = normalizeSearch(input.nome)
+  const duplicate = await getDocs(query(
+    collectionRef(empresaId, 'fornecedores'),
+    where('nomeNormalizado', '==', nome),
+    limit(1),
+  ))
+  if (!duplicate.empty) throw new Error('Já existe um fornecedor com este nome.')
 
   batch.set(ref, {
     ...input,
     nome,
+    nomeNormalizado: nome,
     buscaNormalizada: normalizeSearch([input.nome, input.contato, input.email].filter(Boolean).join(' ')),
     ativo: true,
     criadoEm: now,
@@ -84,11 +94,21 @@ export async function createCategory(
   const ref = doc(collectionRef(empresaId, 'categorias'))
   const batch = writeBatch(db)
   const now = serverTimestamp()
+  const prefixo = input.prefixo?.trim().toUpperCase() || ''
+
+  if (prefixo) {
+    const duplicatePrefix = await getDocs(query(
+      collectionRef(empresaId, 'categorias'),
+      where('prefixo', '==', prefixo),
+      limit(1),
+    ))
+    if (!duplicatePrefix.empty) throw new Error('Este prefixo já está sendo usado por outra categoria.')
+  }
 
   batch.set(ref, {
     ...input,
     nome: input.nome.trim(),
-    prefixo: input.prefixo?.trim().toUpperCase() || '',
+    prefixo,
     buscaNormalizada: normalizeSearch(input.nome),
     ativo: true,
     criadoEm: now,
@@ -116,6 +136,21 @@ export async function createMaterial(
   const ref = doc(collectionRef(empresaId, 'materiais'))
   const batch = writeBatch(db)
   const now = serverTimestamp()
+  const descricaoNormalizada = normalizeSearch(input.descricao)
+  const duplicateDescription = await getDocs(query(
+    collectionRef(empresaId, 'materiais'),
+    where('descricaoNormalizada', '==', descricaoNormalizada),
+    limit(1),
+  ))
+  if (!duplicateDescription.empty) throw new Error('Já existe um material com esta descrição.')
+
+  const duplicateCode = await getDocs(query(
+    collectionRef(empresaId, 'materiais'),
+    where('codigo', '==', input.codigo.trim().toUpperCase()),
+    limit(1),
+  ))
+  if (!duplicateCode.empty) throw new Error('Já existe um material com este código.')
+
   const fornecedores = (input.fornecedores as MaterialSupplier[]).map((item) => ({
     fornecedorId: item.fornecedorId,
     nomeSnapshot: item.nomeSnapshot,
