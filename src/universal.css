@@ -276,3 +276,20 @@
   .workflow-editor-stage { grid-template-columns:34px minmax(0,1fr); }
   .stage-actions { grid-column:2; }
 }
+
+
+/* Ordens de Produção reais */
+.op-modal { width:min(860px,100%); }
+.op-form-body { padding:10px 20px 18px; display:grid; gap:12px; max-height:64vh; overflow:auto; }
+.op-item-editor { border:1px solid #e4eaf0; border-radius:15px; padding:12px; background:#fafcfd; }
+.op-item-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; }
+.op-item-head strong { font-size:11px; color:#2b435a; }
+.variant-list { display:grid; gap:6px; margin:7px 0; }
+.variant-row { display:grid; grid-template-columns:minmax(0,1fr) 110px 34px; gap:6px; align-items:center; }
+.variant-row input,.op-item-editor select { width:100%; border:1px solid #dce5ed; border-radius:10px; padding:8px 9px; font:inherit; font-size:10px; color:#30485f; background:white; }
+.detail-hero + .form-error { margin-top:10px; }
+.op-card { transition:.16s ease; }
+.op-card:hover { border-color:#b8d3e5; box-shadow:0 8px 24px rgba(25,55,90,.06); transform:translateY(-1px); }
+@media (max-width:620px) {
+  .variant-row { grid-template-columns:1fr 90px 34px; }
+}
