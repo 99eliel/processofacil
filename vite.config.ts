@@ -12,7 +12,7 @@ export default defineConfig({
       manifest: {
         name: 'Processo Fácil',
         short_name: 'Processo Fácil',
-        description: 'Gestão da terceirização de confecção',
+        description: 'Plataforma universal e configurável para padronização, fichas, processos, produção e qualidade',
         theme_color: '#0B1F4B',
         background_color: '#F4F7FB',
         display: 'standalone',
