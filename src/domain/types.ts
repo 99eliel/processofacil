@@ -195,3 +195,52 @@ export type TechnicalSheetSummary = {
   status: 'sem_ficha' | 'rascunho' | 'em_validacao' | 'padrao'
   alteradoEm?: unknown
 }
+
+
+export type ProductionVariant = {
+  id: string
+  nome: string
+  quantidade: number
+}
+
+export type ProductionOrderItemRecord = {
+  id: string
+  produtoCodigo: string
+  produtoDescricao: string
+  revisao: number | null
+  variantes: ProductionVariant[]
+  quantidadeTotal: number
+}
+
+export type FrozenKitLine = {
+  id: string
+  materialId: string
+  codigoSnapshot: string
+  descricaoSnapshot: string
+  fornecedorSnapshot?: string
+  unidade: string
+  quantidadeNecessaria: number
+  corRegra: string
+  corFixa?: string
+}
+
+export type OrderHistoryEntry = {
+  id: string
+  acao: string
+  etapaId?: string | null
+  uid: string
+  em: unknown
+  observacao?: string
+}
+
+export type ProductionOrderRecord = {
+  id: string
+  numero: string
+  prazo?: string
+  status: 'rascunho' | 'liberada' | 'em_fluxo' | 'concluida' | 'cancelada' | 'reprovada'
+  workflowStageId?: string | null
+  itens: ProductionOrderItemRecord[]
+  kit: FrozenKitLine[]
+  historico: OrderHistoryEntry[]
+  alteradoEm?: unknown
+}
