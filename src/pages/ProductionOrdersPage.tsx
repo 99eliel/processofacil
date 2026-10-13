@@ -102,7 +102,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
     setBusy(true)
     setLocalError('')
     try {
-      const result = await createProductionOrder(empresaId, user.uid, { prazo, itens })
+      const result = await createProductionOrder(empresaId, user.uid, { prazo, itens: items })
       notify(`${result.numero} criada.`)
       setModal(false)
       setDraftItems([])
