@@ -136,3 +136,62 @@ export type CompanySettings = {
   }
   modulos: Record<ModuleKey, boolean>
 }
+
+
+export type BomLine = {
+  id: string
+  materialId: string
+  codigoSnapshot: string
+  descricaoSnapshot: string
+  fornecedorId?: string
+  fornecedorSnapshot?: string
+  referenciaFornecedorSnapshot?: string
+  corRegra: 'produto' | 'fixa' | 'nao_aplica'
+  corFixa?: string
+  consumo: number
+  unidade: string
+  perdaPercentual: number
+  observacao?: string
+}
+
+export type MeasurementValue = {
+  tamanho: string
+  valor: number | null
+}
+
+export type MeasurementRow = {
+  id: string
+  ponto: string
+  tolerancia: number
+  valores: MeasurementValue[]
+}
+
+export type TechnicalRevision = {
+  id: string
+  numero: number
+  status: 'rascunho' | 'em_validacao' | 'padrao' | 'obsoleta'
+  produtoCodigo: string
+  produtoDescricao: string
+  motivoRevisao?: string
+  construcao: string
+  blocos: {
+    bom: boolean
+    medidas: boolean
+    checklist: boolean
+  }
+  bom: BomLine[]
+  medidas: MeasurementRow[]
+  imagens: Array<{ url: string; legenda: string; ordem: number }>
+  aprovadoPor?: string
+  aprovadoEm?: unknown
+}
+
+export type TechnicalSheetSummary = {
+  id: string
+  produtoCodigo: string
+  produtoDescricao: string
+  revisaoVigente?: number | null
+  revisaoRascunho?: number | null
+  status: 'sem_ficha' | 'rascunho' | 'em_validacao' | 'padrao'
+  alteradoEm?: unknown
+}
