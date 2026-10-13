@@ -26,7 +26,8 @@ import AdminPage from './pages/AdminPage'
 import TechnicalSheetsPage from './pages/TechnicalSheetsPage'
 import WorkflowPage from './pages/WorkflowPage'
 import ProductionOrdersPage from './pages/ProductionOrdersPage'
-import type { Material, ModuleKey, Product, TechnicalSheetSummary } from './domain/types'
+import QualityPage from './pages/QualityPage'
+import type { Material, ModuleKey, Product, ProductionOrderRecord, TechnicalSheetSummary } from './domain/types'
 
 type Page = 'home' | 'materiais' | 'produtos' | 'fichas' | 'workflow' | 'ordens' | 'qualidade' | 'admin'
 type ModuleCard = { id: Page; module?: ModuleKey; title: string; description: string; icon: LucideIcon }
@@ -50,6 +51,7 @@ export default function App() {
   const { items: materials } = useTenantCollection<Material>(empresaId, 'materiais', 'descricao')
   const { items: products } = useTenantCollection<Product>(empresaId, 'produtos', 'descricao')
   const { items: sheets } = useTenantCollection<TechnicalSheetSummary>(empresaId, 'fichas', 'produtoDescricao')
+  const { items: orders } = useTenantCollection<ProductionOrderRecord>(empresaId, 'ordensProducao', 'numero')
 
   const activeModules = useMemo(
     () => modules.filter((item) => !item.module || auth.settings.modulos[item.module]),
@@ -117,13 +119,13 @@ export default function App() {
         </div>
       </header>
 
-      {page === 'home' && <Home open={open} modules={activeModules} materialCount={materials.filter((item) => item.ativo).length} productCount={products.length} sheetCount={sheets.filter((item) => item.status === 'padrao').length} />}
+      {page === 'home' && <Home open={open} modules={activeModules} materialCount={materials.filter((item) => item.ativo).length} productCount={products.length} sheetCount={sheets.filter((item) => item.status === 'padrao').length} orderCount={orders.filter((item) => !['concluida', 'cancelada'].includes(item.status)).length} />}
       {page === 'materiais' && <MaterialsPage notify={notify} />}
       {page === 'produtos' && <ProductsPage notify={notify} />}
       {page === 'fichas' && <TechnicalSheetsPage notify={notify} />}
       {page === 'workflow' && <WorkflowPage notify={notify} />}
       {page === 'ordens' && <ProductionOrdersPage notify={notify} />}
-      {page === 'qualidade' && <PreparedModule icon={ShieldCheck} kicker="Controle" title="Qualidade" text="O módulo será ligado às revisões e OPs reais, com critérios numéricos, checklist, severidade, amostras individuais e retrabalho." />}
+      {page === 'qualidade' && <QualityPage notify={notify} />}
       {page === 'admin' && <AdminPage notify={notify} />}
     </main>
 
@@ -142,7 +144,7 @@ function NavButton({ active, icon: Icon, label, onClick }: { active: boolean; ic
   return <button className={`nav-item ${active ? 'active' : ''}`} onClick={onClick}><Icon size={18} /><span>{label}</span></button>
 }
 
-function Home({ open, modules, materialCount, productCount, sheetCount }: { open: (page: Page) => void; modules: ModuleCard[]; materialCount: number; productCount: number; sheetCount: number }) {
+function Home({ open, modules, materialCount, productCount, sheetCount, orderCount }: { open: (page: Page) => void; modules: ModuleCard[]; materialCount: number; productCount: number; sheetCount: number; orderCount: number }) {
   const auth = useAuth()
   return <>
     <section className="hero-card universal-hero">
@@ -159,7 +161,7 @@ function Home({ open, modules, materialCount, productCount, sheetCount }: { open
       <Stat icon={Boxes} label="Materiais ativos" value={String(materialCount)} meta="dados reais do Firestore" />
       <Stat icon={PackageCheck} label="Produtos" value={String(productCount)} meta="dados reais do Firestore" />
       <Stat icon={FileText} label="Fichas publicadas" value={String(sheetCount)} meta="revisões padrão reais" />
-      <Stat icon={Factory} label="OPs abertas" value="0" meta="sem dados fictícios" />
+      <Stat icon={Factory} label="OPs abertas" value={String(orderCount)} meta="dados reais do Firestore" />
     </section>
 
     <section className="dashboard-grid">
