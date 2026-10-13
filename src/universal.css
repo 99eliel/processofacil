@@ -211,3 +211,38 @@
   .inline-fields { grid-template-columns:1fr; }
   .user-summary > div { display:none; }
 }
+
+
+/* Ficha Técnica real */
+.ft-editor-grid { align-items:start; }
+.editor-label { display:grid; gap:6px; margin-bottom:13px; }
+.editor-label > span { color:#526a81; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:.05em; }
+.editor-label input,.editor-label textarea { width:100%; border:1px solid #dce5ed; border-radius:12px; padding:10px 11px; outline:0; background:white; color:#294158; font:inherit; font-size:11px; }
+.editor-label input:focus,.editor-label textarea:focus { border-color:#78b5d9; box-shadow:0 0 0 3px #eaf5fb; }
+.editor-label input:disabled,.editor-label textarea:disabled { background:#f6f8fa; color:#6f8293; }
+.block-toggles { display:flex; flex-wrap:wrap; gap:7px; margin-top:8px; }
+.block-toggles button { border:1px solid #dfe7ee; background:#f7f9fb; color:#667d91; border-radius:999px; padding:7px 10px; font-size:9px; font-weight:800; }
+.block-toggles button.active { background:#e8f5fb; border-color:#a7d2e7; color:#0a6ab0; }
+.block-toggles button:disabled { opacity:.75; cursor:default; }
+.revision-list { display:grid; gap:7px; max-height:330px; overflow:auto; }
+.revision-list button { border:1px solid #e4eaf0; background:#fafbfd; border-radius:13px; padding:10px; text-align:left; color:#51687d; }
+.revision-list button.active { border-color:#9ecbe4; background:#eef8fc; }
+.revision-list span,.revision-list strong,.revision-list small { display:block; }
+.revision-list span { font-size:8px; text-transform:uppercase; color:#8294a5; font-weight:900; letter-spacing:.05em; }
+.revision-list strong { margin-top:3px; font-size:10px; color:#2a435a; }
+.revision-list small { margin-top:3px; color:#8091a2; font-size:8.5px; line-height:1.35; }
+.ft-create-panel { display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,.85fr); align-items:center; gap:18px; }
+.ft-create-panel h3 { margin:4px 0 0; }
+.sheet-card-button { width:100%; text-align:left; cursor:pointer; }
+.sheet-card-button:hover { border-color:#b8d3e5; box-shadow:0 8px 24px rgba(25,55,90,.06); }
+.bom-add { margin-bottom:12px; }
+.bom-table input,.bom-table select { width:100%; min-width:82px; border:1px solid #dfe7ee; border-radius:9px; padding:7px 8px; font:inherit; font-size:9px; color:#3d556b; background:white; }
+.bom-table td:nth-child(1) { min-width:180px; }
+.bom-table td:nth-child(2) { min-width:120px; }
+.bom-table td:nth-child(7) { min-width:150px; }
+.danger-icon { color:#bb4a4a; background:#fff7f7; border-color:#f1d8d8; }
+.small-empty { min-height:150px; }
+.passport-actions { flex-wrap:wrap; }
+@media (max-width:850px) {
+  .ft-create-panel { grid-template-columns:1fr; }
+}
