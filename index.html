@@ -8,7 +8,21 @@
     <title>Processo Fácil</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot-screen" style="min-height:100vh;display:grid;place-items:center;background:#f4f7fb;font-family:Arial,sans-serif;color:#17365d">
+        <div style="text-align:center">
+          <strong style="font-size:22px">Processo Fácil</strong>
+          <div style="margin-top:8px;font-size:13px;color:#71869d">Carregando sistema...</div>
+        </div>
+      </div>
+    </div>
+    <script>
+      window.addEventListener('error', function (event) {
+        var root = document.getElementById('root');
+        if (!root || !document.getElementById('boot-screen')) return;
+        root.innerHTML = '<div style="min-height:100vh;display:grid;place-items:center;background:#f4f7fb;font-family:Arial,sans-serif;padding:24px"><div style="max-width:520px;text-align:center;color:#17365d"><strong style="font-size:22px">Processo Fácil</strong><p style="color:#60758b;line-height:1.5">O sistema não conseguiu iniciar nesta versão. Atualize a página com Ctrl+F5. Se continuar, o erro já pode ser identificado sem deixar a tela branca.</p></div></div>';
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
