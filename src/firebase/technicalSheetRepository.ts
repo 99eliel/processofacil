@@ -335,6 +335,7 @@ export function createBomLine(material: {
     referenciaFornecedorSnapshot: typeof principal === 'object' ? principal.referenciaFornecedor : undefined,
     corRegra: 'nao_aplica',
     consumo: 1,
+    consumoPorTamanho: {},
     unidade: material.unidade,
     perdaPercentual: 0,
     observacao: '',
