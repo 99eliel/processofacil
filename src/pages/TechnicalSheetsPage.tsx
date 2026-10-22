@@ -178,6 +178,22 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
     setEditor({ ...editor, bom: editor.bom.filter((line) => line.id !== id) })
   }
 
+  const setBomSupplier = (line: BomLine, fornecedorId: string) => {
+    if (!editor || !editable) return
+    const material = materials.find((item) => item.id === line.materialId)
+    const supplier = material?.fornecedores.find(
+      (item) => typeof item !== 'string' && item.fornecedorId === fornecedorId,
+    )
+
+    updateBom(line.id, {
+      fornecedorId: typeof supplier === 'object' ? supplier.fornecedorId : undefined,
+      fornecedorSnapshot: typeof supplier === 'object' ? supplier.nomeSnapshot : undefined,
+      referenciaFornecedorSnapshot: typeof supplier === 'object'
+        ? supplier.referenciaFornecedor
+        : undefined,
+    })
+  }
+
   const toggleVariableConsumption = (line: BomLine) => {
     if (!editor || !editable) return
     const enabled = line.consumoPorTamanho
@@ -529,7 +545,26 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
         <div className="panel-head"><div><span className="section-kicker">Composição</span><h3>BOM — Lista de materiais</h3></div><span className="count-badge">{editor.bom.length}</span></div>
         {editable && <div className="inline-form bom-add"><select value={materialToAdd} onChange={(e) => setMaterialToAdd(e.target.value)}><option value="">Selecione um material ativo</option>{materials.filter((item) => item.ativo).map((material) => <option key={material.id} value={material.id}>{material.codigo} — {material.descricao}</option>)}</select><button className="secondary-button compact" type="button" onClick={addMaterial} disabled={!materialToAdd}><PackagePlus size={16} /> Adicionar à BOM</button></div>}
         {editor.bom.length === 0 ? <div className="empty-state small-empty"><PackagePlus size={28} /><strong>BOM vazia</strong><span>Adicione os materiais que compõem este produto.</span></div> :
-          <div className="table-wrap"><table className="bom-table"><thead><tr><th>Material</th><th>Fornecedor</th><th>Consumo</th><th>Unidade</th><th>Perda %</th><th>Cor</th><th>Observação</th>{editable && <th></th>}</tr></thead><tbody>{editor.bom.map((line) => <tr key={line.id}><td><strong>{line.codigoSnapshot}</strong><small className="table-sub">{line.descricaoSnapshot}</small></td><td>{line.fornecedorSnapshot || '—'}</td><td>{editable ? <input type="number" min="0.0001" step="0.0001" value={line.consumo} onChange={(e) => updateBom(line.id, { consumo: Number(e.target.value) })} /> : line.consumo}</td><td>{line.unidade}</td><td>{editable ? <input type="number" min="0" step="0.01" value={line.perdaPercentual} onChange={(e) => updateBom(line.id, { perdaPercentual: Number(e.target.value) })} /> : line.perdaPercentual}</td><td>{editable ? <select value={line.corRegra} onChange={(e) => updateBom(line.id, { corRegra: e.target.value as BomLine['corRegra'] })}><option value="nao_aplica">N/A</option><option value="produto">Segue produto</option><option value="fixa">Fixa</option></select> : line.corRegra}</td><td>{editable ? <input value={line.observacao ?? ''} onChange={(e) => updateBom(line.id, { observacao: e.target.value })} /> : line.observacao || '—'}</td>{editable && <td><button className="icon-button danger-icon" onClick={() => removeBom(line.id)}><Trash2 size={15} /></button></td>}</tr>)}</tbody></table></div>}
+          <div className="table-wrap"><table className="bom-table"><thead><tr><th>Material</th><th>Fornecedor</th><th>Consumo</th><th>Unidade</th><th>Perda %</th><th>Cor</th><th>Observação</th>{editable && <th></th>}</tr></thead><tbody>{editor.bom.map((line) => <tr key={line.id}><td><strong>{line.codigoSnapshot}</strong><small className="table-sub">{line.descricaoSnapshot}</small></td><td>{editable ? (() => {
+          const material = materials.find((item) => item.id === line.materialId)
+          const options = material?.fornecedores.filter(
+            (item): item is Exclude<typeof item, string> => typeof item !== 'string',
+          ) ?? []
+          return options.length > 0 ? (
+            <select
+              value={line.fornecedorId ?? ''}
+              onChange={(event) => setBomSupplier(line, event.target.value)}
+            >
+              <option value="">Sem fornecedor</option>
+              {options.map((supplier) => (
+                <option key={supplier.fornecedorId} value={supplier.fornecedorId}>
+                  {supplier.nomeSnapshot}
+                  {supplier.referenciaFornecedor ? ` · ${supplier.referenciaFornecedor}` : ''}
+                </option>
+              ))}
+            </select>
+          ) : (line.fornecedorSnapshot || '—')
+        })() : (line.fornecedorSnapshot || '—')}</td><td>{editable ? <input type="number" min="0.0001" step="0.0001" value={line.consumo} onChange={(e) => updateBom(line.id, { consumo: Number(e.target.value) })} /> : line.consumo}</td><td>{line.unidade}</td><td>{editable ? <input type="number" min="0" step="0.01" value={line.perdaPercentual} onChange={(e) => updateBom(line.id, { perdaPercentual: Number(e.target.value) })} /> : line.perdaPercentual}</td><td>{editable ? <select value={line.corRegra} onChange={(e) => updateBom(line.id, { corRegra: e.target.value as BomLine['corRegra'] })}><option value="nao_aplica">N/A</option><option value="produto">Segue produto</option><option value="fixa">Fixa</option></select> : line.corRegra}</td><td>{editable ? <input value={line.observacao ?? ''} onChange={(e) => updateBom(line.id, { observacao: e.target.value })} /> : line.observacao || '—'}</td>{editable && <td><button className="icon-button danger-icon" onClick={() => removeBom(line.id)}><Trash2 size={15} /></button></td>}</tr>)}</tbody></table></div>}
         {editor.tamanhos.length > 0 && editor.bom.length > 0 && <div className="variant-consumption-panel">
           <div className="variant-consumption-head">
             <div>
