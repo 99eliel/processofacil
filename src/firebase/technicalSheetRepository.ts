@@ -87,6 +87,7 @@ export async function openOrCreateTechnicalDraft(
       construcao: base?.construcao ?? '',
       blocos: base?.blocos ?? { bom: true, medidas: false, checklist: false },
       bom: base?.bom?.map((line) => ({ ...line, id: crypto.randomUUID() })) ?? [],
+      tamanhos: base?.tamanhos ?? [],
       medidas: base?.medidas ?? [],
       imagens: base?.imagens ?? [],
     }
@@ -141,6 +142,7 @@ export async function saveTechnicalDraft(
       construcao: revision.construcao,
       blocos: revision.blocos,
       bom: revision.bom,
+      tamanhos: revision.tamanhos,
       medidas: revision.medidas,
       imagens: revision.imagens,
       alteradoEm: serverTimestamp(),
@@ -160,7 +162,26 @@ export async function submitTechnicalRevision(
   revision: TechnicalRevision,
 ) {
   if (!revision.construcao.trim()) throw new Error('Descreva a construção/processo antes de enviar.')
-  if (revision.blocos.bom && revision.bom.length === 0) throw new Error('Adicione ao menos um item na BOM.')
+  if (revision.blocos.bom && revision.bom.length === 0) {
+    throw new Error('Adicione ao menos um item na BOM.')
+  }
+  if (revision.blocos.medidas) {
+    if (revision.tamanhos.length === 0) {
+      throw new Error('Defina ao menos um tamanho/variante para a tabela de medidas.')
+    }
+    if (revision.medidas.length === 0) {
+      throw new Error('Adicione ao menos um ponto de medida.')
+    }
+    const incomplete = revision.medidas.some((row) =>
+      revision.tamanhos.some((size) => {
+        const value = row.valores.find((item) => item.tamanho === size)
+        return value?.valor == null || !Number.isFinite(Number(value.valor))
+      }),
+    )
+    if (incomplete) {
+      throw new Error('Preencha todos os valores da tabela de medidas antes de enviar.')
+    }
+  }
 
   const ref = revisionRef(empresaId, revision.produtoCodigo, revision.numero)
   const sumRef = summaryRef(empresaId, revision.produtoCodigo)
