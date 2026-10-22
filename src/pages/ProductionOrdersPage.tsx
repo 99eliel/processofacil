@@ -246,7 +246,14 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
         </section>
         <section className="panel">
           <div className="panel-head"><div><span className="section-kicker">Fluxo</span><h3>{stage?.nome ?? statusLabel(selected.status)}</h3></div><Factory size={20} /></div>
-          {selected.status === 'rascunho' && <><p className="helper-text">Ao liberar, o sistema exige FT padrão de todos os produtos e congela revisão e kit.</p><button className="primary-button" disabled={!canRelease || busy} onClick={() => release(selected)}><Send size={16} /> Liberar OP</button></>}
+          {selected.status === 'rascunho' && <>
+            <p className="helper-text">Ao liberar, o sistema exige FT padrão de todos os produtos e congela revisão e kit. Antes disso, o rascunho pode ser alterado ou cancelado.</p>
+            <div className="draft-order-actions">
+              <button className="secondary-button" disabled={busy} onClick={() => openEditOrder(selected)}><Edit3 size={16} /> Editar rascunho</button>
+              <button className="primary-button" disabled={!canRelease || busy} onClick={() => release(selected)}><Send size={16} /> Liberar OP</button>
+              <button className="danger-button" disabled={busy} onClick={() => cancelDraft(selected)}><Ban size={16} /> Cancelar OP</button>
+            </div>
+          </>}
           {selected.status === 'em_fluxo' && stage && <><p className="helper-text">Responsáveis: {stage.perfis.join(', ')}.</p><button className="primary-button" disabled={busy} onClick={() => advance(selected)}>Concluir etapa <ArrowRight size={16} /></button></>}
           {selected.status === 'concluida' && <div className="form-success">Fluxo concluído. O histórico da OP permanece preservado.</div>}
         </section>
@@ -270,7 +277,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
   return <>
     <section className="page-intro">
       <div><span className="section-kicker">Planejamento</span><h2>Ordens de Produção</h2><p>OPs reais com vários produtos, variantes e kit congelado a partir das revisões padrão.</p></div>
-      <button className="primary-button" onClick={() => { setDraftItems([]); addItem(); setModal(true); setLocalError('') }}><Plus size={18} /> Nova OP</button>
+      <button className="primary-button" onClick={openNewOrder}><Plus size={18} /> Nova OP</button>
     </section>
     {localError && <div className="form-error page-message">{localError}</div>}
     {error && <div className="form-error page-message">{error}</div>}
@@ -281,7 +288,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
       })}</div>}
 
     {modal && <div className="modal-backdrop"><section className="form-modal op-modal">
-      <div className="modal-head"><div><span className="section-kicker">Planejamento</span><h2>Nova Ordem de Produção</h2></div><button className="icon-button" onClick={() => setModal(false)}><X size={18} /></button></div>
+      <div className="modal-head"><div><span className="section-kicker">Planejamento</span><h2>{editingOrderId ? 'Editar Ordem de Produção' : 'Nova Ordem de Produção'}</h2></div><button className="icon-button" onClick={() => setModal(false)}><X size={18} /></button></div>
       <div className="op-form-body">
         <label className="editor-label"><span>Prazo (opcional)</span><input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} /></label>
         {draftItems.map((item, index) => <div className="op-item-editor" key={item.id}>
@@ -294,7 +301,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
         <button className="secondary-button compact" onClick={addItem}><Plus size={15} /> Adicionar produto</button>
         {localError && <div className="form-error">{localError}</div>}
       </div>
-      <div className="modal-actions"><button className="secondary-button" onClick={() => setModal(false)}>Cancelar</button><button className="primary-button" onClick={create} disabled={busy}>{busy ? <Loader2 className="spin" size={16} /> : <CheckCircle2 size={16} />} Criar OP</button></div>
+      <div className="modal-actions"><button className="secondary-button" onClick={() => setModal(false)}>Cancelar</button><button className="primary-button" onClick={saveOrder} disabled={busy}>{busy ? <Loader2 className="spin" size={16} /> : <CheckCircle2 size={16} />} {editingOrderId ? 'Salvar alterações' : 'Criar OP'}</button></div>
     </section></div>}
   </>
 }
