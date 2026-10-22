@@ -251,9 +251,9 @@ export default function AdminPage({ notify }: { notify: (message: string) => voi
       </section>
 
       <section className="panel">
-        <div className="panel-head"><div><span className="section-kicker">Acesso</span><h3>Usuário atual</h3></div><Users size={20} /></div>
-        <div className="info"><span>Nome</span><strong>{user?.displayName || 'Não informado'}</strong></div>
-        <div className="info"><span>E-mail</span><strong>{user?.email}</strong></div>
+        <div className="panel-head"><div><span className="section-kicker">Modo atual</span><h3>Sessão operacional</h3></div><Users size={20} /></div>
+        <div className="info"><span>Autenticação nominal</span><strong>Temporariamente desativada</strong></div>
+        <div className="info"><span>Sessão Firebase</span><strong>Técnica automática</strong></div>
         <div className="branch-list">{activeProfiles.map((profile) => <span key={profile}><Check size={13} /> {profile}</span>)}</div>
       </section>
     </div>}
