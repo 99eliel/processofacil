@@ -132,8 +132,19 @@ export async function releaseProductionOrder(
       frozenItems.push({ ...item, revisao: vigente })
 
       for (const line of revision.bom ?? []) {
-        const multiplier = item.quantidadeTotal
-        const required = Number(line.consumo) * multiplier * (1 + Number(line.perdaPercentual || 0) / 100)
+        const hasVariableConsumption = line.consumoPorTamanho
+          && Object.keys(line.consumoPorTamanho).length > 0
+
+        const baseRequired = hasVariableConsumption
+          ? item.variantes.reduce((sum, variant) => {
+              const variantConsumption = Number(
+                line.consumoPorTamanho?.[variant.nome] ?? line.consumo,
+              )
+              return sum + variantConsumption * Number(variant.quantidade || 0)
+            }, 0)
+          : Number(line.consumo) * item.quantidadeTotal
+
+        const required = baseRequired * (1 + Number(line.perdaPercentual || 0) / 100)
         const key = kitKey(line)
         const current = kitMap.get(key)
         if (current) {
