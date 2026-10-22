@@ -5,9 +5,12 @@ import {
   ClipboardCheck,
   FileText,
   History,
+  ImagePlus,
   Loader2,
   PackagePlus,
   Plus,
+  Printer,
+  Ruler,
   Save,
   Send,
   ShieldCheck,
@@ -25,6 +28,7 @@ import {
   saveTechnicalDraft,
   submitTechnicalRevision,
 } from '../firebase/technicalSheetRepository'
+import { deleteTechnicalSheetImage, uploadTechnicalSheetImage } from '../firebase/storageRepository'
 import type { BomLine, Material, Product, TechnicalRevision, TechnicalSheetSummary } from '../domain/types'
 
 export default function TechnicalSheetsPage({ notify }: { notify: (message: string) => void }) {
@@ -39,6 +43,8 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
   const [history, setHistory] = useState<TechnicalRevision[]>([])
   const [busy, setBusy] = useState(false)
   const [materialToAdd, setMaterialToAdd] = useState('')
+  const [newSize, setNewSize] = useState('')
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [localError, setLocalError] = useState('')
 
   const selectedProduct = products.find((item) => item.codigo === selectedProductCode)
