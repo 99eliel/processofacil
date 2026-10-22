@@ -397,3 +397,9 @@
   .ft-image-card img { max-height:180px; object-fit:contain; }
   @page { size:A4; margin:12mm; }
 }
+
+
+/* Manutenção de cadastros base */
+.mini-list-row { display:flex !important; align-items:center; justify-content:space-between; gap:10px; }
+.mini-list-row > div:first-child { min-width:0; flex:1; }
+.mini-list-row .row-actions { flex:0 0 auto; }
