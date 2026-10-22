@@ -103,7 +103,10 @@ export async function openOrCreateTechnicalDraft(
       bom: base?.bom?.map((line) => ({ ...line, id: crypto.randomUUID() })) ?? [],
       tamanhos: base?.tamanhos ?? [],
       medidas: base?.medidas ?? [],
-      imagens: base?.imagens ?? [],
+      imagens: base?.imagens?.map((image) => ({
+        ...image,
+        path: undefined,
+      })) ?? [],
     }
 
     const draftRef = revisionRef(empresaId, product.codigo, next)
