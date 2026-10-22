@@ -141,10 +141,22 @@ export async function releaseProductionOrder(
         const hasVariableConsumption = line.consumoPorTamanho
           && Object.keys(line.consumoPorTamanho).length > 0
 
+        if (hasVariableConsumption) {
+          const missingVariants = item.variantes
+            .filter((variant) => line.consumoPorTamanho?.[variant.nome] == null)
+            .map((variant) => variant.nome)
+
+          if (missingVariants.length > 0) {
+            throw new Error(
+              `O material ${line.codigoSnapshot} não possui consumo definido para: ${missingVariants.join(', ')}.`,
+            )
+          }
+        }
+
         const baseRequired = hasVariableConsumption
           ? item.variantes.reduce((sum, variant) => {
               const variantConsumption = Number(
-                line.consumoPorTamanho?.[variant.nome] ?? line.consumo,
+                line.consumoPorTamanho?.[variant.nome],
               )
               return sum + variantConsumption * Number(variant.quantidade || 0)
             }, 0)
