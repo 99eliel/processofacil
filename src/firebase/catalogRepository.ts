@@ -414,3 +414,138 @@ export async function addCompanyBranch(
   })
   await batch.commit()
 }
+
+
+export async function updateSupplier(
+  empresaId: string,
+  uid: string,
+  supplierId: string,
+  input: Omit<Supplier, 'id' | 'ativo'>,
+) {
+  const nome = input.nome.trim()
+  const nomeNormalizado = normalizeSearch(nome)
+  const duplicate = await getDocs(query(
+    collectionRef(empresaId, 'fornecedores'),
+    where('nomeNormalizado', '==', nomeNormalizado),
+    limit(2),
+  ))
+
+  if (duplicate.docs.some((item) => item.id !== supplierId)) {
+    throw new Error('Já existe outro fornecedor com este nome.')
+  }
+
+  await updateTenantDocument(
+    empresaId,
+    uid,
+    'fornecedores',
+    supplierId,
+    {
+      ...input,
+      nome,
+      nomeNormalizado,
+      buscaNormalizada: normalizeSearch([
+        nome,
+        input.contato,
+        input.email,
+        input.telefone,
+      ].filter(Boolean).join(' ')),
+    },
+    nome,
+  )
+}
+
+export async function setSupplierActive(
+  empresaId: string,
+  uid: string,
+  supplierId: string,
+  ativo: boolean,
+  label: string,
+) {
+  await setActiveState(
+    empresaId,
+    uid,
+    'fornecedores',
+    supplierId,
+    ativo,
+    label,
+  )
+}
+
+export async function updateCategory(
+  empresaId: string,
+  uid: string,
+  categoryId: string,
+  input: Omit<Category, 'id' | 'ativo'>,
+) {
+  if (input.parentId === categoryId) {
+    throw new Error('Uma categoria não pode ser filha dela mesma.')
+  }
+
+  const nome = input.nome.trim()
+  const nomeNormalizado = normalizeSearch(nome)
+  const prefixo = input.prefixo?.trim().toUpperCase() || ''
+
+  const duplicateName = await getDocs(query(
+    collectionRef(empresaId, 'categorias'),
+    where('buscaNormalizada', '==', nomeNormalizado),
+    limit(2),
+  ))
+  if (duplicateName.docs.some((item) => item.id !== categoryId)) {
+    throw new Error('Já existe outra categoria com este nome.')
+  }
+
+  if (prefixo) {
+    const duplicatePrefix = await getDocs(query(
+      collectionRef(empresaId, 'categorias'),
+      where('prefixo', '==', prefixo),
+      limit(2),
+    ))
+    if (duplicatePrefix.docs.some((item) => item.id !== categoryId)) {
+      throw new Error('Este prefixo já está sendo usado por outra categoria.')
+    }
+  }
+
+  await updateTenantDocument(
+    empresaId,
+    uid,
+    'categorias',
+    categoryId,
+    {
+      nome,
+      parentId: input.parentId,
+      nivel: input.nivel,
+      prefixo,
+      buscaNormalizada: nomeNormalizado,
+    },
+    nome,
+  )
+}
+
+export async function setCategoryActive(
+  empresaId: string,
+  uid: string,
+  categoryId: string,
+  ativo: boolean,
+  label: string,
+) {
+  if (!ativo) {
+    const used = await getDocs(query(
+      collectionRef(empresaId, 'materiais'),
+      where('categoriaId', '==', categoryId),
+      where('ativo', '==', true),
+      limit(1),
+    ))
+    if (!used.empty) {
+      throw new Error('Não é possível inativar uma categoria usada por material ativo.')
+    }
+  }
+
+  await setActiveState(
+    empresaId,
+    uid,
+    'categorias',
+    categoryId,
+    ativo,
+    label,
+  )
+}
