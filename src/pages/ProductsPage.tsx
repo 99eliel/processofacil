@@ -34,39 +34,83 @@ export default function ProductsPage({ notify }: { notify: (message: string) => 
     })
   }, [products, search, showInactive])
 
+  const openCreate = () => {
+    setEditing(null)
+    setDescription('')
+    setManualCode('')
+    setExternalCode('')
+    setSegmentValues({})
+    setFormError('')
+    setModal(true)
+  }
+
+  const openEdit = (product: Product) => {
+    setEditing(product)
+    setDescription(product.descricao)
+    setFormError('')
+    setModal(true)
+  }
+
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     if (!empresaId || !user) return
+    if (!description.trim()) {
+      setFormError('Informe a descrição do produto.')
+      return
+    }
+
     setBusy(true)
     setFormError('')
     try {
-      const codigo = await generateNextProductCode(empresaId, strategy, {
-        manual: manualCode,
-        external: externalCode,
-        segmentValues,
-      })
+      if (editing) {
+        await updateProduct(empresaId, user.uid, editing.codigo, {
+          descricao: description,
+          classificacoes: editing.classificacoes ?? {},
+        })
+        notify(`Produto ${editing.codigo} atualizado.`)
+      } else {
+        const codigo = await generateNextProductCode(empresaId, strategy, {
+          manual: manualCode,
+          external: externalCode,
+          segmentValues,
+        })
 
-      const classifications = strategy.tipo === 'segmentado'
-        ? Object.fromEntries((strategy.segmentos ?? []).map((segment) => [segment.nome, segmentValues[segment.id] ?? '']))
-        : {}
+        const classifications = strategy.tipo === 'segmentado'
+          ? Object.fromEntries((strategy.segmentos ?? []).map((segment) => [segment.nome, segmentValues[segment.id] ?? '']))
+          : {}
 
-      await createProduct(empresaId, user.uid, {
-        codigo,
-        descricao: description,
-        classificacoes: classifications,
-      })
+        await createProduct(empresaId, user.uid, {
+          codigo,
+          descricao: description,
+          classificacoes: classifications,
+        })
 
-      notify(`Produto ${codigo} criado.`)
+        notify(`Produto ${codigo} criado.`)
+      }
+
       setModal(false)
+      setEditing(null)
       setDescription('')
       setManualCode('')
       setExternalCode('')
       setSegmentValues({})
     } catch (reason) {
       console.error(reason)
-      setFormError(reason instanceof Error ? reason.message : 'Não foi possível criar o produto.')
+      setFormError(reason instanceof Error ? reason.message : 'Não foi possível salvar o produto.')
     } finally {
       setBusy(false)
+    }
+  }
+
+  const toggleState = async (product: Product) => {
+    if (!empresaId || !user) return
+    const next = product.status !== 'ativo'
+    try {
+      await setProductActive(empresaId, user.uid, product.codigo, next)
+      notify(next ? 'Produto reativado.' : 'Produto inativado.')
+    } catch (reason) {
+      console.error(reason)
+      notify('Não foi possível alterar o status do produto.')
     }
   }
 
@@ -77,7 +121,7 @@ export default function ProductsPage({ notify }: { notify: (message: string) => 
         <h2>Produtos</h2>
         <p>O código segue a estratégia configurada pela empresa. Produtos podem existir antes da publicação de uma Ficha Técnica.</p>
       </div>
-      <button className="primary-button" onClick={() => setModal(true)}><Plus size={18} /> Novo produto</button>
+      <button className="primary-button" onClick={openCreate}><Plus size={18} /> Novo produto</button>
     </section>
 
     <section className="panel code-builder">
@@ -89,7 +133,7 @@ export default function ProductsPage({ notify }: { notify: (message: string) => 
       <p className="helper-text">Esta configuração pertence somente a <strong>{activeCompany?.nomeFantasia}</strong> e pode ser alterada por um administrador.</p>
     </section>
 
-    <div className="toolbar"><div className="search-box"><Search size={18} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por código, descrição ou classificação..." /></div></div>
+    <div className="toolbar"><div className="search-box"><Search size={18} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por código, descrição ou classificação..." /></div><button className={`filter-button ${showInactive ? 'filter-active' : ''}`} onClick={() => setShowInactive((value) => !value)}>{showInactive ? <ToggleRight size={17} /> : <ToggleLeft size={17} />} Inativos</button></div>
     {error && <div className="form-error page-message">{error}</div>}
 
     {loading ? <div className="loading-panel"><Loader2 className="spin" size={25} /> Carregando produtos...</div> :
