@@ -30,6 +30,7 @@ import {
   submitTechnicalRevision,
 } from '../firebase/technicalSheetRepository'
 import { deleteTechnicalSheetImage, uploadTechnicalSheetImage } from '../firebase/storageRepository'
+import TechnicalOperationsEditor from '../components/TechnicalOperationsEditor'
 import type { BomLine, Material, MaterialSupplier, Product, TechnicalRevision, TechnicalSheetSummary } from '../domain/types'
 
 export default function TechnicalSheetsPage({ notify }: { notify: (message: string) => void }) {
@@ -443,6 +444,7 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
             <Status status={editor.status} />
             <span>REV {String(editor.numero).padStart(2, '0')}</span>
             <span>{editor.bom.length} itens na BOM</span>
+            <span>{editor.operacoes.length} operações</span>
           </div>
         </div>
         <div className="passport-actions">
@@ -540,6 +542,15 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
           </div>
         )}
       </section>
+
+      <TechnicalOperationsEditor
+        editor={editor}
+        setEditor={setEditor}
+        editable={editable}
+        empresaId={empresaId ?? ''}
+        notify={notify}
+        onError={setLocalError}
+      />
 
       {editor.blocos.bom && <section className="panel">
         <div className="panel-head"><div><span className="section-kicker">Composição</span><h3>BOM — Lista de materiais</h3></div><span className="count-badge">{editor.bom.length}</span></div>
