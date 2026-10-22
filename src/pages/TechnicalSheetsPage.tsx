@@ -177,6 +177,151 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
     setEditor({ ...editor, bom: editor.bom.filter((line) => line.id !== id) })
   }
 
+  const addSize = () => {
+    if (!editor || !editable) return
+    const size = newSize.trim()
+    if (!size || editor.tamanhos.includes(size)) return
+    setEditor({
+      ...editor,
+      tamanhos: [...editor.tamanhos, size],
+      medidas: editor.medidas.map((row) => ({
+        ...row,
+        valores: [...row.valores, { tamanho: size, valor: null }],
+      })),
+    })
+    setNewSize('')
+  }
+
+  const removeSize = (size: string) => {
+    if (!editor || !editable) return
+    setEditor({
+      ...editor,
+      tamanhos: editor.tamanhos.filter((item) => item !== size),
+      medidas: editor.medidas.map((row) => ({
+        ...row,
+        valores: row.valores.filter((item) => item.tamanho !== size),
+      })),
+    })
+  }
+
+  const addMeasurementRow = () => {
+    if (!editor || !editable) return
+    setEditor({
+      ...editor,
+      medidas: [
+        ...editor.medidas,
+        {
+          id: crypto.randomUUID(),
+          ponto: '',
+          tolerancia: 0,
+          valores: editor.tamanhos.map((size) => ({
+            tamanho: size,
+            valor: null,
+          })),
+        },
+      ],
+    })
+  }
+
+  const updateMeasurementRow = (
+    rowId: string,
+    patch: Partial<TechnicalRevision['medidas'][number]>,
+  ) => {
+    if (!editor || !editable) return
+    setEditor({
+      ...editor,
+      medidas: editor.medidas.map((row) =>
+        row.id === rowId ? { ...row, ...patch } : row,
+      ),
+    })
+  }
+
+  const updateMeasurementValue = (
+    rowId: string,
+    size: string,
+    value: number | null,
+  ) => {
+    if (!editor || !editable) return
+    setEditor({
+      ...editor,
+      medidas: editor.medidas.map((row) =>
+        row.id === rowId
+          ? {
+              ...row,
+              valores: row.valores.map((item) =>
+                item.tamanho === size ? { ...item, valor: value } : item,
+              ),
+            }
+          : row,
+      ),
+    })
+  }
+
+  const removeMeasurementRow = (rowId: string) => {
+    if (!editor || !editable) return
+    setEditor({
+      ...editor,
+      medidas: editor.medidas.filter((row) => row.id !== rowId),
+    })
+  }
+
+  const uploadImage = async (file: File) => {
+    if (!editor || !editable || !empresaId) return
+    if (editor.imagens.length >= 6) {
+      setLocalError('A revisão aceita no máximo 6 imagens.')
+      return
+    }
+
+    setUploadingImage(true)
+    setLocalError('')
+    try {
+      const uploaded = await uploadTechnicalSheetImage(
+        empresaId,
+        editor.produtoCodigo,
+        editor.numero,
+        file,
+      )
+      setEditor({
+        ...editor,
+        imagens: [
+          ...editor.imagens,
+          {
+            url: uploaded.url,
+            path: uploaded.path,
+            legenda: '',
+            ordem: editor.imagens.length + 1,
+          },
+        ],
+      })
+      notify('Imagem adicionada à revisão.')
+    } catch (reason) {
+      console.error(reason)
+      setLocalError(
+        reason instanceof Error ? reason.message : 'Não foi possível enviar a imagem.',
+      )
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const removeImage = async (index: number) => {
+    if (!editor || !editable) return
+    const image = editor.imagens[index]
+    try {
+      if (image.path) await deleteTechnicalSheetImage(image.path)
+      setEditor({
+        ...editor,
+        imagens: editor.imagens
+          .filter((_, itemIndex) => itemIndex !== index)
+          .map((item, itemIndex) => ({ ...item, ordem: itemIndex + 1 })),
+      })
+      notify('Imagem removida.')
+    } catch (reason) {
+      console.error(reason)
+      setLocalError('Não foi possível remover a imagem do Storage.')
+    }
+  }
+
   if (editor) {
     const currentProduct = products.find((item) => item.codigo === editor.produtoCodigo)
     return <>
