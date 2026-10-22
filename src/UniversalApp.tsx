@@ -18,7 +18,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react'
-import { useAuth } from './auth/AuthProvider'
+import { useSystem } from './system/SystemProvider'
 import { useTenantCollection } from './hooks/useTenantCollection'
 import MaterialsPage from './pages/MaterialsPage'
 import ProductsPage from './pages/ProductsPage'
@@ -42,7 +42,7 @@ const modules: ModuleCard[] = [
 ]
 
 export default function App() {
-  const auth = useAuth()
+  const auth = useSystem()
   const [page, setPage] = useState<Page>('home')
   const [mobileMenu, setMobileMenu] = useState(false)
   const [toast, setToast] = useState('')
@@ -145,7 +145,7 @@ function NavButton({ active, icon: Icon, label, onClick }: { active: boolean; ic
 }
 
 function Home({ open, modules, materialCount, productCount, sheetCount, orderCount }: { open: (page: Page) => void; modules: ModuleCard[]; materialCount: number; productCount: number; sheetCount: number; orderCount: number }) {
-  const auth = useAuth()
+  const auth = useSystem()
   return <>
     <section className="hero-card universal-hero">
       <div>
