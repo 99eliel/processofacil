@@ -166,6 +166,12 @@ export type MeasurementRow = {
   valores: MeasurementValue[]
 }
 
+export type TechnicalChecklistItem = {
+  id: string
+  descricao: string
+  obrigatorio: boolean
+}
+
 export type TechnicalRevision = {
   id: string
   numero: number
@@ -182,6 +188,7 @@ export type TechnicalRevision = {
   bom: BomLine[]
   tamanhos: string[]
   medidas: MeasurementRow[]
+  checklist: TechnicalChecklistItem[]
   imagens: Array<{ url: string; path?: string; legenda: string; ordem: number }>
   aprovadoPor?: string
   aprovadoEm?: unknown
