@@ -6,6 +6,7 @@ import {
   FileText,
   History,
   ImagePlus,
+  ListChecks,
   Loader2,
   PackagePlus,
   Plus,
@@ -262,6 +263,42 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
     setEditor({
       ...editor,
       medidas: editor.medidas.filter((row) => row.id !== rowId),
+    })
+  }
+
+  const addChecklistItem = () => {
+    if (!editor || !editable) return
+    setEditor({
+      ...editor,
+      checklist: [
+        ...editor.checklist,
+        {
+          id: crypto.randomUUID(),
+          descricao: '',
+          obrigatorio: true,
+        },
+      ],
+    })
+  }
+
+  const updateChecklistItem = (
+    id: string,
+    patch: Partial<TechnicalRevision['checklist'][number]>,
+  ) => {
+    if (!editor || !editable) return
+    setEditor({
+      ...editor,
+      checklist: editor.checklist.map((item) =>
+        item.id === id ? { ...item, ...patch } : item,
+      ),
+    })
+  }
+
+  const removeChecklistItem = (id: string) => {
+    if (!editor || !editable) return
+    setEditor({
+      ...editor,
+      checklist: editor.checklist.filter((item) => item.id !== id),
     })
   }
 
