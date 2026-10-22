@@ -439,6 +439,90 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
         {editor.bom.length === 0 ? <div className="empty-state small-empty"><PackagePlus size={28} /><strong>BOM vazia</strong><span>Adicione os materiais que compõem este produto.</span></div> :
           <div className="table-wrap"><table className="bom-table"><thead><tr><th>Material</th><th>Fornecedor</th><th>Consumo</th><th>Unidade</th><th>Perda %</th><th>Cor</th><th>Observação</th>{editable && <th></th>}</tr></thead><tbody>{editor.bom.map((line) => <tr key={line.id}><td><strong>{line.codigoSnapshot}</strong><small className="table-sub">{line.descricaoSnapshot}</small></td><td>{line.fornecedorSnapshot || '—'}</td><td>{editable ? <input type="number" min="0.0001" step="0.0001" value={line.consumo} onChange={(e) => updateBom(line.id, { consumo: Number(e.target.value) })} /> : line.consumo}</td><td>{line.unidade}</td><td>{editable ? <input type="number" min="0" step="0.01" value={line.perdaPercentual} onChange={(e) => updateBom(line.id, { perdaPercentual: Number(e.target.value) })} /> : line.perdaPercentual}</td><td>{editable ? <select value={line.corRegra} onChange={(e) => updateBom(line.id, { corRegra: e.target.value as BomLine['corRegra'] })}><option value="nao_aplica">N/A</option><option value="produto">Segue produto</option><option value="fixa">Fixa</option></select> : line.corRegra}</td><td>{editable ? <input value={line.observacao ?? ''} onChange={(e) => updateBom(line.id, { observacao: e.target.value })} /> : line.observacao || '—'}</td>{editable && <td><button className="icon-button danger-icon" onClick={() => removeBom(line.id)}><Trash2 size={15} /></button></td>}</tr>)}</tbody></table></div>}
       </section>}
+
+      {editor.blocos.medidas && <section className="panel ft-measurements-panel">
+        <div className="panel-head">
+          <div><span className="section-kicker">Especificação dimensional</span><h3>Tabela de medidas</h3></div>
+          <span className="count-badge">{editor.medidas.length}</span>
+        </div>
+
+        <div className="size-editor">
+          <div className="size-chips">
+            {editor.tamanhos.map((size) => (
+              <span className="size-chip" key={size}>
+                {size}
+                {editable && <button type="button" onClick={() => removeSize(size)} title="Remover tamanho">×</button>}
+              </span>
+            ))}
+          </div>
+          {editable && <div className="inline-form print-hidden">
+            <input
+              value={newSize}
+              onChange={(event) => setNewSize(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  addSize()
+                }
+              }}
+              placeholder="Ex.: P, M, G, 40, 42..."
+            />
+            <button type="button" className="secondary-button compact" onClick={addSize} disabled={!newSize.trim()}>
+              <Plus size={15} /> Tamanho
+            </button>
+          </div>}
+        </div>
+
+        {editor.tamanhos.length === 0 ? (
+          <div className="empty-state small-empty">
+            <Ruler size={28} />
+            <strong>Defina a grade primeiro</strong>
+            <span>Adicione tamanhos ou variantes para montar a tabela de medidas.</span>
+          </div>
+        ) : (
+          <>
+            {editable && <div className="measurement-toolbar print-hidden">
+              <button type="button" className="secondary-button compact" onClick={addMeasurementRow}>
+                <Plus size={15} /> Ponto de medida
+              </button>
+            </div>}
+
+            {editor.medidas.length === 0 ? (
+              <div className="empty-state small-empty">
+                <Ruler size={28} />
+                <strong>Nenhum ponto de medida</strong>
+                <span>Adicione qualquer ponto dimensional necessário ao produto.</span>
+              </div>
+            ) : (
+              <div className="table-wrap">
+                <table className="measurement-table">
+                  <thead>
+                    <tr>
+                      <th>Ponto de medida</th>
+                      <th>Tolerância</th>
+                      {editor.tamanhos.map((size) => <th key={size}>{size}</th>)}
+                      {editable && <th className="print-hidden"></th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {editor.medidas.map((row) => (
+                      <tr key={row.id}>
+                        <td>{editable ? <input value={row.ponto} onChange={(event) => updateMeasurementRow(row.id, { ponto: event.target.value })} placeholder="Ex.: Comprimento total" /> : row.ponto}</td>
+                        <td>{editable ? <input type="number" min="0" step="0.01" value={row.tolerancia} onChange={(event) => updateMeasurementRow(row.id, { tolerancia: Number(event.target.value) })} /> : '± ' + row.tolerancia}</td>
+                        {editor.tamanhos.map((size) => {
+                          const current = row.valores.find((item) => item.tamanho === size)
+                          return <td key={size}>{editable ? <input type="number" step="0.01" value={current?.valor ?? ''} onChange={(event) => updateMeasurementValue(row.id, size, event.target.value === '' ? null : Number(event.target.value))} /> : (current?.valor ?? '—')}</td>
+                        })}
+                        {editable && <td className="print-hidden"><button type="button" className="icon-button danger-icon" onClick={() => removeMeasurementRow(row.id)} title="Remover ponto"><Trash2 size={14} /></button></td>}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </section>}
     </>
   }
 
