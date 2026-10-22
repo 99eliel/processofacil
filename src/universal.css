@@ -454,3 +454,8 @@
 .variant-consumption-values input { width:100%; border:1px solid #dce5ed; border-radius:8px; padding:7px 8px; font:inherit; font-size:9px; color:#30485f; }
 .variant-consumption-values strong { font-size:10px; color:#344c62; }
 @media (max-width:620px) { .variant-consumption-row { grid-template-columns:1fr; } .variable-toggle { justify-self:start; } }
+
+
+/* BOM — cor e acabamento */
+.bom-color-editor { display:grid; gap:5px; min-width:120px; }
+.bom-color-editor input { width:100%; min-width:110px; border:1px solid #dfe7ee; border-radius:9px; padding:7px 8px; font:inherit; font-size:9px; color:#3d556b; background:white; }
