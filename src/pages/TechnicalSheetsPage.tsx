@@ -333,7 +333,7 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
   }
 
   const uploadImage = async (file: File) => {
-    if (!editor || !editable || !empresaId) return
+    if (!editor || !editable || !empresaId || !user) return
     if (editor.imagens.length >= 6) {
       setLocalError('A revisão aceita no máximo 6 imagens.')
       return
@@ -341,6 +341,8 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
 
     setUploadingImage(true)
     setLocalError('')
+    let uploadedPath = ''
+
     try {
       const uploaded = await uploadTechnicalSheetImage(
         empresaId,
@@ -348,7 +350,9 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
         editor.numero,
         file,
       )
-      setEditor({
+      uploadedPath = uploaded.path
+
+      const nextEditor: TechnicalRevision = {
         ...editor,
         imagens: [
           ...editor.imagens,
@@ -359,10 +363,20 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
             ordem: editor.imagens.length + 1,
           },
         ],
-      })
-      notify('Imagem adicionada à revisão.')
+      }
+
+      await saveTechnicalDraft(empresaId, user.uid, nextEditor)
+      setEditor(nextEditor)
+      notify('Imagem adicionada e vinculada ao rascunho.')
     } catch (reason) {
       console.error(reason)
+      if (uploadedPath) {
+        try {
+          await deleteTechnicalSheetImage(uploadedPath)
+        } catch (cleanupError) {
+          console.warn('Não foi possível limpar o upload incompleto.', cleanupError)
+        }
+      }
       setLocalError(
         reason instanceof Error ? reason.message : 'Não foi possível enviar a imagem.',
       )
@@ -372,20 +386,31 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
   }
 
   const removeImage = async (index: number) => {
-    if (!editor || !editable) return
+    if (!editor || !editable || !empresaId || !user) return
     const image = editor.imagens[index]
+    const nextEditor: TechnicalRevision = {
+      ...editor,
+      imagens: editor.imagens
+        .filter((_, itemIndex) => itemIndex !== index)
+        .map((item, itemIndex) => ({ ...item, ordem: itemIndex + 1 })),
+    }
+
     try {
-      if (image.path) await deleteTechnicalSheetImage(image.path)
-      setEditor({
-        ...editor,
-        imagens: editor.imagens
-          .filter((_, itemIndex) => itemIndex !== index)
-          .map((item, itemIndex) => ({ ...item, ordem: itemIndex + 1 })),
-      })
-      notify('Imagem removida.')
+      await saveTechnicalDraft(empresaId, user.uid, nextEditor)
+      setEditor(nextEditor)
+
+      if (image.path) {
+        try {
+          await deleteTechnicalSheetImage(image.path)
+        } catch (cleanupError) {
+          console.warn('Referência removida, mas o arquivo não pôde ser limpo.', cleanupError)
+        }
+      }
+
+      notify('Imagem removida da revisão.')
     } catch (reason) {
       console.error(reason)
-      setLocalError('Não foi possível remover a imagem do Storage.')
+      setLocalError('Não foi possível atualizar a revisão antes de remover a imagem.')
     }
   }
 
