@@ -138,14 +138,48 @@ export default function AdminPage({ notify }: { notify: (message: string) => voi
     if (!empresaId || !user || !supplierForm.nome.trim()) return
     setBusy(true)
     try {
-      await createSupplier(empresaId, user.uid, supplierForm)
+      if (editingSupplierId) {
+        await updateSupplier(empresaId, user.uid, editingSupplierId, supplierForm)
+        notify('Fornecedor atualizado.')
+      } else {
+        await createSupplier(empresaId, user.uid, supplierForm)
+        notify('Fornecedor cadastrado.')
+      }
       setSupplierForm({ nome: '', contato: '', telefone: '', email: '', observacao: '' })
-      notify('Fornecedor cadastrado.')
+      setEditingSupplierId('')
     } catch (error) {
       console.error(error)
-      notify('Não foi possível cadastrar o fornecedor.')
+      notify(error instanceof Error ? error.message : 'Não foi possível salvar o fornecedor.')
     } finally {
       setBusy(false)
+    }
+  }
+
+  const editSupplier = (supplier: Supplier) => {
+    setEditingSupplierId(supplier.id)
+    setSupplierForm({
+      nome: supplier.nome,
+      contato: supplier.contato ?? '',
+      telefone: supplier.telefone ?? '',
+      email: supplier.email ?? '',
+      observacao: supplier.observacao ?? '',
+    })
+  }
+
+  const toggleSupplier = async (supplier: Supplier) => {
+    if (!empresaId || !user) return
+    try {
+      await setSupplierActive(
+        empresaId,
+        user.uid,
+        supplier.id,
+        !supplier.ativo,
+        supplier.nome,
+      )
+      notify(supplier.ativo ? 'Fornecedor inativado.' : 'Fornecedor reativado.')
+    } catch (error) {
+      console.error(error)
+      notify('Não foi possível alterar o fornecedor.')
     }
   }
 
@@ -153,21 +187,54 @@ export default function AdminPage({ notify }: { notify: (message: string) => voi
     event.preventDefault()
     if (!empresaId || !user || !categoryForm.nome.trim()) return
     const parent = categories.find((item) => item.id === categoryForm.parentId)
+    const payload = {
+      nome: categoryForm.nome,
+      parentId: parent?.id ?? null,
+      nivel: (parent?.nivel ?? 0) + 1,
+      prefixo: categoryForm.prefixo || undefined,
+    }
     setBusy(true)
     try {
-      await createCategory(empresaId, user.uid, {
-        nome: categoryForm.nome,
-        parentId: parent?.id ?? null,
-        nivel: (parent?.nivel ?? 0) + 1,
-        prefixo: categoryForm.prefixo || undefined,
-      })
+      if (editingCategoryId) {
+        await updateCategory(empresaId, user.uid, editingCategoryId, payload)
+        notify('Categoria atualizada.')
+      } else {
+        await createCategory(empresaId, user.uid, payload)
+        notify('Categoria cadastrada.')
+      }
       setCategoryForm({ nome: '', parentId: '', prefixo: '' })
-      notify('Categoria cadastrada.')
+      setEditingCategoryId('')
     } catch (error) {
       console.error(error)
-      notify('Não foi possível cadastrar a categoria.')
+      notify(error instanceof Error ? error.message : 'Não foi possível salvar a categoria.')
     } finally {
       setBusy(false)
+    }
+  }
+
+  const editCategory = (category: Category) => {
+    setEditingCategoryId(category.id)
+    setCategoryForm({
+      nome: category.nome,
+      parentId: category.parentId ?? '',
+      prefixo: category.prefixo ?? '',
+    })
+  }
+
+  const toggleCategory = async (category: Category) => {
+    if (!empresaId || !user) return
+    try {
+      await setCategoryActive(
+        empresaId,
+        user.uid,
+        category.id,
+        !category.ativo,
+        category.nome,
+      )
+      notify(category.ativo ? 'Categoria inativada.' : 'Categoria reativada.')
+    } catch (error) {
+      console.error(error)
+      notify(error instanceof Error ? error.message : 'Não foi possível alterar a categoria.')
     }
   }
 
