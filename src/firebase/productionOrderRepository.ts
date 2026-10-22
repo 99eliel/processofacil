@@ -18,6 +18,7 @@ import type {
 export type NewOrderItem = {
   produtoCodigo: string
   produtoDescricao: string
+  cor?: string
   variantes: ProductionVariant[]
 }
 
@@ -44,6 +45,7 @@ export async function createProductionOrder(
       produtoCodigo: item.produtoCodigo,
       produtoDescricao: item.produtoDescricao,
       revisao: null,
+      cor: item.cor?.trim() ?? '',
       variantes: item.variantes,
       quantidadeTotal: totalVariants(item.variantes),
     }))
@@ -86,8 +88,12 @@ export async function createProductionOrder(
   })
 }
 
-function kitKey(line: BomLine) {
-  return [line.materialId, line.unidade, line.corRegra, line.corFixa ?? ''].join('|')
+function kitKey(line: BomLine, resolvedColor: string) {
+  return [
+    line.materialId,
+    line.unidade,
+    resolvedColor || line.corRegra,
+  ].join('|')
 }
 
 export async function releaseProductionOrder(
@@ -145,7 +151,12 @@ export async function releaseProductionOrder(
           : Number(line.consumo) * item.quantidadeTotal
 
         const required = baseRequired * (1 + Number(line.perdaPercentual || 0) / 100)
-        const key = kitKey(line)
+        const resolvedColor = line.corRegra === 'produto'
+          ? (item.cor?.trim() ?? '')
+          : line.corRegra === 'fixa'
+            ? (line.corFixa?.trim() ?? '')
+            : ''
+        const key = kitKey(line, resolvedColor)
         const current = kitMap.get(key)
         if (current) {
           current.quantidadeNecessaria += required
@@ -159,7 +170,7 @@ export async function releaseProductionOrder(
             unidade: line.unidade,
             quantidadeNecessaria: required,
             corRegra: line.corRegra,
-            corFixa: line.corFixa,
+            corFixa: resolvedColor || line.corFixa,
           })
         }
       }
