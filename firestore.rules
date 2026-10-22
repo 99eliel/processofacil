@@ -47,6 +47,39 @@ service cloud.firestore {
       ]);
     }
 
+    function canUpdateRevision(empresaId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+
+      return canWriteOperational(empresaId) && (
+        (
+          resource.data.status == 'rascunho'
+          && request.resource.data.status in ['rascunho', 'em_validacao']
+        )
+        ||
+        (
+          resource.data.status == 'em_validacao'
+          && request.resource.data.status in ['em_validacao', 'rascunho', 'padrao']
+          && changed.hasOnly([
+            'status',
+            'aprovadoPor',
+            'aprovadoEm',
+            'alteradoEm',
+            'alteradoPor'
+          ])
+        )
+        ||
+        (
+          resource.data.status == 'padrao'
+          && request.resource.data.status == 'obsoleta'
+          && changed.hasOnly([
+            'status',
+            'alteradoEm',
+            'alteradoPor'
+          ])
+        )
+      );
+    }
+
     match /usuarios/{uid} {
       allow read: if signedIn() && request.auth.uid == uid;
       allow create: if signedIn() && request.auth.uid == uid && request.resource.data.uid == request.auth.uid;
@@ -114,20 +147,27 @@ service cloud.firestore {
       match /produtos/{produtoCodigo}/revisoes/{revisaoId} {
         allow read: if companyOwner(empresaId) || isMember(empresaId);
         allow create: if canWriteOperational(empresaId);
-        allow update: if canWriteOperational(empresaId)
-          && resource.data.status in ['rascunho', 'em_validacao'];
+        allow update: if canUpdateRevision(empresaId);
         allow delete: if false;
       }
 
       match /{collectionName}/{docId} {
         allow read: if companyOwner(empresaId) || isMember(empresaId);
-        allow create, update: if canWriteOperational(empresaId);
+        allow create, update: if collectionName != 'membros'
+          && collectionName != 'configuracoes'
+          && collectionName != 'auditoria'
+          && collectionName != 'inspecoes'
+          && canWriteOperational(empresaId);
         allow delete: if false;
       }
 
       match /{collectionName}/{docId}/{document=**} {
         allow read: if companyOwner(empresaId) || isMember(empresaId);
         allow create, update: if collectionName != 'produtos'
+          && collectionName != 'membros'
+          && collectionName != 'configuracoes'
+          && collectionName != 'auditoria'
+          && collectionName != 'inspecoes'
           && canWriteOperational(empresaId);
         allow delete: if false;
       }
