@@ -1,176 +1,75 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
-      return request.auth != null;
+    function isPrincipalWorkspace(empresaId) {
+      return empresaId == 'principal';
     }
 
-    function companyPath(empresaId) {
-      return /databases/$(database)/documents/empresas/$(empresaId);
-    }
-
-    function memberPath(empresaId) {
-      return /databases/$(database)/documents/empresas/$(empresaId)/membros/$(request.auth.uid);
-    }
-
-    function companyExists(empresaId) {
-      return exists(companyPath(empresaId));
-    }
-
-    function companyOwner(empresaId) {
-      return signedIn() && companyExists(empresaId) && get(companyPath(empresaId)).data.ownerUid == request.auth.uid;
-    }
-
-    function isMember(empresaId) {
-      return signedIn()
-        && exists(memberPath(empresaId))
-        && get(memberPath(empresaId)).data.ativo == true;
-    }
-
-    function memberProfiles(empresaId) {
-      return get(memberPath(empresaId)).data.perfis;
-    }
-
-    function hasAnyProfile(empresaId, perfis) {
-      return companyOwner(empresaId)
-        || (isMember(empresaId) && memberProfiles(empresaId).hasAny(perfis));
-    }
-
-    function canWriteOperational(empresaId) {
-      return hasAnyProfile(empresaId, [
-        'admin',
-        'desenvolvimento',
-        'planejamento',
-        'ppcp',
-        'producao',
-        'qualidade'
-      ]);
-    }
-
-    function canUpdateRevision(empresaId) {
+    function canUpdateRevision() {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
 
-      return canWriteOperational(empresaId) && (
-        (
-          resource.data.status == 'rascunho'
-          && request.resource.data.status in ['rascunho', 'em_validacao']
-        )
-        ||
-        (
-          resource.data.status == 'em_validacao'
-          && request.resource.data.status in ['em_validacao', 'rascunho', 'padrao']
-          && changed.hasOnly([
-            'status',
-            'aprovadoPor',
-            'aprovadoEm',
-            'alteradoEm',
-            'alteradoPor'
-          ])
-        )
-        ||
-        (
-          resource.data.status == 'padrao'
-          && request.resource.data.status == 'obsoleta'
-          && changed.hasOnly([
-            'status',
-            'alteradoEm',
-            'alteradoPor'
-          ])
-        )
+      return (
+        resource.data.status == 'rascunho'
+        && request.resource.data.status in ['rascunho', 'em_validacao']
+      ) || (
+        resource.data.status == 'em_validacao'
+        && request.resource.data.status in ['em_validacao', 'rascunho', 'padrao']
+        && changed.hasOnly([
+          'status',
+          'aprovadoPor',
+          'aprovadoEm',
+          'alteradoEm',
+          'alteradoPor'
+        ])
+      ) || (
+        resource.data.status == 'padrao'
+        && request.resource.data.status == 'obsoleta'
+        && changed.hasOnly([
+          'status',
+          'alteradoEm',
+          'alteradoPor'
+        ])
       );
     }
 
-    match /usuarios/{uid} {
-      allow read: if signedIn() && request.auth.uid == uid;
-      allow create: if signedIn() && request.auth.uid == uid && request.resource.data.uid == request.auth.uid;
-      allow update: if signedIn() && request.auth.uid == uid && request.resource.data.uid == resource.data.uid;
-      allow delete: if false;
-
-      match /empresas/{empresaId} {
-        allow read: if signedIn() && request.auth.uid == uid;
-        allow create: if signedIn()
-          && request.auth.uid == uid
-          && request.resource.data.empresaId == empresaId
-          && getAfter(companyPath(empresaId)).data.ownerUid == request.auth.uid;
-        allow update: if signedIn()
-          && request.auth.uid == uid
-          && (companyOwner(empresaId) || isMember(empresaId));
-        allow delete: if false;
-      }
-    }
-
     match /empresas/{empresaId} {
-      allow create: if signedIn()
-        && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.ativo == true;
-      allow read: if companyOwner(empresaId) || isMember(empresaId);
-      allow update: if hasAnyProfile(empresaId, ['admin']);
+      allow read, create, update: if isPrincipalWorkspace(empresaId);
       allow delete: if false;
-
-      match /membros/{uid} {
-        allow read: if companyOwner(empresaId) || isMember(empresaId);
-        allow create: if signedIn() && (
-          hasAnyProfile(empresaId, ['admin'])
-          || (
-            uid == request.auth.uid
-            && getAfter(companyPath(empresaId)).data.ownerUid == request.auth.uid
-            && request.resource.data.perfis.hasAny(['admin'])
-          )
-        );
-        allow update: if hasAnyProfile(empresaId, ['admin']);
-        allow delete: if false;
-      }
-
-      match /configuracoes/{docId} {
-        allow read: if companyOwner(empresaId) || isMember(empresaId);
-        allow create: if hasAnyProfile(empresaId, ['admin'])
-          || (
-            signedIn()
-            && getAfter(companyPath(empresaId)).data.ownerUid == request.auth.uid
-          );
-        allow update: if hasAnyProfile(empresaId, ['admin']);
-        allow delete: if false;
-      }
 
       match /auditoria/{docId} {
-        allow read: if hasAnyProfile(empresaId, ['admin']);
-        allow create: if isMember(empresaId) || companyOwner(empresaId);
+        allow read, create: if isPrincipalWorkspace(empresaId);
         allow update, delete: if false;
       }
 
       match /inspecoes/{docId} {
-        allow read: if companyOwner(empresaId) || isMember(empresaId);
-        allow create: if canWriteOperational(empresaId);
+        allow read, create: if isPrincipalWorkspace(empresaId);
         allow update, delete: if false;
       }
 
       match /produtos/{produtoCodigo}/revisoes/{revisaoId} {
-        allow read: if companyOwner(empresaId) || isMember(empresaId);
-        allow create: if canWriteOperational(empresaId);
-        allow update: if canUpdateRevision(empresaId);
+        allow read, create: if isPrincipalWorkspace(empresaId);
+        allow update: if isPrincipalWorkspace(empresaId) && canUpdateRevision();
         allow delete: if false;
       }
 
       match /{collectionName}/{docId} {
-        allow read: if companyOwner(empresaId) || isMember(empresaId);
-        allow create, update: if collectionName != 'membros'
-          && collectionName != 'configuracoes'
+        allow read, create, update: if isPrincipalWorkspace(empresaId)
           && collectionName != 'auditoria'
-          && collectionName != 'inspecoes'
-          && canWriteOperational(empresaId);
+          && collectionName != 'inspecoes';
         allow delete: if false;
       }
 
       match /{collectionName}/{docId}/{document=**} {
-        allow read: if companyOwner(empresaId) || isMember(empresaId);
-        allow create, update: if collectionName != 'produtos'
-          && collectionName != 'membros'
-          && collectionName != 'configuracoes'
+        allow read, create, update: if isPrincipalWorkspace(empresaId)
           && collectionName != 'auditoria'
           && collectionName != 'inspecoes'
-          && canWriteOperational(empresaId);
+          && collectionName != 'produtos';
         allow delete: if false;
       }
+    }
+
+    match /usuarios/{document=**} {
+      allow read, write: if false;
     }
 
     match /{document=**} {
