@@ -212,38 +212,77 @@ export function SystemProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    let signingIn = false
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) {
-        if (signingIn) return
-        signingIn = true
-        setLoading(true)
-        setError('')
-        try {
-          await setPersistence(auth, browserLocalPersistence)
-          await signInAnonymously(auth)
-        } catch (reason) {
-          console.error(reason)
-          setError('A sessão técnica automática não pôde ser iniciada. Habilite o provedor Anonymous no Firebase Authentication.')
-          setLoading(false)
-        }
-        return
-      }
+    let cancelled = false
 
-      setUser(currentUser)
-      setLoading(true)
-      setError('')
-      try {
-        await ensureWorkspace(currentUser)
-      } catch (reason) {
-        console.error(reason)
-        setError(reason instanceof Error ? reason.message : 'Não foi possível preparar o ambiente principal.')
-      } finally {
-        setLoading(false)
-      }
+    const waitForInitialUser = () => new Promise<User | null>((resolve, reject) => {
+      const unsubscribe = onAuthStateChanged(
+        auth,
+        (currentUser) => {
+          unsubscribe()
+          resolve(currentUser)
+        },
+        (reason) => {
+          unsubscribe()
+          reject(reason)
+        },
+      )
     })
 
-    return unsubscribe
+    const withTimeout = <T,>(promise: Promise<T>, milliseconds: number) =>
+      Promise.race<T>([
+        promise,
+        new Promise<T>((_, reject) => {
+          window.setTimeout(
+            () => reject(new Error('O Firebase demorou demais para responder. Verifique a conexão e a configuração do projeto.')),
+            milliseconds,
+          )
+        }),
+      ])
+
+    const boot = async () => {
+      setLoading(true)
+      setError('')
+
+      try {
+        await setPersistence(auth, browserLocalPersistence)
+
+        let currentUser = await withTimeout(waitForInitialUser(), 8000)
+
+        if (!currentUser) {
+          const credential = await withTimeout(signInAnonymously(auth), 8000)
+          currentUser = credential.user
+        }
+
+        if (cancelled) return
+
+        setUser(currentUser)
+        await withTimeout(ensureWorkspace(currentUser), 12000)
+
+        if (cancelled) return
+      } catch (reason) {
+        console.error('Falha no bootstrap do Processo Fácil:', reason)
+        if (cancelled) return
+
+        const message = reason instanceof Error ? reason.message : 'Não foi possível preparar o ambiente principal.'
+        const anonymousDisabled =
+          message.includes('auth/operation-not-allowed')
+          || message.toLowerCase().includes('operation-not-allowed')
+
+        setError(
+          anonymousDisabled
+            ? 'O login visual está desativado, mas o Firebase precisa do provedor Anonymous habilitado para a sessão técnica. Ative Authentication > Sign-in method > Anonymous no projeto processofacil-3f688.'
+            : message,
+        )
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    void boot()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const refreshActiveCompany = async () => {
