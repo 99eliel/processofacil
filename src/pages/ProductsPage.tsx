@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { CheckCircle2, GitBranch, Loader2, PackageCheck, Plus, Search, X } from 'lucide-react'
+import { CheckCircle2, Edit3, GitBranch, Loader2, PackageCheck, Plus, Search, ToggleLeft, ToggleRight, X } from 'lucide-react'
 import { useSystem } from '../system/SystemProvider'
-import { createProduct, generateNextProductCode } from '../firebase/productRepository'
+import { createProduct, generateNextProductCode, setProductActive, updateProduct } from '../firebase/productRepository'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import type { Product } from '../domain/types'
 import type { CodeStrategy } from '../domain/codeEngine'
@@ -11,7 +11,9 @@ export default function ProductsPage({ notify }: { notify: (message: string) => 
   const empresaId = activeCompany?.id
   const { items: products, loading, error } = useTenantCollection<Product>(empresaId, 'produtos', 'descricao')
   const [search, setSearch] = useState('')
+  const [showInactive, setShowInactive] = useState(false)
   const [modal, setModal] = useState(false)
+  const [editing, setEditing] = useState<Product | null>(null)
   const [description, setDescription] = useState('')
   const [manualCode, setManualCode] = useState('')
   const [externalCode, setExternalCode] = useState('')
@@ -22,14 +24,15 @@ export default function ProductsPage({ notify }: { notify: (message: string) => 
   const strategy = settings.estrategiaCodigo as CodeStrategy
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase()
-    if (!term) return products
-    return products.filter((product) =>
-      [product.codigo, product.descricao, ...Object.values(product.classificacoes ?? {})]
+    return products.filter((product) => {
+      if (!showInactive && product.status === 'inativo') return false
+      if (!term) return true
+      return [product.codigo, product.descricao, ...Object.values(product.classificacoes ?? {})]
         .join(' ')
         .toLowerCase()
-        .includes(term),
-    )
-  }, [products, search])
+        .includes(term)
+    })
+  }, [products, search, showInactive])
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
