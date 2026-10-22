@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
+  Ban,
   CheckCircle2,
+  Edit3,
   Factory,
   Loader2,
   PackageCheck,
@@ -17,8 +19,10 @@ import { canActOnStage, nextStage, type WorkflowDefinition } from '../domain/wor
 import { emptyWorkflow, subscribeWorkflow } from '../firebase/workflowRepository'
 import {
   advanceProductionOrder,
+  cancelProductionOrderDraft,
   createProductionOrder,
   releaseProductionOrder,
+  updateProductionOrderDraft,
   type NewOrderItem,
 } from '../firebase/productionOrderRepository'
 import type { ProductionOrderRecord, ProductionVariant, Product } from '../domain/types'
@@ -38,6 +42,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
   const { items: orders, loading, error } = useTenantCollection<ProductionOrderRecord>(empresaId, 'ordensProducao', 'numero')
   const [workflow, setWorkflow] = useState<WorkflowDefinition>(emptyWorkflow)
   const [modal, setModal] = useState(false)
+  const [editingOrderId, setEditingOrderId] = useState('')
   const [selected, setSelected] = useState<ProductionOrderRecord | null>(null)
   const [prazo, setPrazo] = useState('')
   const [draftItems, setDraftItems] = useState<DraftItem[]>([])
