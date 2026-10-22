@@ -23,6 +23,7 @@ function normalizeRevision(id: string, data: Record<string, unknown>): Technical
     tamanhos: Array.isArray(raw.tamanhos) ? raw.tamanhos : [],
     medidas: Array.isArray(raw.medidas) ? raw.medidas : [],
     checklist: Array.isArray(raw.checklist) ? raw.checklist : [],
+    operacoes: Array.isArray(raw.operacoes) ? raw.operacoes : [],
     imagens: Array.isArray(raw.imagens) ? raw.imagens : [],
   }
 }
@@ -108,6 +109,16 @@ export async function openOrCreateTechnicalDraft(
         ...item,
         id: crypto.randomUUID(),
       })) ?? [],
+      operacoes: base?.operacoes?.map((operation, index) => ({
+        ...operation,
+        id: crypto.randomUUID(),
+        ordem: index + 1,
+        midias: (operation.midias ?? []).map((media) => ({
+          ...media,
+          id: crypto.randomUUID(),
+          path: undefined,
+        })),
+      })) ?? [],
       imagens: base?.imagens?.map((image) => ({
         ...image,
         path: undefined,
@@ -167,6 +178,7 @@ export async function saveTechnicalDraft(
       tamanhos: revision.tamanhos,
       medidas: revision.medidas,
       checklist: revision.checklist,
+      operacoes: revision.operacoes,
       imagens: revision.imagens,
       alteradoEm: serverTimestamp(),
       alteradoPor: uid,
@@ -190,6 +202,12 @@ export async function submitTechnicalRevision(
   }
   if (revision.blocos.checklist && revision.checklist.length === 0) {
     throw new Error('Adicione ao menos um item ao checklist técnico.')
+  }
+  if (revision.operacoes.length === 0) {
+    throw new Error('Adicione ao menos uma operação à sequência operacional.')
+  }
+  if (revision.operacoes.some((operation) => !operation.nome.trim() || !operation.descricao.trim())) {
+    throw new Error('Preencha nome e instrução principal de todas as operações.')
   }
   if (
     revision.blocos.checklist
