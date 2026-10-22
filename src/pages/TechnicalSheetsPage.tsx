@@ -30,7 +30,7 @@ import {
   submitTechnicalRevision,
 } from '../firebase/technicalSheetRepository'
 import { deleteTechnicalSheetImage, uploadTechnicalSheetImage } from '../firebase/storageRepository'
-import type { BomLine, Material, Product, TechnicalRevision, TechnicalSheetSummary } from '../domain/types'
+import type { BomLine, Material, MaterialSupplier, Product, TechnicalRevision, TechnicalSheetSummary } from '../domain/types'
 
 export default function TechnicalSheetsPage({ notify }: { notify: (message: string) => void }) {
   const auth = useSystem()
@@ -548,7 +548,7 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
           <div className="table-wrap"><table className="bom-table"><thead><tr><th>Material</th><th>Fornecedor</th><th>Consumo</th><th>Unidade</th><th>Perda %</th><th>Cor</th><th>Observação</th>{editable && <th></th>}</tr></thead><tbody>{editor.bom.map((line) => <tr key={line.id}><td><strong>{line.codigoSnapshot}</strong><small className="table-sub">{line.descricaoSnapshot}</small></td><td>{editable ? (() => {
           const material = materials.find((item) => item.id === line.materialId)
           const options = material?.fornecedores.filter(
-            (item): item is Exclude<typeof item, string> => typeof item !== 'string',
+            (item): item is MaterialSupplier => typeof item !== 'string',
           ) ?? []
           return options.length > 0 ? (
             <select
