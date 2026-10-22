@@ -178,6 +178,36 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
     setEditor({ ...editor, bom: editor.bom.filter((line) => line.id !== id) })
   }
 
+  const toggleVariableConsumption = (line: BomLine) => {
+    if (!editor || !editable) return
+    const enabled = line.consumoPorTamanho
+      && Object.keys(line.consumoPorTamanho).length > 0
+
+    updateBom(line.id, {
+      consumoPorTamanho: enabled
+        ? {}
+        : Object.fromEntries(
+            editor.tamanhos.map((size) => [size, Number(line.consumo)]),
+          ),
+    })
+  }
+
+  const updateVariableConsumption = (
+    lineId: string,
+    size: string,
+    value: number,
+  ) => {
+    if (!editor || !editable) return
+    const line = editor.bom.find((item) => item.id === lineId)
+    if (!line) return
+    updateBom(lineId, {
+      consumoPorTamanho: {
+        ...(line.consumoPorTamanho ?? {}),
+        [size]: value,
+      },
+    })
+  }
+
   const addSize = () => {
     if (!editor || !editable) return
     const size = newSize.trim()
