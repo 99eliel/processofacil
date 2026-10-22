@@ -560,6 +560,54 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
           </>
         )}
       </section>}
+
+      {editor.blocos.checklist && <section className="panel ft-checklist-panel">
+        <div className="panel-head">
+          <div><span className="section-kicker">Verificação técnica</span><h3>Checklist da revisão</h3></div>
+          <span className="count-badge">{editor.checklist.length}</span>
+        </div>
+
+        {editable && <div className="measurement-toolbar print-hidden">
+          <button type="button" className="secondary-button compact" onClick={addChecklistItem}>
+            <Plus size={15} /> Item do checklist
+          </button>
+        </div>}
+
+        {editor.checklist.length === 0 ? (
+          <div className="empty-state small-empty">
+            <ListChecks size={28} />
+            <strong>Checklist vazio</strong>
+            <span>Adicione verificações que precisam acompanhar esta revisão.</span>
+          </div>
+        ) : (
+          <div className="technical-checklist">
+            {editor.checklist.map((item, index) => (
+              <div className="technical-checklist-row" key={item.id}>
+                <span className="check-index">{index + 1}</span>
+                {editable ? (
+                  <input
+                    value={item.descricao}
+                    onChange={(event) => updateChecklistItem(item.id, { descricao: event.target.value })}
+                    placeholder="Ex.: Conferir acabamento final"
+                  />
+                ) : (
+                  <strong>{item.descricao}</strong>
+                )}
+                <label className="required-check">
+                  <input
+                    type="checkbox"
+                    checked={item.obrigatorio}
+                    disabled={!editable}
+                    onChange={(event) => updateChecklistItem(item.id, { obrigatorio: event.target.checked })}
+                  />
+                  Obrigatório
+                </label>
+                {editable && <button type="button" className="icon-button danger-icon print-hidden" onClick={() => removeChecklistItem(item.id)}><Trash2 size={14} /></button>}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>}
     </>
   }
 
