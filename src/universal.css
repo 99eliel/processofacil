@@ -403,3 +403,13 @@
 .mini-list-row { display:flex !important; align-items:center; justify-content:space-between; gap:10px; }
 .mini-list-row > div:first-child { min-width:0; flex:1; }
 .mini-list-row .row-actions { flex:0 0 auto; }
+
+
+/* Ficha Técnica — checklist */
+.technical-checklist { display:grid; gap:7px; }
+.technical-checklist-row { display:grid; grid-template-columns:30px minmax(0,1fr) auto 34px; gap:8px; align-items:center; padding:9px; border:1px solid #e3eaf0; border-radius:12px; background:#fbfcfd; }
+.check-index { width:28px; height:28px; border-radius:9px; display:grid; place-items:center; background:#eaf4fb; color:#0a6ab0; font-size:9px; font-weight:900; }
+.technical-checklist-row > input { width:100%; border:1px solid #dce5ed; border-radius:9px; padding:8px 9px; font:inherit; font-size:10px; color:#30485f; background:white; }
+.technical-checklist-row > strong { font-size:10px; color:#2c455e; }
+.required-check { display:flex; align-items:center; gap:5px; color:#687e92; font-size:9px; font-weight:800; white-space:nowrap; }
+@media (max-width:620px) { .technical-checklist-row { grid-template-columns:30px 1fr; } .required-check,.technical-checklist-row .icon-button { grid-column:2; } }
