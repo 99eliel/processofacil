@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Edit3,
   FileUp,
+  Link2,
   Loader2,
   Plus,
   Search,
@@ -23,6 +24,7 @@ import {
 } from '../firebase/catalogRepository'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import MaterialsImportModal from '../components/MaterialsImportModal'
+import MaterialUsageModal from '../components/MaterialUsageModal'
 import type {
   Category,
   Material,
@@ -101,6 +103,7 @@ export default function MaterialsPage({ notify }: { notify: (message: string) =>
   const [modal, setModal] = useState(false)
   const [importModal, setImportModal] = useState(false)
   const [editing, setEditing] = useState<Material | null>(null)
+  const [usageMaterial, setUsageMaterial] = useState<Material | null>(null)
   const [form, setForm] = useState<MaterialForm>(emptyForm)
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState('')
@@ -412,6 +415,9 @@ export default function MaterialsPage({ notify }: { notify: (message: string) =>
                     </td>
                     <td>
                       <div className="row-actions">
+                        <button title="Onde é usado" onClick={() => setUsageMaterial(material)}>
+                          <Link2 size={15} />
+                        </button>
                         <button title="Editar" onClick={() => openEdit(material)}>
                           <Edit3 size={15} />
                         </button>
@@ -432,6 +438,13 @@ export default function MaterialsPage({ notify }: { notify: (message: string) =>
           </div>
         )}
       </section>
+    )}
+
+    {usageMaterial && (
+      <MaterialUsageModal
+        material={usageMaterial}
+        onClose={() => setUsageMaterial(null)}
+      />
     )}
 
     {importModal && (
