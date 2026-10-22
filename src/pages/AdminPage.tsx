@@ -13,7 +13,7 @@ import {
   SlidersHorizontal,
   Users,
 } from 'lucide-react'
-import { useAuth } from '../auth/AuthProvider'
+import { useSystem } from '../system/SystemProvider'
 import {
   addCompanyBranch,
   createCategory,
@@ -37,7 +37,7 @@ const moduleLabels: Record<ModuleKey, { title: string; text: string }> = {
 type Tab = 'empresa' | 'cadastros' | 'modulos' | 'codigo' | 'auditoria'
 
 export default function AdminPage({ notify }: { notify: (message: string) => void }) {
-  const auth = useAuth()
+  const auth = useSystem()
   const empresaId = auth.activeCompany?.id
   const user = auth.user
   const { items: suppliers } = useTenantCollection<Supplier>(empresaId, 'fornecedores', 'nome')
