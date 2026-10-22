@@ -63,6 +63,7 @@ export async function createProduct(
   batch.set(productRef, {
     codigo: data.codigo,
     descricao: data.descricao.trim(),
+    descricaoNormalizada: data.descricao.trim().toLocaleUpperCase('pt-BR'),
     classificacoes: data.classificacoes,
     revisaoVigente: null,
     status: 'ativo',
@@ -79,6 +80,73 @@ export async function createProduct(
     entidadeId: data.codigo,
     acao: 'criado',
     resumo: `${data.codigo} · ${data.descricao.trim()}`,
+    uid,
+    em: now,
+  })
+
+  await batch.commit()
+}
+
+
+export async function updateProduct(
+  empresaId: string,
+  uid: string,
+  codigo: string,
+  data: {
+    descricao: string
+    classificacoes: Record<string, string>
+  },
+) {
+  const productRef = doc(db, 'empresas', empresaId, 'produtos', codigo)
+  const existing = await getDoc(productRef)
+  if (!existing.exists()) throw new Error('Produto não encontrado.')
+
+  const batch = writeBatch(db)
+  const now = serverTimestamp()
+  batch.update(productRef, {
+    descricao: data.descricao.trim(),
+    descricaoNormalizada: data.descricao.trim().toLocaleUpperCase('pt-BR'),
+    classificacoes: data.classificacoes,
+    alteradoEm: now,
+    alteradoPor: uid,
+  })
+
+  const auditRef = doc(collection(db, 'empresas', empresaId, 'auditoria'))
+  batch.set(auditRef, {
+    entidade: 'produto',
+    entidadeId: codigo,
+    acao: 'alterado',
+    resumo: `${codigo} · ${data.descricao.trim()}`,
+    uid,
+    em: now,
+  })
+
+  await batch.commit()
+}
+
+export async function setProductActive(
+  empresaId: string,
+  uid: string,
+  codigo: string,
+  ativo: boolean,
+) {
+  const productRef = doc(db, 'empresas', empresaId, 'produtos', codigo)
+  const batch = writeBatch(db)
+  const now = serverTimestamp()
+
+  batch.update(productRef, {
+    ativo,
+    status: ativo ? 'ativo' : 'inativo',
+    alteradoEm: now,
+    alteradoPor: uid,
+  })
+
+  const auditRef = doc(collection(db, 'empresas', empresaId, 'auditoria'))
+  batch.set(auditRef, {
+    entidade: 'produto',
+    entidadeId: codigo,
+    acao: ativo ? 'reativado' : 'inativado',
+    resumo: codigo,
     uid,
     em: now,
   })
