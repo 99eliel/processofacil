@@ -505,6 +505,57 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
         {editable && <div className="inline-form bom-add"><select value={materialToAdd} onChange={(e) => setMaterialToAdd(e.target.value)}><option value="">Selecione um material ativo</option>{materials.filter((item) => item.ativo).map((material) => <option key={material.id} value={material.id}>{material.codigo} — {material.descricao}</option>)}</select><button className="secondary-button compact" type="button" onClick={addMaterial} disabled={!materialToAdd}><PackagePlus size={16} /> Adicionar à BOM</button></div>}
         {editor.bom.length === 0 ? <div className="empty-state small-empty"><PackagePlus size={28} /><strong>BOM vazia</strong><span>Adicione os materiais que compõem este produto.</span></div> :
           <div className="table-wrap"><table className="bom-table"><thead><tr><th>Material</th><th>Fornecedor</th><th>Consumo</th><th>Unidade</th><th>Perda %</th><th>Cor</th><th>Observação</th>{editable && <th></th>}</tr></thead><tbody>{editor.bom.map((line) => <tr key={line.id}><td><strong>{line.codigoSnapshot}</strong><small className="table-sub">{line.descricaoSnapshot}</small></td><td>{line.fornecedorSnapshot || '—'}</td><td>{editable ? <input type="number" min="0.0001" step="0.0001" value={line.consumo} onChange={(e) => updateBom(line.id, { consumo: Number(e.target.value) })} /> : line.consumo}</td><td>{line.unidade}</td><td>{editable ? <input type="number" min="0" step="0.01" value={line.perdaPercentual} onChange={(e) => updateBom(line.id, { perdaPercentual: Number(e.target.value) })} /> : line.perdaPercentual}</td><td>{editable ? <select value={line.corRegra} onChange={(e) => updateBom(line.id, { corRegra: e.target.value as BomLine['corRegra'] })}><option value="nao_aplica">N/A</option><option value="produto">Segue produto</option><option value="fixa">Fixa</option></select> : line.corRegra}</td><td>{editable ? <input value={line.observacao ?? ''} onChange={(e) => updateBom(line.id, { observacao: e.target.value })} /> : line.observacao || '—'}</td>{editable && <td><button className="icon-button danger-icon" onClick={() => removeBom(line.id)}><Trash2 size={15} /></button></td>}</tr>)}</tbody></table></div>}
+        {editor.tamanhos.length > 0 && editor.bom.length > 0 && <div className="variant-consumption-panel">
+          <div className="variant-consumption-head">
+            <div>
+              <span className="section-kicker">Consumo por tamanho/variante</span>
+              <strong>Use apenas nos materiais cujo consumo muda conforme a variante.</strong>
+            </div>
+          </div>
+          {editor.bom.map((line) => {
+            const variable = Boolean(
+              line.consumoPorTamanho
+              && Object.keys(line.consumoPorTamanho).length > 0,
+            )
+            return <div className="variant-consumption-row" key={line.id}>
+              <div className="variant-consumption-material">
+                <strong>{line.codigoSnapshot}</strong>
+                <span>{line.descricaoSnapshot}</span>
+              </div>
+              <label className="variable-toggle print-hidden">
+                <input
+                  type="checkbox"
+                  checked={variable}
+                  disabled={!editable}
+                  onChange={() => toggleVariableConsumption(line)}
+                />
+                Varia por tamanho
+              </label>
+              {variable && <div className="variant-consumption-values">
+                {editor.tamanhos.map((size) => (
+                  <label key={size}>
+                    <span>{size}</span>
+                    {editable ? (
+                      <input
+                        type="number"
+                        min="0.0001"
+                        step="0.0001"
+                        value={line.consumoPorTamanho?.[size] ?? line.consumo}
+                        onChange={(event) => updateVariableConsumption(
+                          line.id,
+                          size,
+                          Number(event.target.value),
+                        )}
+                      />
+                    ) : (
+                      <strong>{line.consumoPorTamanho?.[size] ?? line.consumo}</strong>
+                    )}
+                  </label>
+                ))}
+              </div>}
+            </div>
+          })}
+        </div>}
       </section>}
 
       {editor.blocos.medidas && <section className="panel ft-measurements-panel">
