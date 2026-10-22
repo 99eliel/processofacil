@@ -149,6 +149,7 @@ export type BomLine = {
   corRegra: 'produto' | 'fixa' | 'nao_aplica'
   corFixa?: string
   consumo: number
+  consumoPorTamanho?: Record<string, number>
   unidade: string
   perdaPercentual: number
   observacao?: string
