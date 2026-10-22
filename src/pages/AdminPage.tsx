@@ -4,6 +4,7 @@ import {
   Building2,
   Check,
   ChevronRight,
+  Edit3,
   GitBranch,
   Layers3,
   Loader2,
@@ -11,7 +12,10 @@ import {
   Save,
   Settings2,
   SlidersHorizontal,
+  ToggleLeft,
+  ToggleRight,
   Users,
+  X,
 } from 'lucide-react'
 import { useSystem } from '../system/SystemProvider'
 import {
@@ -19,7 +23,11 @@ import {
   createCategory,
   createSupplier,
   saveCompanySettings,
+  setCategoryActive,
+  setSupplierActive,
+  updateCategory,
   updateCompanyProfile,
+  updateSupplier,
 } from '../firebase/catalogRepository'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import type { Category, CompanySettings, ModuleKey, Supplier, UnitDefinition } from '../domain/types'
@@ -52,7 +60,9 @@ export default function AdminPage({ notify }: { notify: (message: string) => voi
   })
   const [branchName, setBranchName] = useState('')
   const [supplierForm, setSupplierForm] = useState({ nome: '', contato: '', telefone: '', email: '', observacao: '' })
+  const [editingSupplierId, setEditingSupplierId] = useState('')
   const [categoryForm, setCategoryForm] = useState({ nome: '', parentId: '', prefixo: '' })
+  const [editingCategoryId, setEditingCategoryId] = useState('')
   const [unitForm, setUnitForm] = useState({ simbolo: '', nome: '' })
   const [segmentForm, setSegmentForm] = useState({ nome: '', tamanho: 2 })
 
