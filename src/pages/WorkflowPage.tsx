@@ -11,12 +11,12 @@ import {
   Trash2,
   Workflow as WorkflowIcon,
 } from 'lucide-react'
-import { useAuth } from '../auth/AuthProvider'
+import { useSystem } from '../system/SystemProvider'
 import { emptyWorkflow, saveWorkflow, subscribeWorkflow } from '../firebase/workflowRepository'
 import type { WorkflowDefinition, WorkflowStageDefinition } from '../domain/workflowEngine'
 
 export default function WorkflowPage({ notify }: { notify: (message: string) => void }) {
-  const auth = useAuth()
+  const auth = useSystem()
   const empresaId = auth.activeCompany?.id
   const user = auth.user
   const [workflow, setWorkflow] = useState<WorkflowDefinition>(emptyWorkflow)
