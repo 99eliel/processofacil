@@ -485,11 +485,15 @@ export async function updateCategory(
   const nomeNormalizado = normalizeSearch(nome)
   const prefixo = input.prefixo?.trim().toUpperCase() || ''
 
-  const duplicateName = await getDocs(query(
-    collectionRef(empresaId, 'categorias'),
-    where('buscaNormalizada', '==', nomeNormalizado),
-    limit(2),
-  ))
+  const [allCategoriesSnap, duplicateName] = await Promise.all([
+    getDocs(collectionRef(empresaId, 'categorias')),
+    getDocs(query(
+      collectionRef(empresaId, 'categorias'),
+      where('buscaNormalizada', '==', nomeNormalizado),
+      limit(2),
+    )),
+  ])
+
   if (duplicateName.docs.some((item) => item.id !== categoryId)) {
     throw new Error('Já existe outra categoria com este nome.')
   }
@@ -505,20 +509,112 @@ export async function updateCategory(
     }
   }
 
-  await updateTenantDocument(
-    empresaId,
-    uid,
-    'categorias',
-    categoryId,
+  const categories = new Map(
+    allCategoriesSnap.docs.map((item) => [
+      item.id,
+      { id: item.id, ...item.data() } as Category,
+    ]),
+  )
+
+  if (!categories.has(categoryId)) {
+    throw new Error('Categoria não encontrada.')
+  }
+
+  if (input.parentId) {
+    const parent = categories.get(input.parentId)
+    if (!parent || !parent.ativo) {
+      throw new Error('Selecione uma categoria pai ativa.')
+    }
+
+    let cursor: string | null = input.parentId
+    const visited = new Set<string>()
+
+    while (cursor) {
+      if (cursor === categoryId) {
+        throw new Error('Essa alteração criaria um ciclo na árvore de categorias.')
+      }
+      if (visited.has(cursor)) {
+        throw new Error('A árvore de categorias atual já possui um ciclo e precisa ser corrigida.')
+      }
+      visited.add(cursor)
+      cursor = categories.get(cursor)?.parentId ?? null
+    }
+  }
+
+  const parentLevel = input.parentId
+    ? Number(categories.get(input.parentId)?.nivel ?? 0)
+    : 0
+  const nextLevel = parentLevel + 1
+
+  const childrenByParent = new Map<string, string[]>()
+  for (const category of categories.values()) {
+    if (!category.parentId) continue
+    const list = childrenByParent.get(category.parentId) ?? []
+    list.push(category.id)
+    childrenByParent.set(category.parentId, list)
+  }
+
+  const descendantUpdates: Array<{ id: string; nivel: number }> = []
+  const queue = (childrenByParent.get(categoryId) ?? []).map((id) => ({
+    id,
+    nivel: nextLevel + 1,
+  }))
+  const visitedDescendants = new Set<string>()
+
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    if (visitedDescendants.has(current.id)) {
+      throw new Error('A árvore possui um ciclo entre categorias descendentes.')
+    }
+    visitedDescendants.add(current.id)
+    descendantUpdates.push(current)
+
+    for (const childId of childrenByParent.get(current.id) ?? []) {
+      queue.push({ id: childId, nivel: current.nivel + 1 })
+    }
+  }
+
+  if (descendantUpdates.length > 450) {
+    throw new Error('A categoria possui muitos descendentes para uma única alteração.')
+  }
+
+  const batch = writeBatch(db)
+  const now = serverTimestamp()
+
+  batch.update(
+    doc(db, 'empresas', empresaId, 'categorias', categoryId),
     {
       nome,
       parentId: input.parentId,
-      nivel: input.nivel,
+      nivel: nextLevel,
       prefixo,
       buscaNormalizada: nomeNormalizado,
+      alteradoEm: now,
+      alteradoPor: uid,
     },
-    nome,
   )
+
+  for (const descendant of descendantUpdates) {
+    batch.update(
+      doc(db, 'empresas', empresaId, 'categorias', descendant.id),
+      {
+        nivel: descendant.nivel,
+        alteradoEm: now,
+        alteradoPor: uid,
+      },
+    )
+  }
+
+  batch.set(auditRef(empresaId), {
+    entidade: 'categorias',
+    entidadeId: categoryId,
+    acao: 'alterado',
+    resumo: nome,
+    uid,
+    em: now,
+  })
+
+  await batch.commit()
 }
 
 export async function setCategoryActive(
