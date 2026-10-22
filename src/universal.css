@@ -340,3 +340,14 @@
 .fatal-error-card p { color:#73879a; font-size:11px; line-height:1.55; }
 .fatal-error-card code { display:block; margin:14px 0; padding:10px; border-radius:11px; background:#f6f8fa; color:#7b4d4d; font-size:9px; overflow-wrap:anywhere; }
 .fatal-error-card button { border:0; border-radius:12px; padding:10px 14px; background:#0a6ab0; color:white; font-weight:800; display:inline-flex; align-items:center; gap:7px; }
+
+
+/* v0.7 — bootstrap operacional sem login visível */
+.system-boot-screen { min-height:100vh; display:grid; place-items:center; padding:24px; background:#f4f7fb; }
+.system-boot-card { width:min(520px,100%); display:grid; justify-items:center; gap:10px; text-align:center; background:white; border:1px solid #e1e8f0; border-radius:24px; padding:32px; box-shadow:0 24px 70px rgba(22,46,80,.1); color:#233e57; }
+.system-boot-card .boot-logo { width:58px; height:58px; display:grid; place-items:center; border-radius:18px; background:#e9f5fb; color:#0a6ab0; }
+.system-boot-card .boot-logo.error { background:#fff1e7; color:#bd6a2e; }
+.system-boot-card strong { font-size:18px; }
+.system-boot-card p { margin:0; max-width:430px; color:#71869a; font-size:11px; line-height:1.55; }
+.system-boot-card small { color:#8a9aaa; font-size:9px; line-height:1.45; }
+.system-boot-card button { border:0; border-radius:12px; padding:10px 14px; background:#0a6ab0; color:white; display:inline-flex; align-items:center; gap:7px; font-weight:800; }
