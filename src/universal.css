@@ -470,3 +470,10 @@
 .usage-row strong,.usage-row small { display:block; }
 .usage-row strong { font-size:10px; color:#2b435a; }
 .usage-row small { margin-top:3px; font-size:8.5px; color:#8192a2; }
+
+
+/* OP — ações do rascunho */
+.draft-order-actions { display:flex; gap:7px; flex-wrap:wrap; margin-top:10px; }
+.danger-button { border:1px solid #efcccc; background:#fff7f7; color:#b64646; border-radius:11px; padding:9px 11px; display:inline-flex; align-items:center; justify-content:center; gap:6px; font:inherit; font-size:9px; font-weight:900; }
+.danger-button:disabled { opacity:.45; cursor:not-allowed; }
+@media (max-width:620px) { .draft-order-actions > button { flex:1; } }
