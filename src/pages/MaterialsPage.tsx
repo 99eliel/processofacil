@@ -4,6 +4,7 @@ import {
   Building2,
   CheckCircle2,
   Edit3,
+  FileUp,
   Loader2,
   Plus,
   Search,
@@ -21,6 +22,7 @@ import {
   updateMaterial,
 } from '../firebase/catalogRepository'
 import { useTenantCollection } from '../hooks/useTenantCollection'
+import MaterialsImportModal from '../components/MaterialsImportModal'
 import type {
   Category,
   Material,
@@ -97,6 +99,7 @@ export default function MaterialsPage({ notify }: { notify: (message: string) =>
   const [search, setSearch] = useState('')
   const [showInactive, setShowInactive] = useState(false)
   const [modal, setModal] = useState(false)
+  const [importModal, setImportModal] = useState(false)
   const [editing, setEditing] = useState<Material | null>(null)
   const [form, setForm] = useState<MaterialForm>(emptyForm)
   const [busy, setBusy] = useState(false)
@@ -303,9 +306,14 @@ export default function MaterialsPage({ notify }: { notify: (message: string) =>
         <h2>Materiais</h2>
         <p>Cadastro operacional com rastreabilidade, múltiplos fornecedores e inativação lógica.</p>
       </div>
-      <button className="primary-button" onClick={openCreate}>
-        <Plus size={18} /> Novo material
-      </button>
+      <div className="page-intro-actions">
+        <button className="secondary-button" onClick={() => setImportModal(true)}>
+          <FileUp size={17} /> Importar CSV
+        </button>
+        <button className="primary-button" onClick={openCreate}>
+          <Plus size={18} /> Novo material
+        </button>
+      </div>
     </section>
 
     <section className="stats-grid compact">
@@ -424,6 +432,13 @@ export default function MaterialsPage({ notify }: { notify: (message: string) =>
           </div>
         )}
       </section>
+    )}
+
+    {importModal && (
+      <MaterialsImportModal
+        onClose={() => setImportModal(false)}
+        notify={notify}
+      />
     )}
 
     {modal && (
