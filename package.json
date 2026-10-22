@@ -1,7 +1,7 @@
 {
   "name": "processo-facil",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,6 @@
     "@vitejs/plugin-react": "latest",
     "firebase": "latest",
     "lucide-react": "latest",
-    "qrcode": "latest",
     "react": "latest",
     "react-dom": "latest",
     "react-router-dom": "latest"
@@ -21,9 +20,7 @@
   "devDependencies": {
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "@types/qrcode": "latest",
     "typescript": "latest",
-    "vite": "latest",
-    "vite-plugin-pwa": "latest"
+    "vite": "latest"
   }
 }
