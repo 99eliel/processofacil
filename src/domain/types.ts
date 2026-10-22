@@ -217,6 +217,7 @@ export type ProductionOrderItemRecord = {
   produtoCodigo: string
   produtoDescricao: string
   revisao: number | null
+  cor?: string
   variantes: ProductionVariant[]
   quantidadeTotal: number
 }
