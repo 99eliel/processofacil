@@ -2,9 +2,9 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import App from './App'
-import { AuthProvider } from './auth/AuthProvider'
-import AuthGate from './auth/AuthGate'
 import ErrorBoundary from './components/ErrorBoundary'
+import { SystemProvider } from './system/SystemProvider'
+import SystemGate from './system/SystemGate'
 import './styles.css'
 import './universal.css'
 
@@ -34,11 +34,11 @@ ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <HashRouter>
       <ErrorBoundary>
-        <AuthProvider>
-          <AuthGate>
+        <SystemProvider>
+          <SystemGate>
             <App />
-          </AuthGate>
-        </AuthProvider>
+          </SystemGate>
+        </SystemProvider>
       </ErrorBoundary>
     </HashRouter>
   </React.StrictMode>,
