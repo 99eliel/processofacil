@@ -173,6 +173,31 @@ export type TechnicalChecklistItem = {
   obrigatorio: boolean
 }
 
+export type TechnicalMedia = {
+  id: string
+  tipo: 'imagem' | 'video'
+  url: string
+  path?: string
+  legenda: string
+  ordem: number
+}
+
+export type TechnicalOperation = {
+  id: string
+  ordem: number
+  codigo: string
+  nome: string
+  descricao: string
+  maquina: string
+  regulagem: string
+  ferramenta: string
+  tempoPadraoMin: number | null
+  dificuldade: 'facil' | 'medio' | 'dificil'
+  pontosCriticos: string[]
+  instrucoes: string[]
+  midias: TechnicalMedia[]
+}
+
 export type TechnicalRevision = {
   id: string
   numero: number
@@ -190,6 +215,7 @@ export type TechnicalRevision = {
   tamanhos: string[]
   medidas: MeasurementRow[]
   checklist: TechnicalChecklistItem[]
+  operacoes: TechnicalOperation[]
   imagens: Array<{ url: string; path?: string; legenda: string; ordem: number }>
   aprovadoPor?: string
   aprovadoEm?: unknown
@@ -243,6 +269,21 @@ export type OrderHistoryEntry = {
   observacao?: string
 }
 
+export type ProductionOperationTask = {
+  id: string
+  itemId: string
+  produtoCodigo: string
+  produtoDescricao: string
+  revisao: number
+  cor?: string
+  operacao: TechnicalOperation
+  status: 'pendente' | 'em_execucao' | 'concluida' | 'bloqueada'
+  iniciadoEm?: unknown
+  concluidoEm?: unknown
+  operadorUid?: string
+  observacao?: string
+}
+
 export type ProductionOrderRecord = {
   id: string
   numero: string
@@ -252,6 +293,7 @@ export type ProductionOrderRecord = {
   reprovadaNaEtapaId?: string | null
   itens: ProductionOrderItemRecord[]
   kit: FrozenKitLine[]
+  operacoes: ProductionOperationTask[]
   historico: OrderHistoryEntry[]
   alteradoEm?: unknown
 }
