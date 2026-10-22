@@ -109,7 +109,7 @@ export default function QualityPage({ notify }: { notify: (message: string) => v
           }
         }
 
-        const value = typeof raw === 'number' ? raw : Number(raw)
+        const value = raw === null || raw === undefined || raw === '' ? NaN : typeof raw === 'number' ? raw : Number(raw)
         const nominal = Number(criterion.nominal ?? 0)
         const tolerance = Number(criterion.tolerancia ?? 0)
         const valid = Number.isFinite(value) && Math.abs(value - nominal) <= tolerance
@@ -142,6 +142,10 @@ export default function QualityPage({ notify }: { notify: (message: string) => v
       return
     }
 
+    if (criteria.some((criterion) => criterion.tipo === 'numerico' && Array.from({ length: sampleCount }, (_, index) => values[criterion.id]?.[index]).some((value) => typeof value !== 'number' || !Number.isFinite(value)))) {
+      setLocalError('Preencha todas as medições numéricas antes de registrar a inspeção.')
+      return
+    }
     setBusy(true)
     setLocalError('')
     try {
