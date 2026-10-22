@@ -549,3 +549,63 @@ export async function setCategoryActive(
     label,
   )
 }
+
+
+export async function importMaterialsBatch(
+  empresaId: string,
+  uid: string,
+  rows: Array<Omit<Material, 'id' | 'ativo' | 'buscaNormalizada'>>,
+) {
+  if (rows.length === 0) return
+  if (rows.length > 200) {
+    throw new Error('Importe no máximo 200 materiais por arquivo.')
+  }
+
+  const batch = writeBatch(db)
+  const now = serverTimestamp()
+
+  for (const input of rows) {
+    const ref = doc(collectionRef(empresaId, 'materiais'))
+    const fornecedores = (input.fornecedores as MaterialSupplier[]).map((item) => ({
+      fornecedorId: item.fornecedorId,
+      nomeSnapshot: item.nomeSnapshot,
+      principal: item.principal,
+      referenciaFornecedor: item.referenciaFornecedor ?? '',
+    }))
+    const codigo = input.codigo.trim().toUpperCase()
+    const descricao = input.descricao.trim()
+
+    batch.set(ref, {
+      ...input,
+      codigo,
+      descricao,
+      descricaoNormalizada: normalizeSearch(descricao),
+      categoria: input.categoria.trim(),
+      unidade: input.unidade.trim(),
+      fornecedores,
+      buscaNormalizada: normalizeSearch([
+        codigo,
+        input.codigoLegado,
+        descricao,
+        input.categoria,
+        ...fornecedores.map((item) => item.nomeSnapshot),
+      ].filter(Boolean).join(' ')),
+      ativo: true,
+      criadoEm: now,
+      criadoPor: uid,
+      alteradoEm: now,
+      alteradoPor: uid,
+    })
+  }
+
+  batch.set(auditRef(empresaId), {
+    entidade: 'material',
+    entidadeId: 'importacao',
+    acao: 'importacao_csv',
+    resumo: `${rows.length} material(is) importado(s)`,
+    uid,
+    em: now,
+  })
+
+  await batch.commit()
+}
