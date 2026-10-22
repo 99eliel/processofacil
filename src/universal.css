@@ -413,3 +413,28 @@
 .technical-checklist-row > strong { font-size:10px; color:#2c455e; }
 .required-check { display:flex; align-items:center; gap:5px; color:#687e92; font-size:9px; font-weight:800; white-space:nowrap; }
 @media (max-width:620px) { .technical-checklist-row { grid-template-columns:30px 1fr; } .required-check,.technical-checklist-row .icon-button { grid-column:2; } }
+
+
+/* Importação CSV */
+.page-intro-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.import-modal { width:min(980px,100%); }
+.import-body { padding:8px 20px 18px; display:grid; gap:12px; max-height:68vh; overflow:auto; }
+.import-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.file-button { cursor:pointer; }
+.file-button input { display:none; }
+.import-file-name { color:#71869a; font-size:9px; font-weight:700; }
+.import-summary { display:grid; grid-template-columns:repeat(3,minmax(0,130px)); gap:8px; }
+.import-summary > div { border:1px solid #e2e8ef; border-radius:12px; padding:10px; background:#fafbfd; }
+.import-summary strong,.import-summary span { display:block; }
+.import-summary strong { font-size:18px; color:#2b435a; }
+.import-summary span { margin-top:2px; font-size:8px; color:#7f91a2; text-transform:uppercase; font-weight:900; }
+.import-summary .success { background:#f3fbf7; border-color:#d5eadf; }
+.import-summary .success strong { color:#2b865d; }
+.import-summary .danger { background:#fff6f6; border-color:#efd6d6; }
+.import-summary .danger strong { color:#b84b4b; }
+.import-preview { max-height:360px; border:1px solid #e4eaf0; border-radius:13px; }
+.import-row-error { background:#fff8f8; }
+.import-ok,.import-error { display:inline-flex; align-items:center; gap:5px; font-size:8.5px; font-weight:800; }
+.import-ok { color:#2d855f; }
+.import-error { color:#b54d4d; max-width:330px; line-height:1.4; }
+@media (max-width:620px) { .page-intro-actions { width:100%; } .page-intro-actions button { flex:1; } .import-summary { grid-template-columns:repeat(3,1fr); } }
