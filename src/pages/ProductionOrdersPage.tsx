@@ -26,6 +26,7 @@ import type { ProductionOrderRecord, ProductionVariant, Product } from '../domai
 type DraftItem = {
   id: string
   produtoCodigo: string
+  cor: string
   variantes: ProductionVariant[]
 }
 
@@ -62,6 +63,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
     setDraftItems([...draftItems, {
       id: crypto.randomUUID(),
       produtoCodigo: '',
+      cor: '',
       variantes: [{ id: crypto.randomUUID(), nome: 'Padrão', quantidade: 1 }],
     }])
   }
@@ -90,6 +92,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
       return {
         produtoCodigo: item.produtoCodigo,
         produtoDescricao: product?.descricao ?? '',
+        cor: item.cor.trim(),
         variantes: item.variantes.filter((variant) => variant.quantidade > 0),
       }
     })
@@ -168,7 +171,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
       <div className="two-columns">
         <section className="panel">
           <div className="panel-head"><div><span className="section-kicker">Produtos congelados</span><h3>Itens da OP</h3></div><PackageCheck size={20} /></div>
-          <div className="mini-list">{selected.itens.map((item) => <div key={item.id}><strong>{item.produtoCodigo} · {item.produtoDescricao}</strong><span>REV {item.revisao ? String(item.revisao).padStart(2, '0') : '—'} · {item.quantidadeTotal} unidade(s) · {item.variantes.map((v) => `${v.nome}: ${v.quantidade}`).join(' · ')}</span></div>)}</div>
+          <div className="mini-list">{selected.itens.map((item) => <div key={item.id}><strong>{item.produtoCodigo} · {item.produtoDescricao}</strong><span>REV {item.revisao ? String(item.revisao).padStart(2, '0') : '—'}{item.cor ? ` · Cor/acabamento: ${item.cor}` : ''} · {item.quantidadeTotal} unidade(s) · {item.variantes.map((v) => `${v.nome}: ${v.quantidade}`).join(' · ')}</span></div>)}</div>
         </section>
         <section className="panel">
           <div className="panel-head"><div><span className="section-kicker">Fluxo</span><h3>{stage?.nome ?? statusLabel(selected.status)}</h3></div><Factory size={20} /></div>
