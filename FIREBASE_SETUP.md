@@ -2,28 +2,25 @@
 
 Projeto oficial: **processofacil-3f688**
 
-O front-end já está apontando para este projeto. Para os recursos reais funcionarem no ambiente publicado, confirme os serviços abaixo no Console do Firebase.
+O front-end já está apontando para este projeto.
 
-## 1. Authentication
+## 1. Authentication — modo atual
 
-Em **Authentication > Sign-in method**, habilite:
+A tela de login está temporariamente desativada.
 
-- Email/Password
+Para manter o banco protegido, habilite apenas o provedor técnico usado nesta fase:
 
-O sistema já possui:
+**Authentication > Sign-in method > Anonymous > Enable**
 
-- cadastro de usuário;
-- login;
-- recuperação de senha;
-- logout;
-- criação da primeira empresa;
-- seleção de empresa quando o usuário possuir mais de uma.
+O sistema cria uma sessão anônima persistente e entra direto no workspace operacional.
+
+Quando o login por usuário voltar, o provedor Anonymous poderá ser desativado depois da migração das sessões/workspaces.
 
 ## 2. Firestore Database
 
-Crie o banco Firestore caso ainda não exista.
+Crie o Firestore caso ainda não exista.
 
-Depois, na raiz do repositório:
+Depois publique regras e índices:
 
 ```bash
 firebase login
@@ -31,7 +28,14 @@ firebase use processofacil-3f688
 firebase deploy --only firestore:rules,firestore:indexes
 ```
 
-As regras do projeto implementam isolamento multiempresa, perfis, auditoria, inspeções imutáveis e proteção de revisões publicadas.
+As regras atuais:
+
+- isolam os dados por empresa;
+- exigem sessão Firebase;
+- impedem exclusão física de registros críticos;
+- tornam inspeções imutáveis;
+- protegem revisões publicadas/obsoletas;
+- restringem configurações e auditoria.
 
 ## 3. Storage
 
@@ -41,38 +45,40 @@ Ative o Firebase Storage e publique as regras:
 firebase deploy --only storage
 ```
 
-Os arquivos devem ficar em caminhos iniciados por:
+Arquivos da FT ficam em:
 
 ```text
-empresas/{empresaId}/...
+empresas/{empresaId}/fichas/{produtoCodigo}/revisoes/{numero}/...
 ```
 
-As regras impedem leitura e escrita de arquivos por usuários que não pertençam à empresa.
+O acesso depende da associação da sessão ao workspace.
 
-## 4. GitHub Pages
+## 4. Workspace inicial
+
+No primeiro acesso sem dados vinculados à sessão, o sistema cria automaticamente:
+
+- usuário técnico;
+- empresa/workspace principal;
+- membro administrador;
+- matriz;
+- configurações gerais;
+- unidades padrão.
+
+O nome inicial é:
+
+**Processo Fácil — Ambiente Principal**
+
+Ele pode ser alterado em **Configurações > Empresa**.
+
+## 5. GitHub Pages
 
 No GitHub:
 
-**Settings > Pages > Build and deployment > Source**
+**Settings > Pages > Build and deployment > Source > GitHub Actions**
 
-Selecione:
+Não use **Deploy from a branch**, pois esse modo pode publicar o código-fonte em vez do `dist`.
 
-**GitHub Actions**
-
-Não deixe **Deploy from a branch**, porque esse modo executa Jekyll sobre a raiz do repositório e pode publicar o TypeScript bruto em vez do build do Vite.
-
-Workflow correto:
-
-```text
-main
-  -> npm install
-  -> typecheck
-  -> npm run build
-  -> dist
-  -> GitHub Pages
-```
-
-## 5. Desenvolvimento local
+## 6. Desenvolvimento local
 
 ```bash
 npm install
@@ -86,30 +92,16 @@ npm run check
 npm run build
 ```
 
-## 6. Estrutura multiempresa
+## 7. Antes de abertura pública
 
-Os dados operacionais são armazenados sob:
+Antes de disponibilizar o sistema para clientes reais:
 
-```text
-empresas/{empresaId}/
-  membros/
-  configuracoes/
-  fornecedores/
-  categorias/
-  materiais/
-  produtos/
-    {produtoCodigo}/revisoes/
-  fichas/
-  ordensProducao/
-  inspecoes/
-  auditoria/
-  contadores/
-```
+1. reativar autenticação nominal de usuários;
+2. migrar/vincular o workspace da sessão técnica ao usuário administrador real;
+3. habilitar Firebase App Check;
+4. revisar permissões por perfil;
+5. criar política de backup/exportação;
+6. revisar limites/custos de Firestore e Storage;
+7. ativar monitoramento de erros e alertas.
 
-Cada usuário possui ponteiros para suas empresas em:
-
-```text
-usuarios/{uid}/empresas/{empresaId}
-```
-
-Isso permite troca de empresa sem misturar os dados dos clientes.
+A sessão anônima atual é uma solução de desenvolvimento operacional: remove a barreira de login sem transformar o Firestore em banco público.
