@@ -270,3 +270,110 @@ export async function advanceProductionOrder(
     })
   })
 }
+
+
+export async function updateProductionOrderDraft(
+  empresaId: string,
+  uid: string,
+  orderId: string,
+  input: { prazo?: string; itens: NewOrderItem[] },
+) {
+  const orderRef = doc(db, 'empresas', empresaId, 'ordensProducao', orderId)
+  const auditRef = doc(collection(db, 'empresas', empresaId, 'auditoria'))
+
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(orderRef)
+    if (!snap.exists()) throw new Error('Ordem de Produção não encontrada.')
+
+    const current = { id: snap.id, ...snap.data() } as ProductionOrderRecord
+    if (current.status !== 'rascunho') {
+      throw new Error('Somente OP em rascunho pode ser editada.')
+    }
+
+    const itens: ProductionOrderItemRecord[] = input.itens.map((item) => ({
+      id: crypto.randomUUID(),
+      produtoCodigo: item.produtoCodigo,
+      produtoDescricao: item.produtoDescricao,
+      revisao: null,
+      cor: item.cor?.trim() ?? '',
+      variantes: item.variantes,
+      quantidadeTotal: totalVariants(item.variantes),
+    }))
+
+    if (itens.length === 0 || itens.some((item) => item.quantidadeTotal <= 0)) {
+      throw new Error('A OP precisa ter ao menos um item com quantidade maior que zero.')
+    }
+
+    const history = [
+      ...(current.historico ?? []),
+      {
+        id: crypto.randomUUID(),
+        acao: 'Rascunho da OP alterado',
+        uid,
+        em: Timestamp.now(),
+      },
+    ]
+
+    transaction.update(orderRef, {
+      prazo: input.prazo ?? '',
+      itens,
+      historico: history,
+      alteradoEm: serverTimestamp(),
+      alteradoPor: uid,
+    })
+
+    transaction.set(auditRef, {
+      entidade: 'ordem_producao',
+      entidadeId: orderId,
+      acao: 'rascunho_alterado',
+      resumo: current.numero,
+      uid,
+      em: serverTimestamp(),
+    })
+  })
+}
+
+export async function cancelProductionOrderDraft(
+  empresaId: string,
+  uid: string,
+  orderId: string,
+) {
+  const orderRef = doc(db, 'empresas', empresaId, 'ordensProducao', orderId)
+  const auditRef = doc(collection(db, 'empresas', empresaId, 'auditoria'))
+
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(orderRef)
+    if (!snap.exists()) throw new Error('Ordem de Produção não encontrada.')
+
+    const current = { id: snap.id, ...snap.data() } as ProductionOrderRecord
+    if (current.status !== 'rascunho') {
+      throw new Error('Somente OP em rascunho pode ser cancelada por esta ação.')
+    }
+
+    const history = [
+      ...(current.historico ?? []),
+      {
+        id: crypto.randomUUID(),
+        acao: 'OP cancelada antes da liberação',
+        uid,
+        em: Timestamp.now(),
+      },
+    ]
+
+    transaction.update(orderRef, {
+      status: 'cancelada',
+      historico: history,
+      alteradoEm: serverTimestamp(),
+      alteradoPor: uid,
+    })
+
+    transaction.set(auditRef, {
+      entidade: 'ordem_producao',
+      entidadeId: orderId,
+      acao: 'cancelada',
+      resumo: current.numero,
+      uid,
+      em: serverTimestamp(),
+    })
+  })
+}
