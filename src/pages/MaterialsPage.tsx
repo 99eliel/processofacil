@@ -12,7 +12,7 @@ import {
   ToggleRight,
   X,
 } from 'lucide-react'
-import { useAuth } from '../auth/AuthProvider'
+import { useSystem } from '../system/SystemProvider'
 import { createMaterial, setActiveState, updateTenantDocument } from '../firebase/catalogRepository'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import type { Category, Material, MaterialSupplier, Supplier } from '../domain/types'
@@ -46,7 +46,7 @@ function supplierNames(material: Material) {
 }
 
 export default function MaterialsPage({ notify }: { notify: (message: string) => void }) {
-  const { activeCompany, settings, user } = useAuth()
+  const { activeCompany, settings, user } = useSystem()
   const empresaId = activeCompany?.id
   const { items: materials, loading, error } = useTenantCollection<Material>(empresaId, 'materiais', 'descricao')
   const { items: suppliers } = useTenantCollection<Supplier>(empresaId, 'fornecedores', 'nome')
