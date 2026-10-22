@@ -9,7 +9,7 @@ export default function SystemGate({ children }: { children: React.ReactNode }) 
       <div className="system-boot-card">
         <span className="boot-logo"><Database size={28} /></span>
         <strong>Preparando o Processo Fácil</strong>
-        <p>Conectando ao Firebase oficial e carregando o ambiente principal.</p>
+        <p>Conectando ao Firestore e carregando o ambiente principal.</p>
         <Loader2 className="spin" size={22} />
       </div>
     </div>
@@ -21,8 +21,8 @@ export default function SystemGate({ children }: { children: React.ReactNode }) 
         <span className="boot-logo error"><AlertTriangle size={28} /></span>
         <strong>Não foi possível iniciar o ambiente</strong>
         <p>{system.error || 'O ambiente principal não foi encontrado.'}</p>
-        <button onClick={() => window.location.reload()}><RefreshCw size={16} /> Tentar novamente</button>
-        <small>Durante esta fase o login está oculto; o Firebase usa uma sessão técnica automática.</small>
+        <button onClick={() => system.refreshSystem()}><RefreshCw size={16} /> Tentar novamente</button>
+        <small>Modo operacional temporário: autenticação desativada e workspace fixo “principal”.</small>
       </div>
     </div>
   }
