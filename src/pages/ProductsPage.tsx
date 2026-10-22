@@ -1,13 +1,13 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { CheckCircle2, GitBranch, Loader2, PackageCheck, Plus, Search, X } from 'lucide-react'
-import { useAuth } from '../auth/AuthProvider'
+import { useSystem } from '../system/SystemProvider'
 import { createProduct, generateNextProductCode } from '../firebase/productRepository'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import type { Product } from '../domain/types'
 import type { CodeStrategy } from '../domain/codeEngine'
 
 export default function ProductsPage({ notify }: { notify: (message: string) => void }) {
-  const { activeCompany, settings, user } = useAuth()
+  const { activeCompany, settings, user } = useSystem()
   const empresaId = activeCompany?.id
   const { items: products, loading, error } = useTenantCollection<Product>(empresaId, 'produtos', 'descricao')
   const [search, setSearch] = useState('')
