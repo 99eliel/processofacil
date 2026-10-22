@@ -12,6 +12,20 @@ import {
 import { db } from './config'
 import type { BomLine, Product, TechnicalRevision, TechnicalSheetSummary } from '../domain/types'
 
+function normalizeRevision(id: string, data: Record<string, unknown>): TechnicalRevision {
+  const raw = data as unknown as TechnicalRevision
+  return {
+    ...raw,
+    id,
+    construcao: raw.construcao ?? '',
+    blocos: raw.blocos ?? { bom: true, medidas: false, checklist: false },
+    bom: Array.isArray(raw.bom) ? raw.bom : [],
+    tamanhos: Array.isArray(raw.tamanhos) ? raw.tamanhos : [],
+    medidas: Array.isArray(raw.medidas) ? raw.medidas : [],
+    imagens: Array.isArray(raw.imagens) ? raw.imagens : [],
+  }
+}
+
 function revisionId(numero: number) {
   return String(numero).padStart(3, '0')
 }
@@ -31,7 +45,7 @@ export async function getTechnicalRevision(
 ) {
   const snap = await getDoc(revisionRef(empresaId, produtoCodigo, numero))
   if (!snap.exists()) return null
-  return { id: snap.id, ...snap.data() } as TechnicalRevision
+  return normalizeRevision(snap.id, snap.data())
 }
 
 export async function listTechnicalRevisions(
@@ -40,7 +54,7 @@ export async function listTechnicalRevisions(
 ) {
   const ref = collection(db, 'empresas', empresaId, 'produtos', produtoCodigo, 'revisoes')
   const snap = await getDocs(query(ref, orderBy('numero', 'desc')))
-  return snap.docs.map((item) => ({ id: item.id, ...item.data() } as TechnicalRevision))
+  return snap.docs.map((item) => normalizeRevision(item.id, item.data()))
 }
 
 export async function openOrCreateTechnicalDraft(
@@ -65,7 +79,7 @@ export async function openOrCreateTechnicalDraft(
     if (summary?.revisaoRascunho) {
       const draftRef = revisionRef(empresaId, product.codigo, summary.revisaoRascunho)
       const draftSnap = await transaction.get(draftRef)
-      if (draftSnap.exists()) return { id: draftSnap.id, ...draftSnap.data() } as TechnicalRevision
+      if (draftSnap.exists()) return normalizeRevision(draftSnap.id, draftSnap.data())
     }
 
     const currentRevision = Number(productData.revisaoVigente ?? 0)
@@ -75,7 +89,7 @@ export async function openOrCreateTechnicalDraft(
     let base: TechnicalRevision | null = null
     if (currentRevision > 0) {
       const baseSnap = await transaction.get(revisionRef(empresaId, product.codigo, currentRevision))
-      if (baseSnap.exists()) base = { id: baseSnap.id, ...baseSnap.data() } as TechnicalRevision
+      if (baseSnap.exists()) base = normalizeRevision(baseSnap.id, baseSnap.data())
     }
 
     const draft: Omit<TechnicalRevision, 'id'> = {
