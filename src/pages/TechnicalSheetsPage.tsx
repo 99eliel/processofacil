@@ -338,6 +338,7 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
           </div>
         </div>
         <div className="passport-actions">
+          <button className="secondary-button print-hidden" onClick={() => window.print()}><Printer size={16} /> Imprimir</button>
           {editable && <button className="secondary-button" onClick={save} disabled={busy}><Save size={16} /> Salvar</button>}
           {editable && <button className="primary-button" onClick={submit} disabled={busy}><Send size={16} /> Enviar validação</button>}
           {editor.status === 'em_validacao' && <button className="secondary-button" onClick={returnToDraft} disabled={busy}>Devolver</button>}
@@ -365,6 +366,72 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
           <div className="revision-list">{history.map((item) => <button key={item.id} className={item.numero === editor.numero ? 'active' : ''} onClick={async () => { if (!empresaId) return; const rev = await getTechnicalRevision(empresaId, item.produtoCodigo, item.numero); if (rev) setEditor(rev) }}><span>REV {String(item.numero).padStart(2, '0')}</span><strong>{statusLabel(item.status)}</strong><small>{item.motivoRevisao || (item.numero === 1 ? 'Revisão inicial' : 'Sem motivo informado')}</small></button>)}</div>
         </section>
       </div>
+
+      <section className="panel ft-images-panel">
+        <div className="panel-head">
+          <div><span className="section-kicker">Referência visual</span><h3>Imagens da revisão</h3></div>
+          <span className="count-badge">{editor.imagens.length}/6</span>
+        </div>
+
+        {editable && <label className="image-upload-button print-hidden">
+          <ImagePlus size={17} />
+          <span>{uploadingImage ? 'Enviando imagem...' : 'Adicionar imagem'}</span>
+          <input
+            type="file"
+            accept="image/*"
+            disabled={uploadingImage || editor.imagens.length >= 6}
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              if (file) uploadImage(file)
+              event.currentTarget.value = ''
+            }}
+          />
+        </label>}
+
+        {editor.imagens.length === 0 ? (
+          <div className="empty-state small-empty">
+            <ImagePlus size={28} />
+            <strong>Sem imagens nesta revisão</strong>
+            <span>Adicione fotos, desenhos, referências ou vistas do produto.</span>
+          </div>
+        ) : (
+          <div className="ft-image-grid">
+            {editor.imagens.map((image, index) => (
+              <figure className="ft-image-card" key={image.path || image.url}>
+                <img src={image.url} alt={image.legenda || `Imagem ${index + 1}`} />
+                <figcaption>
+                  {editable ? (
+                    <input
+                      value={image.legenda}
+                      onChange={(event) => setEditor({
+                        ...editor,
+                        imagens: editor.imagens.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? { ...item, legenda: event.target.value }
+                            : item,
+                        ),
+                      })}
+                      placeholder="Legenda da imagem"
+                    />
+                  ) : (
+                    <span>{image.legenda || `Imagem ${index + 1}`}</span>
+                  )}
+                  {editable && (
+                    <button
+                      className="icon-button danger-icon print-hidden"
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      title="Remover imagem"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        )}
+      </section>
 
       {editor.blocos.bom && <section className="panel">
         <div className="panel-head"><div><span className="section-kicker">Composição</span><h3>BOM — Lista de materiais</h3></div><span className="count-badge">{editor.bom.length}</span></div>
