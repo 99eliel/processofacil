@@ -28,9 +28,10 @@ import WorkflowPage from './pages/WorkflowPage'
 import ProductionOrdersPage from './pages/ProductionOrdersPage'
 import QualityPage from './pages/QualityPage'
 import OperatorPage from './pages/OperatorPage'
+import SimulationPage from './pages/SimulationPage'
 import type { Material, ModuleKey, Product, ProductionOrderRecord, TechnicalSheetSummary } from './domain/types'
 
-type Page = 'home' | 'materiais' | 'produtos' | 'fichas' | 'workflow' | 'ordens' | 'operador' | 'qualidade' | 'admin'
+type Page = 'home' | 'materiais' | 'produtos' | 'fichas' | 'workflow' | 'ordens' | 'simulador' | 'operador' | 'qualidade' | 'admin'
 type ModuleCard = { id: Page; module?: ModuleKey; title: string; description: string; icon: LucideIcon }
 
 const modules: ModuleCard[] = [
@@ -90,6 +91,7 @@ export default function App() {
         <NavButton active={page === 'home'} icon={LayoutDashboard} label="Visão geral" onClick={() => open('home')} />
         {activeModules.map(({ id, title, icon }) => <NavButton key={id} active={page === id} icon={icon} label={title} onClick={() => open(id)} />)}
         <div className="nav-separator" />
+        <NavButton active={page === 'simulador'} icon={ClipboardCheck} label="Simulador" onClick={() => open('simulador')} />
         <NavButton active={page === 'operador'} icon={MonitorPlay} label="Modo Operador" onClick={() => open('operador')} />
         <div className="nav-separator" />
         <NavButton active={page === 'admin'} icon={Settings} label="Configurações" onClick={() => open('admin')} />
@@ -120,6 +122,7 @@ export default function App() {
       {page === 'fichas' && <TechnicalSheetsPage notify={notify} />}
       {page === 'workflow' && <WorkflowPage notify={notify} />}
       {page === 'ordens' && <ProductionOrdersPage notify={notify} />}
+      {page === 'simulador' && <SimulationPage notify={notify} openOperator={() => open('operador')} />}
       {page === 'operador' && <OperatorPage notify={notify} />}
       {page === 'qualidade' && <QualityPage notify={notify} />}
       {page === 'admin' && <AdminPage notify={notify} />}
@@ -176,6 +179,7 @@ function Home({ open, modules, materialCount, productCount, sheetCount, orderCou
         <QuickStep done={materialCount > 0} title="Cadastrar categorias e fornecedores" text="Configure a base em Configurações → Cadastros base." onClick={() => open('admin')} />
         <QuickStep done={materialCount > 0} title="Cadastrar materiais" text="Crie os primeiros materiais usando os cadastros base." onClick={() => open('materiais')} />
         <QuickStep done={productCount > 0} title="Cadastrar produtos" text="Use a estratégia de código definida pela empresa." onClick={() => open('produtos')} />
+        <QuickStep done={orderCount > 0} title="Testar um processo completo" text="Importe o cenário da polo e simule o trajeto da peça." onClick={() => open('simulador')} />
         <QuickStep done={orderCount > 0} title="Abrir chão de fábrica" text="Acesse POPs, fotos, vídeos e operações das OPs liberadas." onClick={() => open('operador')} />
       </div>
     </section>
@@ -198,6 +202,6 @@ function QuickStep({ done, title, text, onClick }: { done: boolean; title: strin
 }
 
 function pageTitle(page: Page) {
-  const names: Record<Page, string> = { home: 'Visão geral', materiais: 'Materiais', produtos: 'Produtos', fichas: 'Fichas Técnicas', workflow: 'Workflow', ordens: 'Ordens de Produção', operador: 'Modo Operador', qualidade: 'Qualidade', admin: 'Configurações' }
+  const names: Record<Page, string> = { home: 'Visão geral', materiais: 'Materiais', produtos: 'Produtos', fichas: 'Fichas Técnicas', workflow: 'Workflow', ordens: 'Ordens de Produção', simulador: 'Simulador de Trajeto', operador: 'Modo Operador', qualidade: 'Qualidade', admin: 'Configurações' }
   return names[page]
 }
