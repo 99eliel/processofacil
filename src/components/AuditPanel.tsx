@@ -1,5 +1,5 @@
 import { History, Loader2 } from 'lucide-react'
-import { useAuth } from '../auth/AuthProvider'
+import { useSystem } from '../system/SystemProvider'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 
 type AuditEntry = {
@@ -20,7 +20,7 @@ function formatDate(value: unknown) {
 }
 
 export default function AuditPanel() {
-  const { activeCompany } = useAuth()
+  const { activeCompany } = useSystem()
   const { items, loading, error } = useTenantCollection<AuditEntry>(activeCompany?.id, 'auditoria', 'em')
   const ordered = [...items].reverse().slice(0, 100)
 
