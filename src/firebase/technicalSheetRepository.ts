@@ -22,6 +22,7 @@ function normalizeRevision(id: string, data: Record<string, unknown>): Technical
     bom: Array.isArray(raw.bom) ? raw.bom : [],
     tamanhos: Array.isArray(raw.tamanhos) ? raw.tamanhos : [],
     medidas: Array.isArray(raw.medidas) ? raw.medidas : [],
+    checklist: Array.isArray(raw.checklist) ? raw.checklist : [],
     imagens: Array.isArray(raw.imagens) ? raw.imagens : [],
   }
 }
@@ -103,6 +104,10 @@ export async function openOrCreateTechnicalDraft(
       bom: base?.bom?.map((line) => ({ ...line, id: crypto.randomUUID() })) ?? [],
       tamanhos: base?.tamanhos ?? [],
       medidas: base?.medidas ?? [],
+      checklist: base?.checklist?.map((item) => ({
+        ...item,
+        id: crypto.randomUUID(),
+      })) ?? [],
       imagens: base?.imagens?.map((image) => ({
         ...image,
         path: undefined,
@@ -161,6 +166,7 @@ export async function saveTechnicalDraft(
       bom: revision.bom,
       tamanhos: revision.tamanhos,
       medidas: revision.medidas,
+      checklist: revision.checklist,
       imagens: revision.imagens,
       alteradoEm: serverTimestamp(),
       alteradoPor: uid,
@@ -182,6 +188,16 @@ export async function submitTechnicalRevision(
   if (revision.blocos.bom && revision.bom.length === 0) {
     throw new Error('Adicione ao menos um item na BOM.')
   }
+  if (revision.blocos.checklist && revision.checklist.length === 0) {
+    throw new Error('Adicione ao menos um item ao checklist técnico.')
+  }
+  if (
+    revision.blocos.checklist
+    && revision.checklist.some((item) => !item.descricao.trim())
+  ) {
+    throw new Error('Preencha a descrição de todos os itens do checklist.')
+  }
+
   if (revision.blocos.medidas) {
     if (revision.tamanhos.length === 0) {
       throw new Error('Defina ao menos um tamanho/variante para a tabela de medidas.')
