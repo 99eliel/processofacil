@@ -64,13 +64,39 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
   const profiles = auth.activeMembership?.perfis ?? []
   const canRelease = profiles.some((role) => ['admin', 'ppcp', 'planejamento'].includes(role)) || auth.activeCompany?.ownerUid === user?.uid
 
+  const newDraftItem = (): DraftItem => ({
+    id: crypto.randomUUID(),
+    produtoCodigo: '',
+    cor: '',
+    variantes: [{ id: crypto.randomUUID(), nome: 'Padrão', quantidade: 1 }],
+  })
+
   const addItem = () => {
-    setDraftItems([...draftItems, {
-      id: crypto.randomUUID(),
-      produtoCodigo: '',
-      cor: '',
-      variantes: [{ id: crypto.randomUUID(), nome: 'Padrão', quantidade: 1 }],
-    }])
+    setDraftItems((current) => [...current, newDraftItem()])
+  }
+
+  const openNewOrder = () => {
+    setEditingOrderId('')
+    setPrazo('')
+    setDraftItems([newDraftItem()])
+    setLocalError('')
+    setModal(true)
+  }
+
+  const openEditOrder = (order: ProductionOrderRecord) => {
+    setEditingOrderId(order.id)
+    setPrazo(order.prazo ?? '')
+    setDraftItems(order.itens.map((item) => ({
+      id: item.id || crypto.randomUUID(),
+      produtoCodigo: item.produtoCodigo,
+      cor: item.cor ?? '',
+      variantes: item.variantes.map((variant) => ({
+        ...variant,
+        id: variant.id || crypto.randomUUID(),
+      })),
+    })))
+    setLocalError('')
+    setModal(true)
   }
 
   const updateItem = (id: string, patch: Partial<DraftItem>) => {
@@ -90,7 +116,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
     } : item))
   }
 
-  const create = async () => {
+  const saveOrder = async () => {
     if (!empresaId || !user) return
     const items: NewOrderItem[] = draftItems.map((item) => {
       const product = products.find((product) => product.codigo === item.produtoCodigo)
@@ -110,14 +136,54 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
     setBusy(true)
     setLocalError('')
     try {
-      const result = await createProductionOrder(empresaId, user.uid, { prazo, itens: items })
-      notify(`${result.numero} criada.`)
+      if (editingOrderId) {
+        await updateProductionOrderDraft(
+          empresaId,
+          user.uid,
+          editingOrderId,
+          { prazo, itens: items },
+        )
+        notify('Rascunho da OP atualizado.')
+      } else {
+        const result = await createProductionOrder(
+          empresaId,
+          user.uid,
+          { prazo, itens: items },
+        )
+        notify(`${result.numero} criada.`)
+      }
+
       setModal(false)
+      setEditingOrderId('')
       setDraftItems([])
       setPrazo('')
     } catch (reason) {
       console.error(reason)
-      setLocalError(reason instanceof Error ? reason.message : 'Não foi possível criar a OP.')
+      setLocalError(reason instanceof Error ? reason.message : 'Não foi possível salvar a OP.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const cancelDraft = async (order: ProductionOrderRecord) => {
+    if (!empresaId || !user) return
+
+    const confirmed = window.confirm(
+      `Cancelar ${order.numero}? O registro será preservado no histórico, mas não poderá ser liberado.`,
+    )
+    if (!confirmed) return
+
+    setBusy(true)
+    setLocalError('')
+    try {
+      await cancelProductionOrderDraft(empresaId, user.uid, order.id)
+      notify('OP cancelada.')
+      setSelected(null)
+    } catch (reason) {
+      console.error(reason)
+      setLocalError(
+        reason instanceof Error ? reason.message : 'Não foi possível cancelar a OP.',
+      )
     } finally {
       setBusy(false)
     }
