@@ -7,21 +7,12 @@ import {
   type ReactNode,
 } from 'react'
 import {
-  browserLocalPersistence,
-  onAuthStateChanged,
-  setPersistence,
-  signInAnonymously,
-  type User,
-} from 'firebase/auth'
-import {
-  collection,
   doc,
   getDoc,
-  getDocs,
   serverTimestamp,
   writeBatch,
 } from 'firebase/firestore'
-import { auth, db } from '../firebase/config'
+import { db } from '../firebase/config'
 import type {
   Company,
   CompanyMembership,
@@ -58,11 +49,18 @@ export const defaultSettings: CompanySettings = {
   ],
 }
 
+export type SystemUser = {
+  uid: string
+  displayName: string
+  email: string | null
+  isAnonymous: boolean
+}
+
 type SystemContextValue = {
-  user: User | null
+  user: SystemUser
   loading: boolean
   error: string
-  activeMembership: CompanyMembership | null
+  activeMembership: CompanyMembership
   activeCompany: Company | null
   settings: CompanySettings
   refreshActiveCompany: () => Promise<void>
@@ -70,99 +68,81 @@ type SystemContextValue = {
 }
 
 const SystemContext = createContext<SystemContextValue | null>(null)
-const ACTIVE_WORKSPACE_KEY = 'processofacil:workspaceAtivo'
 
-async function createWorkspace(user: User) {
-  const companyRef = doc(collection(db, 'empresas'))
-  const memberRef = doc(db, 'empresas', companyRef.id, 'membros', user.uid)
-  const pointerRef = doc(db, 'usuarios', user.uid, 'empresas', companyRef.id)
-  const userRef = doc(db, 'usuarios', user.uid)
-  const settingsRef = doc(db, 'empresas', companyRef.id, 'configuracoes', 'geral')
+const WORKSPACE_ID = 'principal'
+const SYSTEM_USER: SystemUser = {
+  uid: 'operador-local',
+  displayName: 'Operador principal',
+  email: null,
+  isAnonymous: true,
+}
+
+const SYSTEM_MEMBERSHIP: CompanyMembership = {
+  empresaId: WORKSPACE_ID,
+  nomeFantasia: 'Ambiente Principal',
+  perfis: ['admin'],
+  ativo: true,
+}
+
+async function ensureWorkspace() {
+  const companyRef = doc(db, 'empresas', WORKSPACE_ID)
+  const settingsRef = doc(db, 'empresas', WORKSPACE_ID, 'configuracoes', 'geral')
+  const [companySnap, settingsSnap] = await Promise.all([
+    getDoc(companyRef),
+    getDoc(settingsRef),
+  ])
+
+  if (companySnap.exists() && settingsSnap.exists()) return
+
   const batch = writeBatch(db)
   const now = serverTimestamp()
 
-  batch.set(userRef, {
-    uid: user.uid,
-    nome: 'Operador principal',
-    email: null,
-    tipoSessao: user.isAnonymous ? 'tecnica' : 'usuario',
-    ativo: true,
-    criadoEm: now,
-    alteradoEm: now,
-  }, { merge: true })
+  if (!companySnap.exists()) {
+    batch.set(companyRef, {
+      nome: 'Processo Fácil — Ambiente Principal',
+      nomeFantasia: 'Ambiente Principal',
+      documento: '',
+      ownerUid: SYSTEM_USER.uid,
+      ativo: true,
+      modulos: defaultModules,
+      filiais: [{ id: 'matriz', nome: 'Matriz', ativo: true }],
+      modoAcesso: 'sem_auth_temporario',
+      criadoEm: now,
+      criadoPor: SYSTEM_USER.uid,
+      alteradoEm: now,
+      alteradoPor: SYSTEM_USER.uid,
+    })
+  }
 
-  batch.set(companyRef, {
-    nome: 'Processo Fácil — Ambiente Principal',
-    nomeFantasia: 'Ambiente Principal',
-    documento: '',
-    ownerUid: user.uid,
-    ativo: true,
-    modulos: defaultModules,
-    filiais: [{ id: 'matriz', nome: 'Matriz', ativo: true }],
-    criadoEm: now,
-    criadoPor: user.uid,
-    alteradoEm: now,
-    alteradoPor: user.uid,
-  })
-
-  batch.set(memberRef, {
-    uid: user.uid,
-    nome: 'Operador principal',
-    email: null,
-    perfis: ['admin'],
-    ativo: true,
-    criadoEm: now,
-    criadoPor: user.uid,
-    alteradoEm: now,
-    alteradoPor: user.uid,
-  })
-
-  batch.set(pointerRef, {
-    empresaId: companyRef.id,
-    nomeFantasia: 'Ambiente Principal',
-    perfis: ['admin'],
-    ativo: true,
-    criadoEm: now,
-  })
-
-  batch.set(settingsRef, {
-    ...defaultSettings,
-    criadoEm: now,
-    criadoPor: user.uid,
-    alteradoEm: now,
-    alteradoPor: user.uid,
-  })
+  if (!settingsSnap.exists()) {
+    batch.set(settingsRef, {
+      ...defaultSettings,
+      criadoEm: now,
+      criadoPor: SYSTEM_USER.uid,
+      alteradoEm: now,
+      alteradoPor: SYSTEM_USER.uid,
+    })
+  }
 
   await batch.commit()
-  localStorage.setItem(ACTIVE_WORKSPACE_KEY, companyRef.id)
-
-  return {
-    empresaId: companyRef.id,
-    nomeFantasia: 'Ambiente Principal',
-    perfis: ['admin'],
-    ativo: true,
-  } satisfies CompanyMembership
 }
 
 export function SystemProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [activeMembership, setActiveMembership] = useState<CompanyMembership | null>(null)
   const [activeCompany, setActiveCompany] = useState<Company | null>(null)
   const [settings, setSettings] = useState<CompanySettings>(defaultSettings)
 
-  const loadCompany = async (membership: CompanyMembership) => {
+  const loadCompany = async () => {
     const [companySnap, settingsSnap] = await Promise.all([
-      getDoc(doc(db, 'empresas', membership.empresaId)),
-      getDoc(doc(db, 'empresas', membership.empresaId, 'configuracoes', 'geral')),
+      getDoc(doc(db, 'empresas', WORKSPACE_ID)),
+      getDoc(doc(db, 'empresas', WORKSPACE_ID, 'configuracoes', 'geral')),
     ])
 
     if (!companySnap.exists()) {
-      throw new Error('O workspace ativo não existe mais.')
+      throw new Error('O ambiente principal não foi encontrado no Firestore.')
     }
 
-    setActiveMembership(membership)
     setActiveCompany({ id: companySnap.id, ...companySnap.data() } as Company)
 
     if (settingsSnap.exists()) {
@@ -176,133 +156,49 @@ export function SystemProvider({ children }: { children: ReactNode }) {
     } else {
       setSettings(defaultSettings)
     }
-
-    localStorage.setItem(ACTIVE_WORKSPACE_KEY, membership.empresaId)
   }
 
-  const ensureWorkspace = async (currentUser: User) => {
-    const userRef = doc(db, 'usuarios', currentUser.uid)
-    const userSnap = await getDoc(userRef)
-    if (!userSnap.exists()) {
-      const batch = writeBatch(db)
-      batch.set(userRef, {
-        uid: currentUser.uid,
-        nome: 'Operador principal',
-        email: currentUser.email ?? null,
-        tipoSessao: currentUser.isAnonymous ? 'tecnica' : 'usuario',
-        ativo: true,
-        criadoEm: serverTimestamp(),
-        alteradoEm: serverTimestamp(),
-      })
-      await batch.commit()
+  const boot = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      await ensureWorkspace()
+      await loadCompany()
+    } catch (reason) {
+      console.error('Falha no bootstrap do Processo Fácil:', reason)
+      const message = reason instanceof Error ? reason.message : 'Não foi possível iniciar o ambiente principal.'
+      if (message.toLowerCase().includes('permission-denied') || message.toLowerCase().includes('missing or insufficient permissions')) {
+        setError('O sistema já está sem autenticação, mas as regras do Firestore ainda bloqueiam o workspace principal. Publique o firestore.rules atualizado do repositório.')
+      } else {
+        setError(message)
+      }
+    } finally {
+      setLoading(false)
     }
-
-    const membershipsSnap = await getDocs(collection(db, 'usuarios', currentUser.uid, 'empresas'))
-    let memberships = membershipsSnap.docs
-      .map((item) => ({ empresaId: item.id, ...item.data() } as CompanyMembership))
-      .filter((item) => item.ativo !== false)
-
-    if (memberships.length === 0) {
-      memberships = [await createWorkspace(currentUser)]
-    }
-
-    const saved = localStorage.getItem(ACTIVE_WORKSPACE_KEY)
-    const selected = memberships.find((item) => item.empresaId === saved) ?? memberships[0]
-    await loadCompany(selected)
   }
 
   useEffect(() => {
-    let cancelled = false
-
-    const waitForInitialUser = () => new Promise<User | null>((resolve, reject) => {
-      const unsubscribe = onAuthStateChanged(
-        auth,
-        (currentUser) => {
-          unsubscribe()
-          resolve(currentUser)
-        },
-        (reason) => {
-          unsubscribe()
-          reject(reason)
-        },
-      )
-    })
-
-    const withTimeout = <T,>(promise: Promise<T>, milliseconds: number) =>
-      Promise.race<T>([
-        promise,
-        new Promise<T>((_, reject) => {
-          window.setTimeout(
-            () => reject(new Error('O Firebase demorou demais para responder. Verifique a conexão e a configuração do projeto.')),
-            milliseconds,
-          )
-        }),
-      ])
-
-    const boot = async () => {
-      setLoading(true)
-      setError('')
-
-      try {
-        await setPersistence(auth, browserLocalPersistence)
-
-        let currentUser = await withTimeout(waitForInitialUser(), 8000)
-
-        if (!currentUser) {
-          const credential = await withTimeout(signInAnonymously(auth), 8000)
-          currentUser = credential.user
-        }
-
-        if (cancelled) return
-
-        setUser(currentUser)
-        await withTimeout(ensureWorkspace(currentUser), 12000)
-
-        if (cancelled) return
-      } catch (reason) {
-        console.error('Falha no bootstrap do Processo Fácil:', reason)
-        if (cancelled) return
-
-        const message = reason instanceof Error ? reason.message : 'Não foi possível preparar o ambiente principal.'
-        const anonymousDisabled =
-          message.includes('auth/operation-not-allowed')
-          || message.toLowerCase().includes('operation-not-allowed')
-
-        setError(
-          anonymousDisabled
-            ? 'O login visual está desativado, mas o Firebase precisa do provedor Anonymous habilitado para a sessão técnica. Ative Authentication > Sign-in method > Anonymous no projeto processofacil-3f688.'
-            : message,
-        )
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
     void boot()
-
-    return () => {
-      cancelled = true
-    }
   }, [])
 
   const refreshActiveCompany = async () => {
-    if (activeMembership) await loadCompany(activeMembership)
+    await loadCompany()
   }
 
   const refreshSystem = async () => {
-    if (user) await ensureWorkspace(user)
+    await boot()
   }
 
   const value = useMemo<SystemContextValue>(() => ({
-    user,
+    user: SYSTEM_USER,
     loading,
     error,
-    activeMembership,
+    activeMembership: SYSTEM_MEMBERSHIP,
     activeCompany,
     settings,
     refreshActiveCompany,
     refreshSystem,
-  }), [user, loading, error, activeMembership, activeCompany, settings])
+  }), [loading, error, activeCompany, settings])
 
   return <SystemContext.Provider value={value}>{children}</SystemContext.Provider>
 }
