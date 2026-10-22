@@ -1,41 +1,75 @@
 # Processo Fácil
 
-O **Processo Fácil** é uma plataforma universal, multiempresa e configurável para padronização, Ficha Técnica, fluxo operacional, produção e qualidade.
+O **Processo Fácil** é uma plataforma universal e configurável para padronização, Ficha Técnica, fluxo operacional, produção e qualidade.
 
-A planilha da Koleni foi o caso real que originou a ideia e continua servindo como **referência/template de confecção**. Ela não define o núcleo do produto e nenhuma regra específica daquele processo deve ser obrigatória para outros clientes.
+A planilha da Koleni foi o caso real que originou a ideia e continua servindo apenas como **referência/template de confecção**. Nenhuma regra específica daquele processo é obrigatória para os demais clientes.
 
-## Status — v0.6.0
+## Status — v0.7.0
 
-A base atual já possui:
+A base atual está sendo tratada como produto operacional, não mais como protótipo.
+
+### Funcionamento real já disponível
 
 - Firebase oficial `processofacil-3f688`;
-- autenticação por e-mail e senha;
-- recuperação de senha;
-- bootstrap seguro da primeira empresa;
-- arquitetura multiempresa com troca de empresa;
-- filiais/unidades;
-- perfis por empresa;
-- módulos ativáveis;
+- entrada direta no sistema, sem tela de login;
+- sessão técnica automática e persistente no Firebase;
+- workspace real criado automaticamente no primeiro acesso;
+- dados isolados por empresa/workspace;
+- empresa, matriz e filiais;
+- módulos configuráveis;
 - categorias em árvore;
 - unidades configuráveis;
 - fornecedores;
-- materiais reais no Firestore;
-- proteção contra códigos/descrições duplicados nos cadastros principais;
-- estratégia de código de produto manual, sequencial, segmentada ou externa;
-- produtos reais no Firestore;
-- Ficha Técnica com rascunho, histórico de revisão, construção e BOM;
-- revisão padrão protegida contra edição;
-- Workflow editável por empresa;
+- materiais reais com:
+  - múltiplos fornecedores;
+  - fornecedor principal;
+  - referência por fornecedor;
+  - código legado;
+  - custo unitário;
+  - lead time;
+  - lote mínimo;
+  - edição controlada;
+  - inativação lógica;
+- produtos reais com:
+  - código manual, sequencial, segmentado ou externo;
+  - código imutável após criação;
+  - edição de descrição;
+  - inativação/reativação;
+- Ficha Técnica com:
+  - revisões;
+  - rascunho, validação, padrão e obsoleta;
+  - construção/processo;
+  - BOM;
+  - consumo;
+  - perda;
+  - fornecedor congelado na revisão;
+  - imagens reais no Firebase Storage;
+  - grade/tamanhos;
+  - tabela de medidas;
+  - tolerâncias;
+  - impressão limpa;
+- Workflow configurável;
 - Ordem de Produção com vários produtos e variantes;
-- congelamento da revisão e do kit de materiais na liberação da OP;
+- revisão e kit congelados na liberação da OP;
 - necessidade bruta calculada a partir da BOM;
-- Qualidade com várias amostras, critérios numéricos e checklist;
-- reprovação da OP e retorno para retrabalho;
+- Qualidade com várias amostras;
+- critérios numéricos e checklist;
+- reprovação e retorno para retrabalho;
 - auditoria de ações críticas;
-- regras iniciais de Firestore e Storage isoladas por empresa;
-- índices iniciais do Firestore;
+- inspeções imutáveis;
+- revisões publicadas protegidas contra alteração;
 - Error Boundary para evitar tela branca silenciosa;
-- CI com typecheck e build.
+- CI com typecheck e build em Node 24.
+
+## Modo de acesso atual
+
+A autenticação de usuários está **temporariamente fora da interface**.
+
+Para não deixar o Firestore público, o sistema usa por baixo uma **sessão técnica anônima do Firebase Authentication**. Ela é persistida no navegador e serve apenas para identificar o workspace e cumprir as regras de segurança.
+
+Quando a autenticação de usuários voltar, a camada operacional, os dados e os módulos não precisam ser refeitos.
+
+> No Firebase Console, o provedor **Anonymous** precisa estar habilitado durante esta fase.
 
 ## Firebase oficial
 
@@ -45,7 +79,7 @@ A base atual já possui:
 
 O projeto antigo `cotacao-78d9f` não deve mais ser usado.
 
-Consulte [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) para ativação dos serviços e publicação das regras.
+Consulte [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) para publicação das regras e configuração do ambiente.
 
 ## Estrutura de dados
 
@@ -65,20 +99,25 @@ empresas/{empresaId}/
   inspecoes/
   auditoria/
   contadores/
+
+Firebase Storage:
+empresas/{empresaId}/fichas/{produtoCodigo}/revisoes/{numero}/...
 ```
 
-Os documentos operacionais ficam sempre dentro da empresa. A segurança não depende apenas da interface: as regras do Firestore verificam a associação do usuário ao tenant.
+## Regras de arquitetura
 
-## Regras importantes já implementadas
-
-- exclusão física não é usada para dados críticos;
+- sem dados de demonstração no fluxo operacional;
+- nenhum conceito de confecção hardcoded no núcleo;
+- exclusão física evitada em registros críticos;
+- código de produto não é alterado por uma edição comum;
+- FT padrão nunca é sobrescrita;
+- editar FT padrão gera nova revisão;
+- OP liberada preserva snapshots da revisão e da BOM;
+- mudança posterior na FT não altera OP existente;
 - inspeções são imutáveis;
-- revisões publicadas/obsoletas não podem ser alteradas;
-- editar uma FT padrão cria uma nova revisão;
-- uma OP liberada usa snapshots de revisão e BOM;
-- alterações posteriores na FT não alteram uma OP já liberada;
-- cada empresa possui seus próprios módulos, unidades, categorias, código e workflow;
-- nenhum conceito de confecção é obrigatório no núcleo.
+- ações importantes geram auditoria;
+- campos opcionais `undefined` não quebram gravações do Firestore;
+- imagens e anexos são gravados sob o tenant da empresa.
 
 ## Desenvolvimento
 
@@ -94,28 +133,33 @@ npm run check
 npm run build
 ```
 
-## Implantação web
+## GitHub Pages
 
-O workflow `.github/workflows/deploy.yml` publica o conteúdo compilado de `dist` no GitHub Pages.
-
-No GitHub, configure:
+Use:
 
 **Settings > Pages > Build and deployment > Source > GitHub Actions**
 
-Não use **Deploy from a branch**, pois esse modo tenta publicar os arquivos-fonte do Vite/Jekyll e pode resultar em tela branca.
+Não use **Deploy from a branch**.
 
-## Próximas evoluções
+O workflow correto é:
 
-A arquitetura já foi deixada preparada para as próximas camadas, principalmente:
+```text
+main
+  -> npm install
+  -> typecheck
+  -> vite build
+  -> dist
+  -> GitHub Pages
+```
 
-- upload e gerenciamento de imagens/anexos da FT;
-- grade e tabela de medidas totalmente configuráveis;
-- importador genérico Excel/CSV com mapeamento de colunas;
-- convites e administração avançada de usuários;
-- fornecedores alternativos completos por material;
+## Próximas camadas
+
+- importador universal CSV/Excel;
+- presets reutilizáveis de grade e pontos de medida;
+- checklist configurável da FT;
 - comparação visual entre revisões;
-- PDF oficial de Ficha Técnica;
-- notificações;
-- PWA reinstalável após estabilização definitiva do deploy/cache;
-- dashboards e relatórios avançados;
-- estoque e necessidade líquida de compra como módulo futuro.
+- relatórios e PDFs oficiais;
+- administração de usuários quando o login for reativado;
+- App Check antes de abertura pública ampla;
+- dashboards avançados;
+- estoque e necessidade líquida como módulo futuro.
