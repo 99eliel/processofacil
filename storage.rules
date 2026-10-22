@@ -5,7 +5,7 @@ service firebase.storage {
     match /empresas/principal/{allPaths=**} {
       allow read: if true;
       allow write: if request.resource == null
-        || request.resource.size < 15 * 1024 * 1024;
+        || request.resource.size < 130 * 1024 * 1024;
     }
 
     match /{allPaths=**} {
