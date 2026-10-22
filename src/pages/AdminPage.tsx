@@ -343,20 +343,26 @@ export default function AdminPage({ notify }: { notify: (message: string) => voi
             <input value={supplierForm.nome} onChange={(e) => setSupplierForm({ ...supplierForm, nome: e.target.value })} placeholder="Nome do fornecedor" required disabled={!canAdmin} />
             <div className="inline-fields"><input value={supplierForm.contato} onChange={(e) => setSupplierForm({ ...supplierForm, contato: e.target.value })} placeholder="Contato" disabled={!canAdmin} /><input value={supplierForm.telefone} onChange={(e) => setSupplierForm({ ...supplierForm, telefone: e.target.value })} placeholder="Telefone" disabled={!canAdmin} /></div>
             <input type="email" value={supplierForm.email} onChange={(e) => setSupplierForm({ ...supplierForm, email: e.target.value })} placeholder="E-mail" disabled={!canAdmin} />
-            <button className="secondary-button compact" disabled={!canAdmin || busy}><Plus size={15} /> Cadastrar fornecedor</button>
+            <div className="inline-form">
+              <button className="secondary-button compact" disabled={!canAdmin || busy}>{editingSupplierId ? <Save size={15} /> : <Plus size={15} />} {editingSupplierId ? 'Salvar fornecedor' : 'Cadastrar fornecedor'}</button>
+              {editingSupplierId && <button type="button" className="text-button" onClick={() => { setEditingSupplierId(''); setSupplierForm({ nome: '', contato: '', telefone: '', email: '', observacao: '' }) }}><X size={14} /> Cancelar edição</button>}
+            </div>
           </form>
-          <div className="mini-list">{suppliers.slice(0, 8).map((item) => <div key={item.id}><strong>{item.nome}</strong><span>{item.email || item.telefone || 'Sem contato informado'}</span></div>)}</div>
+          <div className="mini-list">{suppliers.map((item) => <div className="mini-list-row" key={item.id}><div><strong>{item.nome}</strong><span>{item.email || item.telefone || 'Sem contato informado'} · {item.ativo ? 'Ativo' : 'Inativo'}</span></div><div className="row-actions"><button type="button" title="Editar" onClick={() => editSupplier(item)}><Edit3 size={14} /></button><button type="button" title={item.ativo ? 'Inativar' : 'Reativar'} onClick={() => toggleSupplier(item)}>{item.ativo ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}</button></div></div>)}</div>
         </section>
 
         <section className="panel">
           <div className="panel-head"><div><span className="section-kicker">Categorias</span><h3>Árvore livre</h3></div><span className="count-badge">{categories.length}</span></div>
           <form className="stack-form" onSubmit={addCategory}>
             <input value={categoryForm.nome} onChange={(e) => setCategoryForm({ ...categoryForm, nome: e.target.value })} placeholder="Nome da categoria" required disabled={!canAdmin} />
-            <select value={categoryForm.parentId} onChange={(e) => setCategoryForm({ ...categoryForm, parentId: e.target.value })} disabled={!canAdmin}><option value="">Categoria raiz</option>{categories.filter((item) => item.ativo).map((item) => <option key={item.id} value={item.id}>{'— '.repeat(Math.max(0, item.nivel - 1))}{item.nome}</option>)}</select>
+            <select value={categoryForm.parentId} onChange={(e) => setCategoryForm({ ...categoryForm, parentId: e.target.value })} disabled={!canAdmin}><option value="">Categoria raiz</option>{categories.filter((item) => item.ativo && item.id !== editingCategoryId).map((item) => <option key={item.id} value={item.id}>{'— '.repeat(Math.max(0, item.nivel - 1))}{item.nome}</option>)}</select>
             <input value={categoryForm.prefixo} onChange={(e) => setCategoryForm({ ...categoryForm, prefixo: e.target.value })} placeholder="Prefixo de código (opcional)" disabled={!canAdmin} />
-            <button className="secondary-button compact" disabled={!canAdmin || busy}><Plus size={15} /> Cadastrar categoria</button>
+            <div className="inline-form">
+              <button className="secondary-button compact" disabled={!canAdmin || busy}>{editingCategoryId ? <Save size={15} /> : <Plus size={15} />} {editingCategoryId ? 'Salvar categoria' : 'Cadastrar categoria'}</button>
+              {editingCategoryId && <button type="button" className="text-button" onClick={() => { setEditingCategoryId(''); setCategoryForm({ nome: '', parentId: '', prefixo: '' }) }}><X size={14} /> Cancelar edição</button>}
+            </div>
           </form>
-          <div className="mini-list">{categories.slice(0, 10).map((item) => <div key={item.id}><strong>{'— '.repeat(Math.max(0, item.nivel - 1))}{item.nome}</strong><span>Nível {item.nivel}{item.prefixo ? ` · ${item.prefixo}` : ''}</span></div>)}</div>
+          <div className="mini-list">{categories.map((item) => <div className="mini-list-row" key={item.id}><div><strong>{'— '.repeat(Math.max(0, item.nivel - 1))}{item.nome}</strong><span>Nível {item.nivel}{item.prefixo ? ` · ${item.prefixo}` : ''} · {item.ativo ? 'Ativa' : 'Inativa'}</span></div><div className="row-actions"><button type="button" title="Editar" onClick={() => editCategory(item)}><Edit3 size={14} /></button><button type="button" title={item.ativo ? 'Inativar' : 'Reativar'} onClick={() => toggleCategory(item)}>{item.ativo ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}</button></div></div>)}</div>
         </section>
       </div>
 
