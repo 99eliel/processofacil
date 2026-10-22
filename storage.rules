@@ -19,8 +19,12 @@ service firebase.storage {
 
     match /empresas/{empresaId}/{allPaths=**} {
       allow read: if isMember(empresaId);
-      allow write: if isMember(empresaId)
+
+      allow create, update: if isMember(empresaId)
+        && request.resource != null
         && request.resource.size < 15 * 1024 * 1024;
+
+      allow delete: if isMember(empresaId);
     }
 
     match /{allPaths=**} {
