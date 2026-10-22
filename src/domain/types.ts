@@ -180,8 +180,9 @@ export type TechnicalRevision = {
     checklist: boolean
   }
   bom: BomLine[]
+  tamanhos: string[]
   medidas: MeasurementRow[]
-  imagens: Array<{ url: string; legenda: string; ordem: number }>
+  imagens: Array<{ url: string; path?: string; legenda: string; ordem: number }>
   aprovadoPor?: string
   aprovadoEm?: unknown
 }
