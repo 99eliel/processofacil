@@ -9,7 +9,7 @@ import {
   Trash2,
   XCircle,
 } from 'lucide-react'
-import { useAuth } from '../auth/AuthProvider'
+import { useSystem } from '../system/SystemProvider'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import { emptyWorkflow, subscribeWorkflow } from '../firebase/workflowRepository'
 import { createQualityInspection, sendOrderToRework } from '../firebase/qualityRepository'
@@ -25,7 +25,7 @@ import type { WorkflowDefinition } from '../domain/workflowEngine'
 type CriterionDraft = QualityCriterion
 
 export default function QualityPage({ notify }: { notify: (message: string) => void }) {
-  const auth = useAuth()
+  const auth = useSystem()
   const empresaId = auth.activeCompany?.id
   const user = auth.user
   const { items: orders } = useTenantCollection<ProductionOrderRecord>(empresaId, 'ordensProducao', 'numero')
