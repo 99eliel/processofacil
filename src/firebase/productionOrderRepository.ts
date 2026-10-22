@@ -9,6 +9,7 @@ import { db } from './config'
 import type {
   BomLine,
   FrozenKitLine,
+  ProductionOperationTask,
   ProductionOrderItemRecord,
   ProductionOrderRecord,
   ProductionVariant,
@@ -69,6 +70,7 @@ export async function createProductionOrder(
       workflowStageId: null,
       itens,
       kit: [],
+      operacoes: [],
       historico: history,
       criadoEm: serverTimestamp(),
       criadoPor: uid,
@@ -112,6 +114,7 @@ export async function releaseProductionOrder(
     if (order.status !== 'rascunho') throw new Error('Somente OP em rascunho pode ser liberada.')
 
     const frozenItems: ProductionOrderItemRecord[] = []
+    const frozenOperations: ProductionOperationTask[] = []
     const kitMap = new Map<string, FrozenKitLine>()
 
     for (const item of order.itens) {
@@ -136,6 +139,27 @@ export async function releaseProductionOrder(
       if (revision.status !== 'padrao') throw new Error(`A revisão vigente do produto ${item.produtoCodigo} não está publicada.`)
 
       frozenItems.push({ ...item, revisao: vigente })
+
+      for (const operation of revision.operacoes ?? []) {
+        frozenOperations.push({
+          id: crypto.randomUUID(),
+          itemId: item.id,
+          produtoCodigo: item.produtoCodigo,
+          produtoDescricao: item.produtoDescricao,
+          revisao: vigente,
+          cor: item.cor,
+          operacao: {
+            ...operation,
+            instrucoes: [...(operation.instrucoes ?? [])],
+            pontosCriticos: [...(operation.pontosCriticos ?? [])],
+            midias: (operation.midias ?? []).map((media) => ({
+              ...media,
+              path: undefined,
+            })),
+          },
+          status: 'pendente',
+        })
+      }
 
       for (const line of revision.bom ?? []) {
         const hasVariableConsumption = line.consumoPorTamanho
@@ -205,6 +229,7 @@ export async function releaseProductionOrder(
       workflowStageId: firstWorkflowStageId ?? null,
       itens: frozenItems,
       kit: Array.from(kitMap.values()),
+      operacoes: frozenOperations,
       historico: history,
       liberadaEm: serverTimestamp(),
       liberadaPor: uid,
@@ -220,7 +245,7 @@ export async function releaseProductionOrder(
       em: serverTimestamp(),
     })
 
-    return { ...order, itens: frozenItems, kit: Array.from(kitMap.values()), status: nextStatus, workflowStageId: firstWorkflowStageId ?? null }
+    return { ...order, itens: frozenItems, kit: Array.from(kitMap.values()), operacoes: frozenOperations, status: nextStatus, workflowStageId: firstWorkflowStageId ?? null }
   })
 }
 
@@ -317,6 +342,7 @@ export async function updateProductionOrderDraft(
     transaction.update(orderRef, {
       prazo: input.prazo ?? '',
       itens,
+      operacoes: [],
       historico: history,
       alteradoEm: serverTimestamp(),
       alteradoPor: uid,
