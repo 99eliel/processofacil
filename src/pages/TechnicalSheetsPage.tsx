@@ -765,11 +765,11 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
 
   return <>
     <section className="page-intro">
-      <div><span className="section-kicker">Engenharia / padronização</span><h2>Fichas Técnicas</h2><p>Revisões reais, histórico preservado e composição vinculada ao cadastro mestre de materiais.</p></div>
+      <div><span className="section-kicker">Engenharia / padronização</span><h2>Passaporte Digital do Produto</h2><p>Ficha Técnica mestre com revisão, referências visuais, materiais, medidas, checklist e sequência operacional com POP.</p></div>
     </section>
 
     <section className="panel ft-create-panel">
-      <div><span className="section-kicker">Nova ficha ou nova revisão</span><h3>Selecione um produto</h3><p className="helper-text">Se já existir uma revisão em rascunho, ela será reaberta. Se houver uma revisão padrão, será criada uma nova cópia para edição.</p></div>
+      <div><span className="section-kicker">Novo passaporte ou nova revisão</span><h3>Selecione um produto</h3><p className="helper-text">Se já existir uma revisão em rascunho, ela será reaberta. Se houver uma revisão padrão, será criada uma nova cópia para edição.</p></div>
       <div className="inline-form"><select value={selectedProductCode} onChange={(e) => setSelectedProductCode(e.target.value)}><option value="">Selecione...</option>{products.filter((product) => product.status === 'ativo').map((product) => <option key={product.id} value={product.codigo}>{product.codigo} — {product.descricao}</option>)}</select><button className="primary-button" disabled={!selectedProduct || busy} onClick={() => selectedProduct && openOrCreate(selectedProduct)}>{busy ? <Loader2 className="spin" size={16} /> : <Plus size={16} />} Abrir ficha</button></div>
     </section>
 
