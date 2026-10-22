@@ -8,7 +8,6 @@ import {
   FileText,
   GitBranch,
   LayoutDashboard,
-  LogOut,
   Menu,
   PackageCheck,
   Settings,
@@ -42,11 +41,11 @@ const modules: ModuleCard[] = [
 ]
 
 export default function App() {
-  const auth = useSystem()
+  const system = useSystem()
   const [page, setPage] = useState<Page>('home')
   const [mobileMenu, setMobileMenu] = useState(false)
   const [toast, setToast] = useState('')
-  const empresaId = auth.activeCompany?.id
+  const empresaId = system.activeCompany?.id
 
   const { items: materials } = useTenantCollection<Material>(empresaId, 'materiais', 'descricao')
   const { items: products } = useTenantCollection<Product>(empresaId, 'produtos', 'descricao')
@@ -54,8 +53,8 @@ export default function App() {
   const { items: orders } = useTenantCollection<ProductionOrderRecord>(empresaId, 'ordensProducao', 'numero')
 
   const activeModules = useMemo(
-    () => modules.filter((item) => !item.module || auth.settings.modulos[item.module]),
-    [auth.settings.modulos],
+    () => modules.filter((item) => !item.module || system.settings.modulos[item.module]),
+    [system.settings.modulos],
   )
 
   const open = (target: Page) => {
@@ -69,13 +68,6 @@ export default function App() {
     window.setTimeout(() => setToast(''), 2600)
   }
 
-  const initials = (auth.user?.displayName || auth.user?.email || 'PF')
-    .split(/\s|@/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((item) => item[0]?.toUpperCase())
-    .join('')
-
   return <div className="app-shell">
     <aside className={`sidebar ${mobileMenu ? 'mobile-open' : ''}`}>
       <div className="brand">
@@ -88,7 +80,7 @@ export default function App() {
         <span className="tenant-logo"><Building2 size={18} /></span>
         <div>
           <small>Empresa ativa</small>
-          {auth.memberships.length > 1 ? <select value={auth.activeCompany?.id ?? ''} onChange={(event) => auth.selectCompany(event.target.value)}>{auth.memberships.map((membership) => <option key={membership.empresaId} value={membership.empresaId}>{membership.nomeFantasia}</option>)}</select> : <strong>{auth.activeCompany?.nomeFantasia}</strong>}
+          <strong>{system.activeCompany?.nomeFantasia}</strong>
         </div>
       </div>
 
@@ -97,12 +89,11 @@ export default function App() {
         {activeModules.map(({ id, title, icon }) => <NavButton key={id} active={page === id} icon={icon} label={title} onClick={() => open(id)} />)}
         <div className="nav-separator" />
         <NavButton active={page === 'admin'} icon={Settings} label="Configurações" onClick={() => open('admin')} />
-        <button className="nav-item" onClick={() => auth.logout()}><LogOut size={18} /><span>Sair</span></button>
       </nav>
 
       <div className="sidebar-footer">
         <div><span className="connection-dot" /> Firebase oficial conectado</div>
-        <small>processofacil-3f688 · v0.6.0</small>
+        <small>processofacil-3f688 · v0.7.0</small>
       </div>
     </aside>
 
@@ -112,10 +103,10 @@ export default function App() {
       <header className="topbar">
         <div className="topbar-left">
           <button className="mobile-menu-button" onClick={() => setMobileMenu(true)}><Menu size={21} /></button>
-          <div><p className="eyebrow">{auth.activeCompany?.nomeFantasia} · {auth.activeCompany?.filiais?.[0]?.nome ?? 'Matriz'}</p><h1>{pageTitle(page)}</h1></div>
+          <div><p className="eyebrow">{system.activeCompany?.nomeFantasia} · {system.activeCompany?.filiais?.[0]?.nome ?? 'Matriz'}</p><h1>{pageTitle(page)}</h1></div>
         </div>
         <div className="topbar-actions">
-          <div className="user-summary"><div><strong>{auth.user?.displayName || 'Usuário'}</strong><small>{auth.activeMembership?.perfis?.join(' · ')}</small></div><button className="profile-button" onClick={() => open('admin')} aria-label="Perfil">{initials}</button></div>
+          <div className="user-summary"><div><strong>Operador principal</strong><small>{system.activeMembership?.perfis?.join(' · ') || 'admin'}</small></div><button className="profile-button" onClick={() => open('admin')} aria-label="Configurações">PF</button></div>
         </div>
       </header>
 
@@ -145,13 +136,13 @@ function NavButton({ active, icon: Icon, label, onClick }: { active: boolean; ic
 }
 
 function Home({ open, modules, materialCount, productCount, sheetCount, orderCount }: { open: (page: Page) => void; modules: ModuleCard[]; materialCount: number; productCount: number; sheetCount: number; orderCount: number }) {
-  const auth = useSystem()
+  const system = useSystem()
   return <>
     <section className="hero-card universal-hero">
       <div>
-        <span className="hero-label">Ambiente multiempresa ativo</span>
-        <h2>{auth.activeCompany?.nomeFantasia}, seu processo começa pela configuração certa.</h2>
-        <p>Os dados desta tela pertencem somente a esta empresa. Cadastros e regras não são compartilhados com outros clientes.</p>
+        <span className="hero-label">Ambiente operacional ativo</span>
+        <h2>{system.activeCompany?.nomeFantasia}, seu processo começa pela configuração certa.</h2>
+        <p>O sistema está conectado ao Firebase oficial e trabalha apenas com dados reais deste ambiente.</p>
         <button className="hero-action" onClick={() => open('admin')}><SlidersHorizontal size={18} /> Configurar empresa</button>
       </div>
       <div className="hero-stat"><strong>{modules.length}</strong><span>módulos ativos</span><div className="mini-progress"><i style={{ width: `${Math.min(100, modules.length / 6 * 100)}%` }} /></div></div>
@@ -169,7 +160,7 @@ function Home({ open, modules, materialCount, productCount, sheetCount, orderCou
         <div className="panel-head"><div><span className="section-kicker">Arquitetura</span><h3>Configuração desta empresa</h3></div><button className="text-button" onClick={() => open('admin')}>Editar <ChevronRight size={16} /></button></div>
         <div className="architecture-list">
           <ArchitectureItem icon={Building2} title="Tenant isolado" text="Cada leitura e gravação é feita dentro do ambiente da empresa ativa." />
-          <ArchitectureItem icon={GitBranch} title="Código configurável" text={`Estratégia atual: ${auth.settings.estrategiaCodigo.tipo}.`} />
+          <ArchitectureItem icon={GitBranch} title="Código configurável" text={`Estratégia atual: ${system.settings.estrategiaCodigo.tipo}.`} />
           <ArchitectureItem icon={Workflow} title="Workflow por empresa" text="O motor suporta etapas e perfis definidos por cada cliente." />
           <ArchitectureItem icon={ShieldCheck} title="Auditoria" text="Cadastros reais registram ação, usuário, entidade e data." />
         </div>
@@ -185,10 +176,6 @@ function Home({ open, modules, materialCount, productCount, sheetCount, orderCou
     <section className="section-header"><div><span className="section-kicker">Acesso rápido</span><h3>Módulos ativos</h3></div><span className="muted">controlados por empresa</span></section>
     <section className="module-grid">{modules.map(({ id, title, description, icon: Icon }) => <button className="module-card" key={id} onClick={() => open(id)}><span className="module-icon"><Icon size={22} /></span><span className="module-copy"><strong>{title}</strong><small>{description}</small></span><ChevronRight className="module-arrow" size={19} /></button>)}</section>
   </>
-}
-
-function PreparedModule({ icon: Icon, kicker, title, text }: { icon: LucideIcon; kicker: string; title: string; text: string }) {
-  return <><section className="page-intro"><div><span className="section-kicker">{kicker}</span><h2>{title}</h2><p>{text}</p></div></section><section className="panel prepared-module"><span><Icon size={34} /></span><strong>Estrutura preparada, sem dados simulados</strong><p>Este módulo já faz parte do modelo universal e será conectado ao Firestore seguindo as mesmas regras de tenant, auditoria e permissões dos cadastros que já estão funcionais.</p></section></>
 }
 
 function Stat({ icon: Icon, label, value, meta }: { icon: LucideIcon; label: string; value: string; meta: string }) {
