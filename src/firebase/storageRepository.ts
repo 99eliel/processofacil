@@ -57,3 +57,60 @@ export async function deleteTechnicalSheetImage(path: string) {
   if (!path) return
   await deleteObject(ref(storage, path))
 }
+
+
+export async function uploadOperationMedia(
+  empresaId: string,
+  produtoCodigo: string,
+  revisao: number,
+  operacaoId: string,
+  file: File,
+) {
+  const isImage = file.type.startsWith('image/')
+  const isVideo = file.type.startsWith('video/')
+
+  if (!isImage && !isVideo) {
+    throw new Error('Envie uma imagem ou vídeo.')
+  }
+
+  const maxSize = isVideo ? 120 * 1024 * 1024 : 8 * 1024 * 1024
+  if (file.size > maxSize) {
+    throw new Error(isVideo ? 'O vídeo deve ter no máximo 120 MB.' : 'A imagem deve ter no máximo 8 MB.')
+  }
+
+  const path = [
+    'empresas',
+    empresaId,
+    'fichas',
+    produtoCodigo,
+    'revisoes',
+    String(revisao).padStart(3, '0'),
+    'operacoes',
+    operacaoId,
+    `${crypto.randomUUID()}-${safeFileName(file.name || (isVideo ? 'video' : 'imagem'))}`,
+  ].join('/')
+
+  const storageRef = ref(storage, path)
+  await uploadBytes(storageRef, file, {
+    contentType: file.type,
+    customMetadata: {
+      empresaId,
+      produtoCodigo,
+      revisao: String(revisao),
+      operacaoId,
+      tipo: isVideo ? 'video' : 'imagem',
+    },
+  })
+
+  const url = await getDownloadURL(storageRef)
+  return {
+    url,
+    path,
+    tipo: (isVideo ? 'video' : 'imagem') as 'video' | 'imagem',
+  }
+}
+
+export async function deleteOperationMedia(path: string) {
+  if (!path) return
+  await deleteObject(ref(storage, path))
+}
