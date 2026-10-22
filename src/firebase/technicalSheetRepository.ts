@@ -268,12 +268,37 @@ export async function publishTechnicalRevision(
       transaction.get(productRef),
       transaction.get(currentRef),
     ])
-    if (!productSnap.exists() || !currentSnap.exists()) throw new Error('Produto ou revisão não encontrado.')
-    if (currentSnap.data().status !== 'em_validacao') throw new Error('A revisão precisa estar em validação antes de ser publicada.')
+
+    if (!productSnap.exists() || !currentSnap.exists()) {
+      throw new Error('Produto ou revisão não encontrado.')
+    }
+
+    const currentRevision = normalizeRevision(currentSnap.id, currentSnap.data())
+    if (currentRevision.status !== 'em_validacao') {
+      throw new Error('A revisão precisa estar em validação antes de ser publicada.')
+    }
 
     const previous = Number(productSnap.data().revisaoVigente ?? 0)
+    let previousRevision: TechnicalRevision | null = null
+    let previousRef: ReturnType<typeof revisionRef> | null = null
+
     if (previous > 0 && previous !== revision.numero) {
-      transaction.update(revisionRef(empresaId, revision.produtoCodigo, previous), {
+      previousRef = revisionRef(empresaId, revision.produtoCodigo, previous)
+      const previousSnap = await transaction.get(previousRef)
+      if (previousSnap.exists()) {
+        previousRevision = normalizeRevision(previousSnap.id, previousSnap.data())
+      }
+    }
+
+    const previousMaterials = new Set(
+      (previousRevision?.bom ?? []).map((line) => line.materialId),
+    )
+    const currentMaterials = new Set(
+      (currentRevision.bom ?? []).map((line) => line.materialId),
+    )
+
+    if (previousRef && previousRevision) {
+      transaction.update(previousRef, {
         status: 'obsoleta',
         alteradoEm: serverTimestamp(),
         alteradoPor: uid,
@@ -287,25 +312,71 @@ export async function publishTechnicalRevision(
       alteradoEm: serverTimestamp(),
       alteradoPor: uid,
     })
+
     transaction.update(productRef, {
       revisaoVigente: revision.numero,
       alteradoEm: serverTimestamp(),
       alteradoPor: uid,
     })
+
     transaction.set(sumRef, {
-      produtoCodigo: revision.produtoCodigo,
-      produtoDescricao: revision.produtoDescricao,
-      revisaoVigente: revision.numero,
+      produtoCodigo: currentRevision.produtoCodigo,
+      produtoDescricao: currentRevision.produtoDescricao,
+      revisaoVigente: currentRevision.numero,
       revisaoRascunho: null,
       status: 'padrao',
       alteradoEm: serverTimestamp(),
       alteradoPor: uid,
     }, { merge: true })
+
+    for (const materialId of previousMaterials) {
+      if (currentMaterials.has(materialId)) continue
+      const usageRef = doc(
+        db,
+        'empresas',
+        empresaId,
+        'usoMateriais',
+        materialId,
+        'produtos',
+        currentRevision.produtoCodigo,
+      )
+      transaction.set(usageRef, {
+        materialId,
+        produtoCodigo: currentRevision.produtoCodigo,
+        produtoDescricao: currentRevision.produtoDescricao,
+        revisao: currentRevision.numero,
+        ativo: false,
+        alteradoEm: serverTimestamp(),
+        alteradoPor: uid,
+      }, { merge: true })
+    }
+
+    for (const materialId of currentMaterials) {
+      const usageRef = doc(
+        db,
+        'empresas',
+        empresaId,
+        'usoMateriais',
+        materialId,
+        'produtos',
+        currentRevision.produtoCodigo,
+      )
+      transaction.set(usageRef, {
+        materialId,
+        produtoCodigo: currentRevision.produtoCodigo,
+        produtoDescricao: currentRevision.produtoDescricao,
+        revisao: currentRevision.numero,
+        ativo: true,
+        alteradoEm: serverTimestamp(),
+        alteradoPor: uid,
+      }, { merge: true })
+    }
+
     transaction.set(auditRef, {
       entidade: 'ficha_tecnica',
-      entidadeId: revision.produtoCodigo,
+      entidadeId: currentRevision.produtoCodigo,
       acao: 'revisao_publicada',
-      resumo: `${revision.produtoCodigo} · REV ${String(revision.numero).padStart(2, '0')}`,
+      resumo: `${currentRevision.produtoCodigo} · REV ${String(currentRevision.numero).padStart(2, '0')}`,
       uid,
       em: serverTimestamp(),
     })
