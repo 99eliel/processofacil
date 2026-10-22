@@ -9,6 +9,7 @@ import {
   GitBranch,
   LayoutDashboard,
   Menu,
+  MonitorPlay,
   PackageCheck,
   Settings,
   ShieldCheck,
@@ -26,9 +27,10 @@ import TechnicalSheetsPage from './pages/TechnicalSheetsPage'
 import WorkflowPage from './pages/WorkflowPage'
 import ProductionOrdersPage from './pages/ProductionOrdersPage'
 import QualityPage from './pages/QualityPage'
+import OperatorPage from './pages/OperatorPage'
 import type { Material, ModuleKey, Product, ProductionOrderRecord, TechnicalSheetSummary } from './domain/types'
 
-type Page = 'home' | 'materiais' | 'produtos' | 'fichas' | 'workflow' | 'ordens' | 'qualidade' | 'admin'
+type Page = 'home' | 'materiais' | 'produtos' | 'fichas' | 'workflow' | 'ordens' | 'operador' | 'qualidade' | 'admin'
 type ModuleCard = { id: Page; module?: ModuleKey; title: string; description: string; icon: LucideIcon }
 
 const modules: ModuleCard[] = [
@@ -88,12 +90,14 @@ export default function App() {
         <NavButton active={page === 'home'} icon={LayoutDashboard} label="Visão geral" onClick={() => open('home')} />
         {activeModules.map(({ id, title, icon }) => <NavButton key={id} active={page === id} icon={icon} label={title} onClick={() => open(id)} />)}
         <div className="nav-separator" />
+        <NavButton active={page === 'operador'} icon={MonitorPlay} label="Modo Operador" onClick={() => open('operador')} />
+        <div className="nav-separator" />
         <NavButton active={page === 'admin'} icon={Settings} label="Configurações" onClick={() => open('admin')} />
       </nav>
 
       <div className="sidebar-footer">
         <div><span className="connection-dot" /> Firebase oficial conectado</div>
-        <small>processofacil-3f688 · v0.7.0</small>
+        <small>processofacil-3f688 · v0.8.0</small>
       </div>
     </aside>
 
@@ -116,6 +120,7 @@ export default function App() {
       {page === 'fichas' && <TechnicalSheetsPage notify={notify} />}
       {page === 'workflow' && <WorkflowPage notify={notify} />}
       {page === 'ordens' && <ProductionOrdersPage notify={notify} />}
+      {page === 'operador' && <OperatorPage notify={notify} />}
       {page === 'qualidade' && <QualityPage notify={notify} />}
       {page === 'admin' && <AdminPage notify={notify} />}
     </main>
@@ -124,6 +129,7 @@ export default function App() {
       <button className={page === 'home' ? 'active' : ''} onClick={() => open('home')}><LayoutDashboard size={20} /><span>Início</span></button>
       <button className={page === 'materiais' ? 'active' : ''} onClick={() => open('materiais')}><Boxes size={20} /><span>Materiais</span></button>
       <button className={page === 'produtos' ? 'active' : ''} onClick={() => open('produtos')}><PackageCheck size={20} /><span>Produtos</span></button>
+      <button className={page === 'operador' ? 'active' : ''} onClick={() => open('operador')}><MonitorPlay size={20} /><span>Operador</span></button>
       <button className={page === 'admin' ? 'active' : ''} onClick={() => open('admin')}><Settings size={20} /><span>Config.</span></button>
     </nav>
 
@@ -170,6 +176,7 @@ function Home({ open, modules, materialCount, productCount, sheetCount, orderCou
         <QuickStep done={materialCount > 0} title="Cadastrar categorias e fornecedores" text="Configure a base em Configurações → Cadastros base." onClick={() => open('admin')} />
         <QuickStep done={materialCount > 0} title="Cadastrar materiais" text="Crie os primeiros materiais usando os cadastros base." onClick={() => open('materiais')} />
         <QuickStep done={productCount > 0} title="Cadastrar produtos" text="Use a estratégia de código definida pela empresa." onClick={() => open('produtos')} />
+        <QuickStep done={orderCount > 0} title="Abrir chão de fábrica" text="Acesse POPs, fotos, vídeos e operações das OPs liberadas." onClick={() => open('operador')} />
       </div>
     </section>
 
@@ -191,6 +198,6 @@ function QuickStep({ done, title, text, onClick }: { done: boolean; title: strin
 }
 
 function pageTitle(page: Page) {
-  const names: Record<Page, string> = { home: 'Visão geral', materiais: 'Materiais', produtos: 'Produtos', fichas: 'Fichas Técnicas', workflow: 'Workflow', ordens: 'Ordens de Produção', qualidade: 'Qualidade', admin: 'Configurações' }
+  const names: Record<Page, string> = { home: 'Visão geral', materiais: 'Materiais', produtos: 'Produtos', fichas: 'Fichas Técnicas', workflow: 'Workflow', ordens: 'Ordens de Produção', operador: 'Modo Operador', qualidade: 'Qualidade', admin: 'Configurações' }
   return names[page]
 }
