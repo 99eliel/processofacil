@@ -55,10 +55,11 @@ export async function createSupplier(
   const ref = doc(collectionRef(empresaId, 'fornecedores'))
   const batch = writeBatch(db)
   const now = serverTimestamp()
-  const nome = normalizeSearch(input.nome)
+  const nome = input.nome.trim()
+  const nomeNormalizado = normalizeSearch(nome)
   const duplicate = await getDocs(query(
     collectionRef(empresaId, 'fornecedores'),
-    where('nomeNormalizado', '==', nome),
+    where('nomeNormalizado', '==', nomeNormalizado),
     limit(1),
   ))
   if (!duplicate.empty) throw new Error('Já existe um fornecedor com este nome.')
@@ -66,7 +67,7 @@ export async function createSupplier(
   batch.set(ref, {
     ...input,
     nome,
-    nomeNormalizado: nome,
+    nomeNormalizado,
     buscaNormalizada: normalizeSearch([input.nome, input.contato, input.email].filter(Boolean).join(' ')),
     ativo: true,
     criadoEm: now,
@@ -95,6 +96,14 @@ export async function createCategory(
   const batch = writeBatch(db)
   const now = serverTimestamp()
   const prefixo = input.prefixo?.trim().toUpperCase() || ''
+  const nomeNormalizado = normalizeSearch(input.nome)
+
+  const duplicateName = await getDocs(query(
+    collectionRef(empresaId, 'categorias'),
+    where('buscaNormalizada', '==', nomeNormalizado),
+    limit(1),
+  ))
+  if (!duplicateName.empty) throw new Error('Já existe uma categoria com este nome.')
 
   if (prefixo) {
     const duplicatePrefix = await getDocs(query(
@@ -188,6 +197,88 @@ export async function createMaterial(
   })
   await batch.commit()
   return ref.id
+}
+
+export async function updateMaterial(
+  empresaId: string,
+  uid: string,
+  materialId: string,
+  input: Omit<Material, 'id' | 'ativo' | 'buscaNormalizada'>,
+) {
+  const codigo = input.codigo.trim().toUpperCase()
+  const descricao = input.descricao.trim()
+  const descricaoNormalizada = normalizeSearch(descricao)
+
+  const [descriptionMatches, codeMatches] = await Promise.all([
+    getDocs(query(
+      collectionRef(empresaId, 'materiais'),
+      where('descricaoNormalizada', '==', descricaoNormalizada),
+      limit(2),
+    )),
+    getDocs(query(
+      collectionRef(empresaId, 'materiais'),
+      where('codigo', '==', codigo),
+      limit(2),
+    )),
+  ])
+
+  if (descriptionMatches.docs.some((item) => item.id !== materialId)) {
+    throw new Error('Já existe outro material com esta descrição.')
+  }
+
+  if (codeMatches.docs.some((item) => item.id !== materialId)) {
+    throw new Error('Já existe outro material com este código.')
+  }
+
+  const fornecedores = (input.fornecedores as MaterialSupplier[]).map((item) => ({
+    fornecedorId: item.fornecedorId,
+    nomeSnapshot: item.nomeSnapshot,
+    principal: item.principal,
+    referenciaFornecedor: item.referenciaFornecedor ?? '',
+  }))
+
+  if (fornecedores.filter((item) => item.principal).length > 1) {
+    throw new Error('Defina no máximo um fornecedor principal.')
+  }
+
+  const ref = doc(db, 'empresas', empresaId, 'materiais', materialId)
+  const batch = writeBatch(db)
+  const now = serverTimestamp()
+
+  batch.update(ref, {
+    codigo,
+    codigoLegado: input.codigoLegado?.trim() ?? '',
+    descricao,
+    descricaoNormalizada,
+    categoriaId: input.categoriaId ?? '',
+    categoria: input.categoria.trim(),
+    unidade: input.unidade.trim(),
+    fornecedores,
+    custoUnitario: input.custoUnitario ?? null,
+    leadTimeDias: input.leadTimeDias ?? null,
+    loteMinimo: input.loteMinimo ?? null,
+    observacao: input.observacao?.trim() ?? '',
+    buscaNormalizada: normalizeSearch([
+      codigo,
+      input.codigoLegado,
+      descricao,
+      input.categoria,
+      ...fornecedores.map((item) => item.nomeSnapshot),
+    ].filter(Boolean).join(' ')),
+    alteradoEm: now,
+    alteradoPor: uid,
+  })
+
+  batch.set(auditRef(empresaId), {
+    entidade: 'material',
+    entidadeId: materialId,
+    acao: 'alterado',
+    resumo: `${codigo} · ${descricao}`,
+    uid,
+    em: now,
+  })
+
+  await batch.commit()
 }
 
 export async function updateTenantDocument(
