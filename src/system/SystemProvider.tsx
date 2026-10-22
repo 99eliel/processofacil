@@ -7,7 +7,9 @@ import {
   type ReactNode,
 } from 'react'
 import {
+  browserLocalPersistence,
   onAuthStateChanged,
+  setPersistence,
   signInAnonymously,
   type User,
 } from 'firebase/auth'
@@ -218,6 +220,7 @@ export function SystemProvider({ children }: { children: ReactNode }) {
         setLoading(true)
         setError('')
         try {
+          await setPersistence(auth, browserLocalPersistence)
           await signInAnonymously(auth)
         } catch (reason) {
           console.error(reason)
