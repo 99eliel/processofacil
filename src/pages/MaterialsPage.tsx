@@ -25,6 +25,7 @@ import {
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import MaterialsImportModal from '../components/MaterialsImportModal'
 import MaterialUsageModal from '../components/MaterialUsageModal'
+import { listMaterialUsage } from '../firebase/materialUsageRepository'
 import type {
   Category,
   Material,
@@ -286,7 +287,19 @@ export default function MaterialsPage({ notify }: { notify: (message: string) =>
 
   const toggleState = async (material: Material) => {
     if (!empresaId || !user) return
+
     try {
+      if (material.ativo) {
+        const usage = await listMaterialUsage(empresaId, material.id)
+        if (usage.length > 0) {
+          const confirmed = window.confirm(
+            `Este material está em ${usage.length} Ficha(s) Técnica(s) padrão. `
+            + 'As revisões publicadas continuarão preservadas, mas o material deixará de aparecer para novos usos. Deseja inativar mesmo assim?',
+          )
+          if (!confirmed) return
+        }
+      }
+
       await setActiveState(
         empresaId,
         user.uid,
