@@ -11,7 +11,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useAuth } from '../auth/AuthProvider'
+import { useSystem } from '../system/SystemProvider'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import { canActOnStage, nextStage, type WorkflowDefinition } from '../domain/workflowEngine'
 import { emptyWorkflow, subscribeWorkflow } from '../firebase/workflowRepository'
@@ -30,7 +30,7 @@ type DraftItem = {
 }
 
 export default function ProductionOrdersPage({ notify }: { notify: (message: string) => void }) {
-  const auth = useAuth()
+  const auth = useSystem()
   const empresaId = auth.activeCompany?.id
   const user = auth.user
   const { items: products } = useTenantCollection<Product>(empresaId, 'produtos', 'descricao')
