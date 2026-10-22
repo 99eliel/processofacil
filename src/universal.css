@@ -438,3 +438,19 @@
 .import-ok { color:#2d855f; }
 .import-error { color:#b54d4d; max-width:330px; line-height:1.4; }
 @media (max-width:620px) { .page-intro-actions { width:100%; } .page-intro-actions button { flex:1; } .import-summary { grid-template-columns:repeat(3,1fr); } }
+
+
+/* BOM — consumo por tamanho/variante */
+.variant-consumption-panel { margin-top:14px; padding-top:14px; border-top:1px solid #edf1f5; display:grid; gap:8px; }
+.variant-consumption-head strong { display:block; margin-top:3px; font-size:9px; color:#6f8294; font-weight:700; }
+.variant-consumption-row { border:1px solid #e3eaf0; border-radius:12px; padding:10px; display:grid; grid-template-columns:minmax(180px,1fr) auto; gap:9px 12px; align-items:center; background:#fbfcfd; }
+.variant-consumption-material strong,.variant-consumption-material span { display:block; }
+.variant-consumption-material strong { font-size:10px; color:#2b435a; }
+.variant-consumption-material span { margin-top:2px; font-size:8.5px; color:#8192a2; }
+.variable-toggle { display:flex; align-items:center; gap:6px; color:#5d7488; font-size:9px; font-weight:800; white-space:nowrap; }
+.variant-consumption-values { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:7px; }
+.variant-consumption-values label { min-width:92px; display:grid; gap:4px; }
+.variant-consumption-values label > span { font-size:8px; color:#71869a; font-weight:900; }
+.variant-consumption-values input { width:100%; border:1px solid #dce5ed; border-radius:8px; padding:7px 8px; font:inherit; font-size:9px; color:#30485f; }
+.variant-consumption-values strong { font-size:10px; color:#344c62; }
+@media (max-width:620px) { .variant-consumption-row { grid-template-columns:1fr; } .variable-toggle { justify-self:start; } }
