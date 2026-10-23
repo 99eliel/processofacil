@@ -12,6 +12,7 @@ import {
   MonitorPlay,
   PackageCheck,
   PlayCircle,
+  Plus,
   Settings,
   ShieldCheck,
   Sparkles,
@@ -30,6 +31,7 @@ import ProductionOrdersPage from './pages/ProductionOrdersPage'
 import QualityPage from './pages/QualityPage'
 import OperatorPage from './pages/OperatorPage'
 import SimulationPage from './pages/SimulationPage'
+import GuidedPieceFlowPage from './pages/GuidedPieceFlowPage'
 import type {
   Material,
   Product,
@@ -39,6 +41,7 @@ import type {
 
 type Page =
   | 'home'
+  | 'fluxo'
   | 'materiais'
   | 'produtos'
   | 'fichas'
@@ -127,6 +130,11 @@ export default function App() {
           <strong>{system.activeCompany?.nomeFantasia}</strong>
         </div>
         <ChevronRight size={15} />
+      </button>
+
+      <button className={`guided-sidebar-cta ${page === 'fluxo' ? 'active' : ''}`} onClick={() => open('fluxo')}>
+        <Plus size={18} />
+        <span><strong>Criar nova peça</strong><small>Fluxo rápido até a produção</small></span>
       </button>
 
       <nav className="desktop-nav presentation-nav">
@@ -221,6 +229,13 @@ export default function App() {
           orderCount={openOrders}
         />
       )}
+      {page === 'fluxo' && (
+        <GuidedPieceFlowPage
+          notify={notify}
+          openOperator={() => open('operador')}
+          openPassport={() => open('fichas')}
+        />
+      )}
       {page === 'materiais' && <MaterialsPage notify={notify} />}
       {page === 'produtos' && <ProductsPage notify={notify} />}
       {page === 'fichas' && <TechnicalSheetsPage notify={notify} />}
@@ -306,11 +321,11 @@ function Home({
         </p>
 
         <div className="presentation-hero-actions">
-          <button className="presentation-primary-cta" onClick={() => open('simulador')}>
-            <PlayCircle size={18} /> Iniciar demonstração
+          <button className="presentation-primary-cta" onClick={() => open('fluxo')}>
+            <Plus size={18} /> Criar nova peça
           </button>
-          <button className="presentation-secondary-cta" onClick={() => open('operador')}>
-            <MonitorPlay size={18} /> Ver chão de fábrica
+          <button className="presentation-secondary-cta" onClick={() => open('simulador')}>
+            <PlayCircle size={18} /> Usar demonstração pronta
           </button>
         </div>
       </div>
@@ -338,11 +353,11 @@ function Home({
     <section className="presentation-journey">
       <JourneyCard
         number="01"
-        icon={FileText}
-        title="Passaporte Digital"
-        text="Centraliza produto, materiais, medidas, revisões, sequência operacional e POPs."
-        action="Abrir passaportes"
-        onClick={() => open('fichas')}
+        icon={PackageCheck}
+        title="Criar peça"
+        text="Cadastre nome, referência, cor e tamanhos. O sistema abre o Passaporte automaticamente."
+        action="Começar agora"
+        onClick={() => open('fluxo')}
       />
       <JourneyCard
         number="02"
@@ -472,6 +487,7 @@ function MetricCard({
 function pageTitle(page: Page) {
   const names: Record<Page, string> = {
     home: 'Visão geral',
+    fluxo: 'Criar nova peça',
     materiais: 'Materiais',
     produtos: 'Produtos',
     fichas: 'Passaporte Digital',
