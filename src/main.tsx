@@ -7,6 +7,7 @@ import { SystemProvider } from './system/SystemProvider'
 import SystemGate from './system/SystemGate'
 import './styles.css'
 import './universal.css'
+import './premium.css'
 
 function cleanupLegacyPwa() {
   if (!('serviceWorker' in navigator)) return
