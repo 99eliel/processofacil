@@ -175,8 +175,8 @@ export default function App() {
       </nav>
 
       <div className="sidebar-footer presentation-footer">
-        <span className="presentation-badge"><Sparkles size={13} /> Versão de apresentação</span>
-        <small>v0.9 · Processo Fácil</small>
+        <span className="presentation-badge"><Sparkles size={13} /> Apresentação v1.0</span>
+        <small>v1.0 · Processo Fácil</small>
       </div>
     </aside>
 
