@@ -1,0 +1,978 @@
+/* Processo Fácil v1.0 — nova escala visual / apresentação premium */
+
+:root {
+  --pf-bg: #f3f6f9;
+  --pf-surface: #ffffff;
+  --pf-surface-soft: #f8fafc;
+  --pf-line: #dfe7ee;
+  --pf-ink: #17304a;
+  --pf-muted: #6f8294;
+  --pf-navy: #071b35;
+  --pf-blue: #0876b5;
+  --pf-cyan: #39bfd6;
+  --pf-shadow: 0 12px 34px rgba(21, 49, 78, .07);
+}
+
+html {
+  background: var(--pf-bg);
+}
+
+body {
+  background:
+    radial-gradient(circle at 85% 0%, rgba(38, 156, 198, .06), transparent 28%),
+    var(--pf-bg);
+  color: var(--pf-ink);
+}
+
+.presentation-shell {
+  min-height: 100vh;
+  background: transparent !important;
+}
+
+/* ---------- Shell / navegação ---------- */
+.presentation-brand {
+  gap: 12px !important;
+}
+
+.presentation-brand .brand-mark {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 15px !important;
+}
+
+.presentation-brand strong {
+  font-size: 17px !important;
+  letter-spacing: -.02em;
+}
+
+.presentation-brand span {
+  margin-top: 3px !important;
+  font-size: 11px !important;
+}
+
+.presentation-company {
+  margin-top: 24px !important;
+  grid-template-columns: 42px minmax(0,1fr) auto !important;
+  padding: 13px !important;
+  border-radius: 16px !important;
+}
+
+.presentation-company .tenant-logo {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 12px !important;
+}
+
+.presentation-company small {
+  font-size: 9px !important;
+}
+
+.presentation-company strong {
+  font-size: 12px !important;
+}
+
+.nav-group {
+  margin-top: 20px !important;
+  gap: 5px !important;
+}
+
+.nav-group-label {
+  padding: 0 13px 6px !important;
+  font-size: 9px !important;
+}
+
+.presentation-nav .nav-item {
+  min-height: 44px;
+  padding: 11px 13px !important;
+  border-radius: 12px !important;
+  gap: 11px !important;
+  font-size: 12.5px !important;
+  font-weight: 750 !important;
+}
+
+.presentation-nav .nav-item svg {
+  width: 19px;
+  height: 19px;
+}
+
+.presentation-footer small {
+  font-size: 9px !important;
+}
+
+.presentation-badge {
+  padding: 7px 10px !important;
+  font-size: 9px !important;
+}
+
+/* ---------- Topbar ---------- */
+.presentation-topbar {
+  min-height: 66px;
+  margin-bottom: 26px !important;
+}
+
+.presentation-topbar .eyebrow {
+  font-size: 10px !important;
+  letter-spacing: .11em;
+}
+
+.presentation-topbar h1 {
+  margin-top: 5px !important;
+  font-size: 31px !important;
+  line-height: 1;
+}
+
+.presentation-demo-button {
+  min-height: 42px;
+  padding: 10px 14px !important;
+  border-radius: 13px !important;
+  font-size: 11.5px !important;
+}
+
+.presentation-profile {
+  width: 42px !important;
+  height: 42px !important;
+  font-size: 11px !important;
+}
+
+/* ---------- Home ---------- */
+.presentation-hero {
+  min-height: 500px !important;
+  grid-template-columns: minmax(0, 1.15fr) minmax(410px, .78fr) !important;
+  gap: clamp(38px, 4vw, 68px) !important;
+  padding: clamp(44px, 4.2vw, 72px) !important;
+  border-radius: 32px !important;
+}
+
+.presentation-overline {
+  padding: 9px 13px !important;
+  font-size: 11px !important;
+}
+
+.presentation-hero h2 {
+  max-width: 840px !important;
+  margin: 22px 0 18px !important;
+  font-size: clamp(50px, 4.25vw, 74px) !important;
+  line-height: .98 !important;
+}
+
+.presentation-hero p {
+  max-width: 780px !important;
+  font-size: 15px !important;
+  line-height: 1.7 !important;
+}
+
+.presentation-hero-actions {
+  margin-top: 28px !important;
+  gap: 12px !important;
+}
+
+.presentation-primary-cta,
+.presentation-secondary-cta {
+  min-height: 48px;
+  padding: 12px 17px !important;
+  border-radius: 14px !important;
+  font-size: 13px !important;
+}
+
+.presentation-hero-visual {
+  padding: 20px !important;
+  border-radius: 24px !important;
+}
+
+.presentation-visual-label {
+  margin-bottom: 14px !important;
+  font-size: 9px !important;
+}
+
+.presentation-visual-step {
+  gap: 12px !important;
+  padding: 13px !important;
+  border-radius: 15px !important;
+}
+
+.presentation-visual-step > span {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 13px !important;
+}
+
+.presentation-visual-step strong {
+  font-size: 13px !important;
+}
+
+.presentation-visual-step small {
+  margin-top: 3px !important;
+  font-size: 10.5px !important;
+}
+
+.presentation-visual-arrow {
+  height: 30px !important;
+}
+
+.presentation-section-head {
+  margin: 36px 0 16px !important;
+}
+
+.presentation-section-head .section-kicker {
+  font-size: 10px !important;
+}
+
+.presentation-section-head h3 {
+  font-size: 27px !important;
+}
+
+.presentation-section-note {
+  font-size: 11px !important;
+}
+
+.presentation-journey {
+  gap: 14px !important;
+}
+
+.presentation-journey-card {
+  min-height: 270px !important;
+  padding: 22px !important;
+  border-radius: 24px !important;
+  box-shadow: var(--pf-shadow) !important;
+}
+
+.presentation-journey-top {
+  margin-bottom: 28px !important;
+}
+
+.presentation-journey-number {
+  font-size: 12px !important;
+}
+
+.presentation-journey-icon {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 14px !important;
+}
+
+.presentation-journey-card > strong {
+  font-size: 18px !important;
+}
+
+.presentation-journey-card p {
+  margin: 11px 0 22px !important;
+  font-size: 13px !important;
+  line-height: 1.62 !important;
+}
+
+.presentation-journey-link {
+  font-size: 12px !important;
+}
+
+.presentation-demo-strip {
+  grid-template-columns: 58px minmax(0,1fr) auto !important;
+  gap: 16px !important;
+  margin-top: 18px !important;
+  padding: 21px 23px !important;
+  border-radius: 23px !important;
+}
+
+.presentation-demo-icon {
+  width: 58px !important;
+  height: 58px !important;
+  border-radius: 16px !important;
+}
+
+.presentation-demo-copy span {
+  font-size: 9px !important;
+}
+
+.presentation-demo-copy strong {
+  margin-top: 4px !important;
+  font-size: 15px !important;
+}
+
+.presentation-demo-copy small {
+  margin-top: 5px !important;
+  font-size: 11px !important;
+}
+
+.presentation-demo-strip > button {
+  min-height: 44px;
+  padding: 11px 15px !important;
+  font-size: 11px !important;
+}
+
+.presentation-metrics {
+  gap: 12px !important;
+}
+
+.presentation-metric-card {
+  min-height: 84px;
+  gap: 13px !important;
+  padding: 17px !important;
+  border-radius: 18px !important;
+  box-shadow: 0 6px 20px rgba(20, 52, 82, .035);
+}
+
+.presentation-metric-card > span {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 13px !important;
+}
+
+.presentation-metric-card strong {
+  font-size: 24px !important;
+}
+
+.presentation-metric-card small {
+  margin-top: 2px !important;
+  font-size: 10.5px !important;
+}
+
+/* ---------- Escala global das páginas internas ---------- */
+.presentation-content .page-intro {
+  margin-bottom: 24px;
+}
+
+.presentation-content .page-intro h2 {
+  margin: 6px 0 8px;
+  font-size: clamp(30px, 2.4vw, 40px);
+  letter-spacing: -.045em;
+}
+
+.presentation-content .page-intro p {
+  max-width: 900px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.presentation-content .section-kicker,
+.presentation-content .eyebrow {
+  font-size: 10px;
+}
+
+.presentation-content .panel {
+  margin-bottom: 16px;
+  padding: 23px;
+  border-radius: 22px;
+  box-shadow: 0 8px 26px rgba(27, 58, 88, .05);
+}
+
+.presentation-content .panel-head {
+  margin-bottom: 19px;
+}
+
+.presentation-content .panel-head h3 {
+  margin-top: 5px;
+  font-size: 21px;
+  letter-spacing: -.025em;
+}
+
+.presentation-content .helper-text {
+  font-size: 12px;
+  line-height: 1.58;
+}
+
+.presentation-content .primary-button,
+.presentation-content .secondary-button,
+.presentation-content .danger-button {
+  min-height: 43px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.presentation-content .secondary-button.compact,
+.presentation-content .primary-button.compact {
+  min-height: 38px;
+  padding: 8px 11px;
+  font-size: 11px;
+}
+
+.presentation-content .text-button {
+  font-size: 12px;
+}
+
+.presentation-content .back-link {
+  margin-bottom: 20px;
+  font-size: 12px;
+}
+
+.presentation-content .status {
+  padding: 7px 10px;
+  font-size: 10px;
+}
+
+/* formulários */
+.presentation-content .form-grid {
+  gap: 14px;
+}
+
+.presentation-content .form-grid label > span,
+.presentation-content .editor-label > span,
+.presentation-content label > span {
+  font-size: 10px;
+}
+
+.presentation-content input,
+.presentation-content select,
+.presentation-content textarea {
+  min-height: 42px;
+  font-size: 12.5px;
+}
+
+.presentation-content textarea {
+  line-height: 1.55;
+}
+
+.presentation-content .editor-label input,
+.presentation-content .editor-label textarea {
+  padding: 10px 12px;
+  font-size: 12.5px;
+}
+
+.presentation-content .toolbar {
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.presentation-content .search-box {
+  min-height: 46px;
+  border-radius: 13px;
+}
+
+.presentation-content .search-box input {
+  font-size: 13px;
+}
+
+.presentation-content .filter-button {
+  min-height: 46px;
+  font-size: 12px;
+}
+
+/* tabelas */
+.presentation-content table {
+  min-width: 720px;
+}
+
+.presentation-content th {
+  padding: 12px 11px;
+  font-size: 10px;
+}
+
+.presentation-content td {
+  padding: 13px 11px;
+  font-size: 12px;
+}
+
+.presentation-content .table-sub {
+  margin-top: 3px;
+  font-size: 10px;
+}
+
+/* cards de listagem */
+.presentation-content .office-card,
+.presentation-content .sheet-card,
+.presentation-content .op-card {
+  padding: 19px;
+  border-radius: 20px;
+}
+
+.presentation-content .office-head h3,
+.presentation-content .sheet-head h3,
+.presentation-content .op-top h3 {
+  font-size: 15px;
+}
+
+.presentation-content .office-head span:not(.category),
+.presentation-content .sheet-head small,
+.presentation-content .op-top small {
+  font-size: 11px;
+}
+
+.presentation-content .category {
+  padding: 7px 10px;
+  font-size: 10px;
+}
+
+/* Passaporte */
+.presentation-content .passport-header {
+  padding: 21px;
+  border-radius: 23px;
+}
+
+.presentation-content .passport-thumb {
+  width: 68px;
+  height: 68px;
+  border-radius: 18px;
+}
+
+.presentation-content .passport-main h2 {
+  margin: 5px 0 9px;
+  font-size: 25px;
+}
+
+.presentation-content .passport-meta > span:not(.status) {
+  font-size: 11px;
+}
+
+.presentation-content .operation-editor-card {
+  border-radius: 17px;
+}
+
+.presentation-content .operation-editor-summary {
+  padding: 13px;
+}
+
+.presentation-content .operation-order {
+  width: 44px;
+  height: 44px;
+  font-size: 11px;
+}
+
+.presentation-content .operation-title-button strong {
+  font-size: 12.5px;
+}
+
+.presentation-content .operation-title-button small {
+  font-size: 10px;
+}
+
+.presentation-content .pop-section-head strong {
+  font-size: 12px;
+}
+
+.presentation-content .pop-step-row input,
+.presentation-content .critical-points-editor input {
+  font-size: 12px;
+}
+
+/* OP */
+.presentation-content .detail-hero {
+  padding: 25px;
+  border-radius: 24px;
+}
+
+.presentation-content .detail-hero h2 {
+  font-size: 29px;
+}
+
+.presentation-content .detail-hero p {
+  font-size: 13px;
+}
+
+.presentation-content .mini-list strong {
+  font-size: 12.5px;
+}
+
+.presentation-content .mini-list span {
+  font-size: 10.5px;
+}
+
+/* Simulador */
+.presentation-content .simulation-flow {
+  gap: 14px;
+}
+
+.presentation-content .simulation-flow-step > span {
+  width: 40px;
+  height: 40px;
+  font-size: 11px;
+}
+
+.presentation-content .simulation-flow-step strong {
+  font-size: 12px;
+}
+
+.presentation-content .simulation-flow-step small {
+  font-size: 10px;
+}
+
+.presentation-content .simulation-dropzone {
+  min-height: 220px;
+  padding: 28px;
+  border-radius: 18px;
+}
+
+.presentation-content .simulation-dropzone strong {
+  font-size: 15px;
+}
+
+.presentation-content .simulation-dropzone span {
+  font-size: 11px;
+}
+
+.presentation-content .simulation-package-title strong {
+  font-size: 13px;
+}
+
+.presentation-content .simulation-package-title span {
+  font-size: 10.5px;
+}
+
+.presentation-content .simulation-preview-stats strong {
+  font-size: 12px;
+}
+
+.presentation-content .simulation-preview-stats span {
+  font-size: 10px;
+}
+
+.presentation-content .simulation-created-list span {
+  font-size: 10.5px;
+}
+
+.presentation-content .simulation-created-list strong {
+  font-size: 11.5px;
+}
+
+.presentation-content .simulation-check-grid span {
+  padding: 11px 12px;
+  font-size: 10.5px;
+}
+
+/* Modo operador */
+.presentation-content .operator-page-head {
+  margin-bottom: 20px;
+}
+
+.presentation-content .operator-page-head h2 {
+  font-size: 34px;
+}
+
+.presentation-content .operator-page-head p {
+  font-size: 13px;
+}
+
+.presentation-content .operator-order-select {
+  min-width: 320px;
+}
+
+.presentation-content .operator-order-select span {
+  font-size: 10px;
+}
+
+.presentation-content .operator-order-select select {
+  min-height: 46px;
+  font-size: 12px;
+}
+
+.presentation-content .operator-layout {
+  grid-template-columns: 330px minmax(0,1fr);
+  gap: 18px;
+}
+
+.presentation-content .operator-sequence {
+  padding: 17px;
+  border-radius: 20px;
+}
+
+.presentation-content .operator-sequence-head span {
+  font-size: 9px;
+}
+
+.presentation-content .operator-sequence-head strong {
+  font-size: 12px;
+}
+
+.presentation-content .operator-sequence-head b {
+  font-size: 22px;
+}
+
+.presentation-content .operator-task {
+  padding: 11px;
+  border-radius: 13px;
+}
+
+.presentation-content .operator-task > span {
+  width: 40px;
+  height: 40px;
+  font-size: 10px;
+}
+
+.presentation-content .operator-task strong {
+  font-size: 11.5px;
+}
+
+.presentation-content .operator-task small {
+  font-size: 9.5px;
+}
+
+.presentation-content .operator-work-card {
+  border-radius: 24px;
+}
+
+.presentation-content .operator-product-bar {
+  padding: 16px 20px;
+}
+
+.presentation-content .operator-product-bar span {
+  font-size: 10px;
+}
+
+.presentation-content .operator-product-bar strong {
+  font-size: 14px;
+}
+
+.presentation-content .operator-operation-hero {
+  padding: 30px 28px 22px;
+}
+
+.presentation-content .operator-operation-number {
+  font-size: 11px;
+}
+
+.presentation-content .operator-operation-hero h1 {
+  margin: 8px 0 12px;
+  font-size: clamp(36px, 4vw, 56px);
+}
+
+.presentation-content .operator-operation-hero p {
+  font-size: 13.5px;
+}
+
+.presentation-content .operator-badges span {
+  padding: 8px 11px;
+  font-size: 10.5px;
+}
+
+.presentation-content .operator-media-section {
+  padding: 0 28px 22px;
+}
+
+.presentation-content .operator-media figcaption {
+  padding: 11px 13px;
+  font-size: 10.5px;
+}
+
+.presentation-content .operator-info-grid {
+  gap: 13px;
+  padding: 0 28px 24px;
+}
+
+.presentation-content .operator-info-card {
+  padding: 17px;
+  border-radius: 16px;
+}
+
+.presentation-content .operator-info-title strong {
+  font-size: 12px;
+}
+
+.presentation-content .operator-info-card li,
+.presentation-content .operator-info-card p {
+  font-size: 11px;
+}
+
+.presentation-content .operator-info-card dt {
+  font-size: 10px;
+}
+
+.presentation-content .operator-info-card dd {
+  font-size: 10.5px;
+}
+
+.presentation-content .operator-controls {
+  padding: 17px 22px;
+}
+
+.presentation-content .operator-nav-button,
+.presentation-content .operator-problem-button {
+  min-height: 42px;
+  font-size: 11px;
+}
+
+.presentation-content .operator-start,
+.presentation-content .operator-complete {
+  min-height: 48px;
+  padding: 12px 20px;
+  font-size: 13px;
+}
+
+/* Workflow / qualidade / configurações */
+.presentation-content .workflow-editor-stage {
+  padding: 13px;
+  border-radius: 15px;
+}
+
+.presentation-content .workflow-editor-stage strong {
+  font-size: 12px;
+}
+
+.presentation-content .workflow-editor-stage small {
+  font-size: 10px;
+}
+
+.presentation-content .inspection-card {
+  padding: 14px;
+  border-radius: 15px;
+}
+
+.presentation-content .inspection-card strong {
+  font-size: 12px;
+}
+
+.presentation-content .inspection-card small {
+  font-size: 10px;
+}
+
+.presentation-content .toggle-card {
+  padding: 15px;
+}
+
+.presentation-content .toggle-card strong {
+  font-size: 12px;
+}
+
+.presentation-content .toggle-card small {
+  font-size: 10px;
+}
+
+/* ---------- Desktop grande ---------- */
+@media (min-width: 1000px) {
+  .presentation-shell {
+    display: grid !important;
+    grid-template-columns: 286px minmax(0,1fr) !important;
+  }
+
+  .presentation-sidebar {
+    padding: 28px 20px !important;
+  }
+
+  .presentation-content {
+    width: 100% !important;
+    max-width: 1780px !important;
+    margin: 0 auto !important;
+    padding: 34px clamp(34px, 3.2vw, 62px) 70px !important;
+  }
+}
+
+/* usa melhor monitores ultrawide/4K sem deixar a aplicação minúscula */
+@media (min-width: 1800px) {
+  .presentation-content {
+    max-width: none !important;
+    padding-left: clamp(46px, 3.6vw, 86px) !important;
+    padding-right: clamp(46px, 3.6vw, 86px) !important;
+  }
+
+  .presentation-hero {
+    min-height: 530px !important;
+  }
+
+  .presentation-journey-card {
+    min-height: 290px !important;
+  }
+}
+
+@media (min-width: 2400px) {
+  .presentation-shell {
+    grid-template-columns: 320px minmax(0,1fr) !important;
+  }
+
+  .presentation-sidebar {
+    padding: 34px 24px !important;
+  }
+
+  .presentation-nav .nav-item {
+    min-height: 50px;
+    font-size: 14px !important;
+  }
+
+  .presentation-brand strong {
+    font-size: 19px !important;
+  }
+
+  .presentation-content {
+    padding: 46px 80px 80px !important;
+  }
+
+  .presentation-topbar h1 {
+    font-size: 36px !important;
+  }
+
+  .presentation-hero h2 {
+    font-size: clamp(62px, 3.4vw, 82px) !important;
+  }
+}
+
+/* ---------- Tablet / mobile ---------- */
+@media (max-width: 999px) {
+  .presentation-content {
+    max-width: none !important;
+    padding: 20px 16px 104px !important;
+  }
+
+  .sidebar.mobile-open {
+    width: min(340px, 90vw) !important;
+    padding: 24px 18px !important;
+  }
+
+  .sidebar.mobile-open .nav-item {
+    min-height: 44px;
+    font-size: 12px !important;
+  }
+
+  .presentation-hero {
+    min-height: 0 !important;
+    grid-template-columns: 1fr !important;
+    padding: 30px 24px !important;
+  }
+
+  .presentation-hero h2 {
+    font-size: clamp(36px, 9vw, 54px) !important;
+  }
+
+  .presentation-hero p {
+    font-size: 13px !important;
+  }
+
+  .presentation-hero-visual {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .presentation-visual-arrow {
+    display: none;
+  }
+
+  .presentation-journey {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .presentation-content .operator-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .presentation-topbar h1 {
+    font-size: 25px !important;
+  }
+
+  .presentation-journey,
+  .presentation-metrics {
+    grid-template-columns: 1fr !important;
+  }
+
+  .presentation-hero-visual {
+    grid-template-columns: 1fr !important;
+  }
+
+  .presentation-demo-strip {
+    grid-template-columns: 48px minmax(0,1fr) !important;
+  }
+
+  .presentation-demo-strip > button {
+    grid-column: 1/-1;
+    justify-content: center;
+  }
+
+  .presentation-content .page-intro h2 {
+    font-size: 29px;
+  }
+
+  .presentation-content .operator-page-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .presentation-content .operator-order-select {
+    min-width: 0;
+  }
+}
