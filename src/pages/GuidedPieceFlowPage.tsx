@@ -411,7 +411,7 @@ export default function GuidedPieceFlowPage({
           produtoCodigo: product.codigo,
           produtoDescricao: product.descricao,
           cor: orderForm.cor,
-          variantes,
+          variantes: variants,
         }],
       })
       await releaseProductionOrder(empresaId, user.uid, created.id, null)
