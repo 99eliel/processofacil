@@ -23,6 +23,8 @@ export async function createQualityInspection(
 ) {
   if (criterios.length === 0) throw new Error('Adicione pelo menos um critério de inspeção.')
   if (amostras.length === 0) throw new Error('Adicione pelo menos uma amostra.')
+  if (order.status === 'rascunho' || order.status === 'cancelada' || order.status === 'concluida') throw new Error('A OP não está disponível para inspeção.')
+  if (amostras.some((sample) => sample.resultados.length !== criterios.length || sample.resultados.some((result) => result.tipo === 'numerico' && (result.valor === undefined || !Number.isFinite(result.valor))))) throw new Error('Todas as medições numéricas precisam estar preenchidas.')
 
   const resultadoGeral: QualityInspection['resultadoGeral'] =
     amostras.every((sample) => sample.aprovada) ? 'aprovada' : 'reprovada'
