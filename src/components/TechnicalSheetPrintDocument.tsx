@@ -23,8 +23,8 @@ type Props = {
 
 function timestampDate(value: unknown) {
   if (value && typeof value === 'object' && 'toDate' in value) {
-    const toDate = (value as { toDate?: () => Date }).toDate
-    if (typeof toDate === 'function') return toDate().toLocaleDateString('pt-BR')
+    const timestamp = value as { toDate?: () => Date }
+    if (typeof timestamp.toDate === 'function') return timestamp.toDate().toLocaleDateString('pt-BR')
   }
   return '—'
 }
