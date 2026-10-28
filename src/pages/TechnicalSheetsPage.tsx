@@ -31,6 +31,7 @@ import {
 } from '../firebase/technicalSheetRepository'
 import { deleteTechnicalSheetImage, uploadTechnicalSheetImage } from '../firebase/storageRepository'
 import TechnicalOperationsEditor from '../components/TechnicalOperationsEditor'
+import TechnicalSheetPrintDocument from '../components/TechnicalSheetPrintDocument'
 import type { BomLine, Material, MaterialSupplier, Product, TechnicalRevision, TechnicalSheetSummary } from '../domain/types'
 
 export default function TechnicalSheetsPage({ notify }: { notify: (message: string) => void }) {
@@ -48,6 +49,7 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
   const [newSize, setNewSize] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
   const [localError, setLocalError] = useState('')
+  const [printPreview, setPrintPreview] = useState(false)
 
   const selectedProduct = products.find((item) => item.codigo === selectedProductCode)
   const editable = editor?.status === 'rascunho'
@@ -448,7 +450,7 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
           </div>
         </div>
         <div className="passport-actions">
-          <button className="secondary-button print-hidden" onClick={() => window.print()}><Printer size={16} /> Imprimir</button>
+          <button className="secondary-button print-hidden" onClick={() => setPrintPreview(true)}><Printer size={16} /> Ficha para impressão / PDF</button>
           {editable && <button className="secondary-button" onClick={save} disabled={busy}><Save size={16} /> Salvar</button>}
           {editable && <button className="primary-button" onClick={submit} disabled={busy}><Send size={16} /> Enviar validação</button>}
           {editor.status === 'em_validacao' && <button className="secondary-button" onClick={returnToDraft} disabled={busy}>Devolver</button>}
@@ -712,6 +714,15 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
           </>
         )}
       </section>}
+
+      {printPreview && <TechnicalSheetPrintDocument
+        revision={editor}
+        product={currentProduct}
+        company={auth.activeCompany}
+        materials={materials}
+        responsibleName={user.displayName}
+        onClose={() => setPrintPreview(false)}
+      />}
 
       {editor.blocos.checklist && <section className="panel ft-checklist-panel">
         <div className="panel-head">
