@@ -8,6 +8,7 @@ import SystemGate from './system/SystemGate'
 import './styles.css'
 import './universal.css'
 import './premium.css'
+import './technical-print.css'
 
 function cleanupLegacyPwa() {
   if (!('serviceWorker' in navigator)) return
