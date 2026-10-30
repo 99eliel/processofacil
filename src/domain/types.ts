@@ -257,7 +257,7 @@ export type TechnicalProductImage = {
 export type TechnicalProductDna = {
   tempoPadraoMin: number | null
   maquinaPrincipal: string
-  nivelDificuldade: 'facil' | 'medio' | 'dificil'
+  nivelDificuldade: '' | 'facil' | 'medio' | 'dificil'
   principaisErros: string[]
 }
 
