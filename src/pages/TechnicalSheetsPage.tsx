@@ -38,6 +38,29 @@ import TechnicalOperationsEditor from '../components/TechnicalOperationsEditor'
 import TechnicalSheetPrintDocument from '../components/TechnicalSheetPrintDocument'
 import type { BomLine, Material, MaterialSupplier, Product, TechnicalRevision, TechnicalSheetSummary } from '../domain/types'
 
+
+const attachmentDefinitions: Array<{
+  tipo: TechnicalRevision['anexos'][number]['tipo']
+  nome: string
+}> = [
+  { tipo: 'molde', nome: 'Molde PDF' },
+  { tipo: 'encaixe', nome: 'Encaixe Audaces' },
+  { tipo: 'desenho', nome: 'Desenho Técnico' },
+  { tipo: 'pop', nome: 'Procedimento Operacional (POP)' },
+  { tipo: 'video', nome: 'Vídeo Operacional' },
+  { tipo: 'relatorio_medidas', nome: 'Relatório de Medidas' },
+  { tipo: 'aprovacao_cliente', nome: 'Aprovação do Cliente' },
+]
+
+function imageTypeLabel(tipo: TechnicalRevision['imagens'][number]['tipo']) {
+  if (tipo === 'frente') return 'Foto da frente'
+  if (tipo === 'costas') return 'Foto das costas'
+  if (tipo === 'detalhe_1') return 'Detalhe 1'
+  if (tipo === 'detalhe_2') return 'Detalhe 2'
+  if (tipo === 'peca_perfeita') return 'Peça perfeita'
+  return 'Outra referência'
+}
+
 export default function TechnicalSheetsPage({ notify }: { notify: (message: string) => void }) {
   const auth = useSystem()
   const empresaId = auth.activeCompany?.id
@@ -631,20 +654,30 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
           <span className="count-badge">{editor.imagens.length}/6</span>
         </div>
 
-        {editable && <label className="image-upload-button print-hidden">
-          <ImagePlus size={17} />
-          <span>{uploadingImage ? 'Enviando imagem...' : 'Adicionar imagem'}</span>
-          <input
-            type="file"
-            accept="image/*"
-            disabled={uploadingImage || editor.imagens.length >= 6}
-            onChange={(event) => {
-              const file = event.target.files?.[0]
-              if (file) uploadImage(file)
-              event.currentTarget.value = ''
-            }}
-          />
-        </label>}
+        {editable && <div className="ft-image-upload-row print-hidden">
+          <select value={imageTypeToUpload} onChange={(e) => setImageTypeToUpload(e.target.value as typeof imageTypeToUpload)}>
+            <option value="frente">Foto da frente</option>
+            <option value="costas">Foto das costas</option>
+            <option value="detalhe_1">Detalhe 1</option>
+            <option value="detalhe_2">Detalhe 2</option>
+            <option value="peca_perfeita">Peça perfeita</option>
+            <option value="outro">Outra referência</option>
+          </select>
+          <label className="image-upload-button">
+            <ImagePlus size={17} />
+            <span>{uploadingImage ? 'Enviando imagem...' : 'Selecionar imagem'}</span>
+            <input
+              type="file"
+              accept="image/*"
+              disabled={uploadingImage || editor.imagens.length >= 6}
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (file) void uploadImage(file, imageTypeToUpload)
+                event.currentTarget.value = ''
+              }}
+            />
+          </label>
+        </div>}
 
         {editor.imagens.length === 0 ? (
           <div className="empty-state small-empty">
@@ -659,18 +692,38 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
                 <img src={image.url} alt={image.legenda || `Imagem ${index + 1}`} />
                 <figcaption>
                   {editable ? (
-                    <input
-                      value={image.legenda}
-                      onChange={(event) => setEditor({
-                        ...editor,
-                        imagens: editor.imagens.map((item, itemIndex) =>
-                          itemIndex === index
-                            ? { ...item, legenda: event.target.value }
-                            : item,
-                        ),
-                      })}
-                      placeholder="Legenda da imagem"
-                    />
+                    <div className="ft-image-caption-editor">
+                      <select
+                        value={image.tipo ?? 'outro'}
+                        onChange={(event) => setEditor({
+                          ...editor,
+                          imagens: editor.imagens.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, tipo: event.target.value as TechnicalRevision['imagens'][number]['tipo'], legenda: imageTypeLabel(event.target.value as TechnicalRevision['imagens'][number]['tipo']) }
+                              : item,
+                          ),
+                        })}
+                      >
+                        <option value="frente">Frente</option>
+                        <option value="costas">Costas</option>
+                        <option value="detalhe_1">Detalhe 1</option>
+                        <option value="detalhe_2">Detalhe 2</option>
+                        <option value="peca_perfeita">Peça perfeita</option>
+                        <option value="outro">Outra</option>
+                      </select>
+                      <input
+                        value={image.legenda}
+                        onChange={(event) => setEditor({
+                          ...editor,
+                          imagens: editor.imagens.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, legenda: event.target.value }
+                              : item,
+                          ),
+                        })}
+                        placeholder="Legenda da imagem"
+                      />
+                    </div>
                   ) : (
                     <span>{image.legenda || `Imagem ${index + 1}`}</span>
                   )}
