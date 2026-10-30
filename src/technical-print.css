@@ -755,8 +755,8 @@
 }
 
 .ft-doc-drawing svg {
-  width: 29mm;
-  height: 31mm;
+  width: 18.5mm;
+  height: 25mm;
 }
 
 .ft-doc-quality-columns {
@@ -851,4 +851,50 @@
   .technical-print-root {
     width: 210mm;
   }
+}
+
+
+/* correções de encaixe entre colunas */
+.ft-doc-middle-grid > *,
+.ft-doc-sequence-grid > *,
+.ft-doc-control-grid > *,
+.ft-doc-top-grid > * {
+  min-width: 0;
+}
+
+.ft-doc-right-stack .ft-doc-table,
+.ft-doc-top-right .ft-doc-table {
+  width: 100%;
+  max-width: 100%;
+}
+
+.ft-doc-top-right .ft-doc-table th:first-child,
+.ft-doc-top-right .ft-doc-table td:first-child {
+  width: 22mm;
+}
+
+.ft-doc-right-stack .ft-doc-table th:first-child,
+.ft-doc-right-stack .ft-doc-table td:first-child {
+  width: 21mm;
+}
+
+.ft-doc-sequence-grid .ft-doc-table.operations td:nth-child(2) {
+  font-weight: 600;
+}
+
+.ft-doc-drawing {
+  overflow: hidden;
+}
+
+.ft-doc-drawing > div {
+  min-width: 0;
+}
+
+.ft-doc-drawing svg {
+  max-width: 100%;
+}
+
+.ft-doc-perfect .ft-doc-image-placeholder {
+  min-height: 0;
+  height: 21mm;
 }
