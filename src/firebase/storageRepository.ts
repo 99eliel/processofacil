@@ -114,3 +114,34 @@ export async function deleteOperationMedia(path: string) {
   if (!path) return
   await deleteObject(ref(storage, path))
 }
+
+
+export async function uploadTechnicalAttachment(
+  empresaId: string,
+  produtoCodigo: string,
+  revisao: number,
+  tipo: string,
+  file: File,
+) {
+  if (file.size > 130 * 1024 * 1024) throw new Error('O anexo deve ter no máximo 130 MB.')
+
+  const path = [
+    'empresas',
+    empresaId,
+    'fichas',
+    produtoCodigo,
+    'revisoes',
+    String(revisao).padStart(3, '0'),
+    'anexos',
+    tipo,
+    `${crypto.randomUUID()}-${safeFileName(file.name || tipo)}`,
+  ].join('/')
+
+  const storageRef = ref(storage, path)
+  await uploadBytes(storageRef, file, {
+    contentType: file.type || 'application/octet-stream',
+    customMetadata: { empresaId, produtoCodigo, revisao: String(revisao), tipo },
+  })
+
+  return { url: await getDownloadURL(storageRef), path }
+}
