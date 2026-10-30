@@ -275,7 +275,7 @@ export default function GuidedPieceFlowPage({
   const [dna, setDna] = useState({
     tempoPadraoMin: '',
     maquinaPrincipal: '',
-    nivelDificuldade: 'medio' as 'facil' | 'medio' | 'dificil',
+    nivelDificuldade: '' as '' | 'facil' | 'medio' | 'dificil',
     principaisErros: '',
   })
   const [materials, setMaterials] = useState<MaterialDraft[]>([])
@@ -830,7 +830,7 @@ export default function GuidedPieceFlowPage({
           <div className="guided-form-grid">
             <label className="guided-field"><span>Tempo padrão total (min)</span><input type="number" step="0.01" value={dna.tempoPadraoMin} onChange={(e) => setDna({ ...dna, tempoPadraoMin: e.target.value })} placeholder="Ex.: 2,85" /></label>
             <label className="guided-field"><span>Máquina principal</span><input value={dna.maquinaPrincipal} onChange={(e) => setDna({ ...dna, maquinaPrincipal: e.target.value })} placeholder="Ex.: Overloque 5 fios" /></label>
-            <label className="guided-field"><span>Nível de dificuldade</span><select value={dna.nivelDificuldade} onChange={(e) => setDna({ ...dna, nivelDificuldade: e.target.value as typeof dna.nivelDificuldade })}><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option></select></label>
+            <label className="guided-field"><span>Nível de dificuldade</span><select value={dna.nivelDificuldade} onChange={(e) => setDna({ ...dna, nivelDificuldade: e.target.value as typeof dna.nivelDificuldade })}><option value="">Selecione...</option><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option></select></label>
             <label className="guided-field wide"><span>Principais erros encontrados</span><textarea rows={5} value={dna.principaisErros} onChange={(e) => setDna({ ...dna, principaisErros: e.target.value })} placeholder={"Um por linha\nEx.: Gola torta\nBainha ondulada\nEtiqueta desalinhada"} /></label>
           </div>
         </FormSection>
