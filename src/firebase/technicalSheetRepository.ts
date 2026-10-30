@@ -35,7 +35,7 @@ function normalizeRevision(id: string, data: Record<string, unknown>): Technical
     controleQualidade: raw.controleQualidade ?? { pontosCriticos: [], defeitosNaoAceitos: [] },
     anexos: Array.isArray(raw.anexos) ? raw.anexos : [],
     dnaProduto: raw.dnaProduto ?? {
-      tempoPadraoMin: null, maquinaPrincipal: '', nivelDificuldade: 'medio', principaisErros: [],
+      tempoPadraoMin: null, maquinaPrincipal: '', nivelDificuldade: '', principaisErros: [],
     },
     blocos: raw.blocos ?? { bom: true, medidas: false, checklist: false },
     bom: Array.isArray(raw.bom) ? raw.bom : [],
@@ -137,7 +137,7 @@ export async function openOrCreateTechnicalDraft(
       controleQualidade: base?.controleQualidade ?? { pontosCriticos: [], defeitosNaoAceitos: [] },
       anexos: base?.anexos?.map((item) => ({ ...item, id: crypto.randomUUID(), path: undefined })) ?? [],
       dnaProduto: base?.dnaProduto ?? {
-        tempoPadraoMin: null, maquinaPrincipal: '', nivelDificuldade: 'medio', principaisErros: [],
+        tempoPadraoMin: null, maquinaPrincipal: '', nivelDificuldade: '', principaisErros: [],
       },
       blocos: base?.blocos ?? { bom: true, medidas: false, checklist: false },
       bom: base?.bom?.map((line) => ({ ...line, id: crypto.randomUUID() })) ?? [],
