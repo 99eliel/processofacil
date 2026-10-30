@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "tipo": "processo-facil-simulacao",
-  "id": "polo-completa-v2-ficha-real",
-  "nome": "Polo Masculina Azul Marinho — Ficha Técnica Completa",
-  "descricao": "Cenário realista com todos os blocos da Ficha Técnica oficial, POPs e OP liberada.",
+  "id": "polo-demo-completa-sem-imagens-v1",
+  "nome": "Polo Corporativa Azul Marinho — Demo Completa",
+  "descricao": "Peça demonstrativa com dados técnicos realistas para testar o Processo Fácil. Valores ilustrativos, não substituem especificação técnica do fabricante.",
   "produto": {
-    "codigo": "SIM-POLO-FT-001",
+    "codigo": "DEMO-POLO-001",
     "descricao": "Polo Masculina Azul Marinho",
     "classificacoes": {
       "familia": "Uniformes",
@@ -309,7 +309,7 @@
     "colecao": "Corporativo 2027",
     "familia": "Uniformes",
     "modelo": "Polo masculina",
-    "responsavelTecnico": "Márcia Pedro",
+    "responsavelTecnico": "Equipe Técnica — Demonstração",
     "dadosTecido": {
       "tecidoPrincipal": "Malha Piquet",
       "composicao": "50% Algodão / 50% Poliéster",
@@ -381,7 +381,7 @@
     "anexos": []
   },
   "op": {
-    "numero": "SIM-OP-FT-001",
+    "numero": "DEMO-OP-001",
     "prazo": "2026-10-30",
     "cor": "Azul Marinho",
     "variantes": [
