@@ -239,7 +239,7 @@ export default function TechnicalSheetPrintDocument({
                     <KeyValueRows rows={fabricRows} />
                   </DynamicBox>}
                   {linkedMaterials.length > 0 && <DynamicBox title="AVIAMENTOS E MATERIAIS">
-                    <table className="ft-flex-table">
+                    <table className="ft-flex-table ft-materials-table">
                       <thead><tr><th>CÓDIGO</th><th>DESCRIÇÃO</th><th>FORNECEDOR</th><th>CONSUMO / PEÇA</th></tr></thead>
                       <tbody>{linkedMaterials.map(({ line }) => <tr key={line.id}>
                         <td>{line.codigoSnapshot}</td>
@@ -256,7 +256,7 @@ export default function TechnicalSheetPrintDocument({
                 <section className="ft-flex-two ft-print-page-one-bottom">
                   {revision.medidas.length > 0 && <DynamicBox title="TABELA DE MEDIDAS">
                     <div className="ft-flex-table-scroll">
-                      <table className="ft-flex-table centered">
+                      <table className="ft-flex-table ft-measures-table centered">
                         <thead><tr><th>MEDIDA</th><th>TOL.</th>{revision.tamanhos.map((size) => <th key={size}>{size}</th>)}</tr></thead>
                         <tbody>{revision.medidas.map((row) => <tr key={row.id}>
                           <td>{row.ponto}</td>
@@ -293,7 +293,7 @@ export default function TechnicalSheetPrintDocument({
 
             {revision.operacoes.length > 0 && <>
               <DynamicBox title="SEQUÊNCIA OPERACIONAL">
-                <table className="ft-flex-table">
+                <table className="ft-flex-table ft-operations-table">
                   <thead><tr><th>Nº</th><th>OPERAÇÃO</th><th>MÁQUINA</th><th>ACESSÓRIO</th><th>REGULAGEM</th><th>TEMPO</th></tr></thead>
                   <tbody>{revision.operacoes.map((operation) => <tr key={operation.id}>
                     <td>{operation.codigo || operation.ordem * 10}</td>
@@ -309,12 +309,12 @@ export default function TechnicalSheetPrintDocument({
 
               <section className="ft-flex-two">
                 {machines.length > 0 && <DynamicBox title="MÁQUINAS NECESSÁRIAS">
-                  <table className="ft-flex-table"><thead><tr><th>OPERAÇÃO</th><th>MÁQUINA</th></tr></thead><tbody>
+                  <table className="ft-flex-table ft-machines-table"><thead><tr><th>OPERAÇÃO</th><th>MÁQUINA</th></tr></thead><tbody>
                     {machines.map((operation) => <tr key={operation.id}><td>{operation.nome}</td><td>{operation.maquina}</td></tr>)}
                   </tbody></table>
                 </DynamicBox>}
                 {machineAccessories.length > 0 && <DynamicBox title="ACESSÓRIOS / REGULAGENS">
-                  <table className="ft-flex-table"><thead><tr><th>MÁQUINA</th><th>ACESSÓRIO</th><th>REGULAGEM</th></tr></thead><tbody>
+                  <table className="ft-flex-table ft-accessories-table"><thead><tr><th>MÁQUINA</th><th>ACESSÓRIO</th><th>REGULAGEM</th></tr></thead><tbody>
                     {machineAccessories.map((operation) => <tr key={operation.id}><td>{operation.maquina}</td><td>{operation.ferramenta}</td><td>{operation.regulagem}</td></tr>)}
                   </tbody></table>
                 </DynamicBox>}
@@ -322,7 +322,7 @@ export default function TechnicalSheetPrintDocument({
             </>}
 
             {revision.agulhasLinhas.length > 0 && <DynamicBox title="AGULHAS E LINHAS">
-              <table className="ft-flex-table"><thead><tr><th>MÁQUINA</th><th>AGULHA</th><th>LINHA</th></tr></thead><tbody>
+              <table className="ft-flex-table ft-needles-table"><thead><tr><th>MÁQUINA</th><th>AGULHA</th><th>LINHA</th></tr></thead><tbody>
                 {revision.agulhasLinhas.map((item) => <tr key={item.id}><td>{item.maquina}</td><td>{item.agulha}</td><td>{item.linha}</td></tr>)}
               </tbody></table>
             </DynamicBox>}
