@@ -1,0 +1,412 @@
+import type { SimulationPackage } from '../firebase/simulationRepository'
+
+export const demoTechnicalPiece = {
+  "schemaVersion": 1,
+  "tipo": "processo-facil-simulacao",
+  "id": "polo-demo-completa-sem-imagens-v1",
+  "nome": "Polo Corporativa Azul Marinho — Demo Completa",
+  "descricao": "Peça demonstrativa com dados técnicos realistas para testar o Processo Fácil. Valores ilustrativos, não substituem especificação técnica do fabricante.",
+  "produto": {
+    "codigo": "DEMO-POLO-001",
+    "descricao": "Polo Masculina Azul Marinho",
+    "classificacoes": {
+      "familia": "Uniformes",
+      "linha": "Corporativo",
+      "modelo": "Polo masculina",
+      "cor": "Azul Marinho"
+    }
+  },
+  "materiais": [
+    {
+      "codigo": "SIM-MAT-001",
+      "descricao": "Malha Piquet Azul Marinho",
+      "categoria": "Tecidos",
+      "unidade": "kg",
+      "fornecedor": "Malhas Brasil",
+      "referenciaFornecedor": "PIQ-AZM-50"
+    },
+    {
+      "codigo": "SIM-MAT-002",
+      "descricao": "Gola pronta Polo Azul Marinho",
+      "categoria": "Aviamentos",
+      "unidade": "un",
+      "fornecedor": "Malhas Brasil",
+      "referenciaFornecedor": "GOLA-AZM"
+    },
+    {
+      "codigo": "SIM-MAT-003",
+      "descricao": "Linha 120 Poliéster Azul Marinho",
+      "categoria": "Linhas",
+      "unidade": "m",
+      "fornecedor": "Fios Centro",
+      "referenciaFornecedor": "L120-AZM"
+    },
+    {
+      "codigo": "SIM-MAT-004",
+      "descricao": "Botão 4 furos Azul Marinho",
+      "categoria": "Aviamentos",
+      "unidade": "un",
+      "fornecedor": "Aviamentos Goiás",
+      "referenciaFornecedor": "BOT-04-AZM"
+    },
+    {
+      "codigo": "SIM-MAT-005",
+      "descricao": "Etiqueta de marca",
+      "categoria": "Etiquetas",
+      "unidade": "un",
+      "fornecedor": "Etiquetas Premium",
+      "referenciaFornecedor": "ETQ-MARCA"
+    }
+  ],
+  "ficha": {
+    "construcao": "Polo masculina em malha piquet azul marinho, gola pronta, abertura frontal com três botões, mangas curtas e bainha em galoneira. Produção acompanhada por POP em cada operação.",
+    "tamanhos": [
+      "P",
+      "M",
+      "G",
+      "GG",
+      "XG"
+    ],
+    "bom": [
+      {
+        "materialCodigo": "SIM-MAT-001",
+        "consumo": 0.32,
+        "consumoPorTamanho": {
+          "P": 0.28,
+          "M": 0.3,
+          "G": 0.32,
+          "GG": 0.34,
+          "XG": 0.37
+        },
+        "perdaPercentual": 5,
+        "corRegra": "produto",
+        "observacao": "Consumo de malha varia por tamanho."
+      },
+      {
+        "materialCodigo": "SIM-MAT-002",
+        "consumo": 1,
+        "perdaPercentual": 2,
+        "corRegra": "produto",
+        "observacao": "Uma gola por peça."
+      },
+      {
+        "materialCodigo": "SIM-MAT-003",
+        "consumo": 85,
+        "perdaPercentual": 3,
+        "corRegra": "produto",
+        "observacao": "Estimativa de linha por peça."
+      },
+      {
+        "materialCodigo": "SIM-MAT-004",
+        "consumo": 3,
+        "perdaPercentual": 2,
+        "corRegra": "fixa",
+        "corFixa": "Azul Marinho",
+        "observacao": "Três botões por peça."
+      },
+      {
+        "materialCodigo": "SIM-MAT-005",
+        "consumo": 1,
+        "perdaPercentual": 1,
+        "corRegra": "nao_aplica",
+        "observacao": "Etiqueta interna da marca."
+      }
+    ],
+    "medidas": [
+      {
+        "ponto": "Peito",
+        "tolerancia": 1,
+        "valores": {
+          "P": 50,
+          "M": 52,
+          "G": 54,
+          "GG": 56,
+          "XG": 58
+        }
+      },
+      {
+        "ponto": "Comprimento",
+        "tolerancia": 1,
+        "valores": {
+          "P": 66,
+          "M": 68,
+          "G": 70,
+          "GG": 72,
+          "XG": 74
+        }
+      },
+      {
+        "ponto": "Ombro",
+        "tolerancia": 0.5,
+        "valores": {
+          "P": 42,
+          "M": 44,
+          "G": 46,
+          "GG": 48,
+          "XG": 50
+        }
+      },
+      {
+        "ponto": "Manga",
+        "tolerancia": 0.5,
+        "valores": {
+          "P": 20,
+          "M": 21,
+          "G": 22,
+          "GG": 23,
+          "XG": 24
+        }
+      },
+      {
+        "ponto": "Barra",
+        "tolerancia": 1,
+        "valores": {
+          "P": 50,
+          "M": 52,
+          "G": 54,
+          "GG": 56,
+          "XG": 58
+        }
+      }
+    ],
+    "checklist": [
+      "Medida da gola dentro da tolerância",
+      "Distância da bainha conforme padrão",
+      "Tonalidade do tecido uniforme",
+      "Centralização da etiqueta",
+      "Resistência da costura",
+      "Produto sem manchas ou furos"
+    ],
+    "operacoes": [
+      {
+        "codigo": "10",
+        "nome": "Fechar ombros",
+        "descricao": "Unir frente e costas pelos ombros, mantendo as marcações alinhadas.",
+        "maquina": "Overloque 5 fios",
+        "regulagem": "Margem 0,7 cm · ponto médio · tensão equilibrada",
+        "ferramenta": "Guia de margem",
+        "tempoPadraoMin": 0.25,
+        "dificuldade": "facil",
+        "pontosCriticos": [
+          "Ombros alinhados",
+          "Sem franzimento",
+          "Margem constante"
+        ],
+        "instrucoes": [
+          "Posicionar frente e costas direito com direito.",
+          "Alinhar as marcações dos ombros.",
+          "Costurar os dois ombros mantendo margem de 0,7 cm.",
+          "Conferir se não houve franzimento."
+        ]
+      },
+      {
+        "codigo": "20",
+        "nome": "Aplicar gola",
+        "descricao": "Aplicar a gola pronta ao decote respeitando os piques e a centralização.",
+        "maquina": "Galoneira",
+        "regulagem": "Ponto 3,0 mm · velocidade média",
+        "ferramenta": "Aparelho/guia para gola",
+        "tempoPadraoMin": 0.65,
+        "dificuldade": "dificil",
+        "pontosCriticos": [
+          "Gola centralizada",
+          "Sem torção",
+          "Curva do decote uniforme"
+        ],
+        "instrucoes": [
+          "Marcar o centro da gola e do decote.",
+          "Posicionar a gola pelos pontos de referência.",
+          "Distribuir a gola sem esticar em excesso.",
+          "Costurar acompanhando todo o decote.",
+          "Revisar simetria dos dois lados."
+        ]
+      },
+      {
+        "codigo": "30",
+        "nome": "Fechar mangas",
+        "descricao": "Fechar a lateral de cada manga mantendo a mesma margem de costura.",
+        "maquina": "Overloque 5 fios",
+        "regulagem": "Margem 0,7 cm",
+        "ferramenta": "Guia de margem",
+        "tempoPadraoMin": 0.4,
+        "dificuldade": "facil",
+        "pontosCriticos": [
+          "Margens iguais nas duas mangas",
+          "Sem repuxo"
+        ],
+        "instrucoes": [
+          "Dobrar a manga direito com direito.",
+          "Alinhar as bordas laterais.",
+          "Costurar do topo até a barra.",
+          "Repetir na segunda manga e comparar as duas."
+        ]
+      },
+      {
+        "codigo": "40",
+        "nome": "Pregar mangas",
+        "descricao": "Montar as mangas nas cavas respeitando frente, costas e piques de referência.",
+        "maquina": "Overloque 5 fios",
+        "regulagem": "Margem 0,7 cm · diferencial neutro",
+        "ferramenta": "Guia de cava",
+        "tempoPadraoMin": 0.5,
+        "dificuldade": "medio",
+        "pontosCriticos": [
+          "Manga correta em cada lado",
+          "Piques coincidentes",
+          "Sem franzido na cava"
+        ],
+        "instrucoes": [
+          "Identificar manga direita e esquerda.",
+          "Encaixar o topo da manga no ombro.",
+          "Alinhar os piques da cava.",
+          "Costurar contornando a cava sem esticar.",
+          "Conferir visualmente o caimento."
+        ]
+      },
+      {
+        "codigo": "50",
+        "nome": "Fazer bainha",
+        "descricao": "Executar bainha das mangas e da barra mantendo largura uniforme.",
+        "maquina": "Galoneira",
+        "regulagem": "Bainha 2,0 cm · ponto 3,0 mm",
+        "ferramenta": "Guia magnético",
+        "tempoPadraoMin": 0.7,
+        "dificuldade": "medio",
+        "pontosCriticos": [
+          "Largura constante",
+          "Costura paralela",
+          "Sem ondulação"
+        ],
+        "instrucoes": [
+          "Dobrar a margem conforme padrão.",
+          "Posicionar a peça no guia.",
+          "Costurar sem acelerar nas curvas.",
+          "Conferir frente e verso da bainha."
+        ]
+      },
+      {
+        "codigo": "60",
+        "nome": "Aplicar botões",
+        "descricao": "Aplicar os três botões frontais respeitando posição e espaçamento definidos.",
+        "maquina": "Botoneira",
+        "regulagem": "Programa para botão 4 furos",
+        "ferramenta": "Molde de posicionamento",
+        "tempoPadraoMin": 0.35,
+        "dificuldade": "facil",
+        "pontosCriticos": [
+          "Botões centralizados",
+          "Espaçamento uniforme",
+          "Fixação resistente"
+        ],
+        "instrucoes": [
+          "Marcar as três posições dos botões.",
+          "Posicionar a peça na botoneira.",
+          "Aplicar cada botão seguindo a marcação.",
+          "Testar manualmente a fixação.",
+          "Realizar inspeção visual final."
+        ]
+      }
+    ],
+    "cliente": "Empresa XYZ",
+    "colecao": "Corporativo 2027",
+    "familia": "Uniformes",
+    "modelo": "Polo masculina",
+    "responsavelTecnico": "Equipe Técnica — Demonstração",
+    "dadosTecido": {
+      "tecidoPrincipal": "Malha Piquet",
+      "composicao": "50% Algodão / 50% Poliéster",
+      "gramatura": "180 g/m²",
+      "largura": "1,75 m",
+      "fornecedor": "Malhas Brasil",
+      "cor": "Azul Marinho",
+      "encolhimentoMaximo": "3%",
+      "solidezCor": "Grau 4"
+    },
+    "processoCorte": {
+      "encaixe": "Corpo Polo 01",
+      "consumoTecido": "1,55 m/peça",
+      "comprimentoRisco": "6 m",
+      "alturaEnfesto": "98 cm",
+      "numeroFolhas": "10",
+      "perdasPercentual": "8%"
+    },
+    "agulhasLinhas": [
+      {
+        "maquina": "Overloque",
+        "agulha": "DCx27 nº 11",
+        "linha": "120 Poliéster"
+      },
+      {
+        "maquina": "Galoneira",
+        "agulha": "UY128 nº 11",
+        "linha": "120 Poliéster"
+      },
+      {
+        "maquina": "Reta",
+        "agulha": "DBx1 nº 11",
+        "linha": "120 Poliéster"
+      },
+      {
+        "maquina": "Botoneira",
+        "agulha": "UY128 nº 11",
+        "linha": "120 Poliéster"
+      }
+    ],
+    "controleQualidade": {
+      "pontosCriticos": [
+        "Ombros alinhados",
+        "Sem franzimento",
+        "Margem constante",
+        "Gola centralizada",
+        "Resistência da costura"
+      ],
+      "defeitosNaoAceitos": [
+        "Medida da gola fora da tolerância",
+        "Distância da bainha fora do padrão",
+        "Tonalidade não uniforme",
+        "Centralização da etiqueta incorreta",
+        "Falha de costura"
+      ]
+    },
+    "dnaProduto": {
+      "tempoPadraoMin": 2.85,
+      "maquinaPrincipal": "Overloque 5 fios",
+      "nivelDificuldade": "dificil",
+      "principaisErros": [
+        "Gola torta",
+        "Bainha ondulada",
+        "Etiqueta desalinhada",
+        "Costura aberta na cava",
+        "Diferença de tonalidade"
+      ]
+    },
+    "anexos": []
+  },
+  "op": {
+    "numero": "DEMO-OP-001",
+    "prazo": "2026-10-30",
+    "cor": "Azul Marinho",
+    "variantes": [
+      {
+        "nome": "P",
+        "quantidade": 5
+      },
+      {
+        "nome": "M",
+        "quantidade": 10
+      },
+      {
+        "nome": "G",
+        "quantidade": 10
+      },
+      {
+        "nome": "GG",
+        "quantidade": 5
+      },
+      {
+        "nome": "XG",
+        "quantidade": 2
+      }
+    ]
+  }
+} satisfies SimulationPackage
