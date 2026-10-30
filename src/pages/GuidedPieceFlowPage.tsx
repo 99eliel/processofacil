@@ -55,6 +55,12 @@ type Props = {
   openPassport: () => void
 }
 
+type PhotoSlot = {
+  tipo: 'frente' | 'costas' | 'detalhe_1' | 'detalhe_2' | 'peca_perfeita'
+  label: string
+  file: File | null
+}
+
 type MaterialDraft = {
   id: string
   origem: 'existente' | 'novo'
@@ -224,13 +230,19 @@ export default function GuidedPieceFlowPage({
     modelo: '',
     cor: '',
     responsavelTecnico: '',
-    tamanhos: 'P, M, G, GG',
+    tamanhos: '',
     construcao: '',
   })
 
   const sizes = useMemo(() => parseSizes(piece.tamanhos), [piece.tamanhos])
 
-  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [photoSlots, setPhotoSlots] = useState<PhotoSlot[]>([
+    { tipo: 'frente', label: 'Foto da frente', file: null },
+    { tipo: 'costas', label: 'Foto das costas', file: null },
+    { tipo: 'detalhe_1', label: 'Detalhe 1', file: null },
+    { tipo: 'detalhe_2', label: 'Detalhe 2', file: null },
+    { tipo: 'peca_perfeita', label: 'Peça perfeita / referência final', file: null },
+  ])
   const [fabric, setFabric] = useState({
     tecidoPrincipal: '',
     composicao: '',
@@ -249,11 +261,9 @@ export default function GuidedPieceFlowPage({
     numeroFolhas: '',
     perdasPercentual: '',
   })
-  const [needleThreads, setNeedleThreads] = useState<NeedleThreadDraft[]>([
-    { id: crypto.randomUUID(), maquina: '', agulha: '', linha: '' },
-  ])
-  const [qualityCritical, setQualityCritical] = useState<string[]>([''])
-  const [qualityDefects, setQualityDefects] = useState<string[]>([''])
+  const [needleThreads, setNeedleThreads] = useState<NeedleThreadDraft[]>([])
+  const [qualityCritical, setQualityCritical] = useState<string[]>([])
+  const [qualityDefects, setQualityDefects] = useState<string[]>([])
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([
     { tipo: 'molde', nome: 'Molde PDF', file: null },
     { tipo: 'encaixe', nome: 'Encaixe Audaces', file: null },
@@ -269,12 +279,11 @@ export default function GuidedPieceFlowPage({
     nivelDificuldade: 'medio' as 'facil' | 'medio' | 'dificil',
     principaisErros: '',
   })
-  const [materials, setMaterials] = useState<MaterialDraft[]>([createEmptyMaterial()])
+  const [materials, setMaterials] = useState<MaterialDraft[]>([])
   const [measurements, setMeasurements] = useState<MeasurementDraft[]>([])
-  const [operations, setOperations] = useState<OperationDraft[]>([createEmptyOperation(1)])
-  const [qualityItems, setQualityItems] = useState<string[]>([''])
+  const [operations, setOperations] = useState<OperationDraft[]>([])
   const [production, setProduction] = useState({
-    criarOp: true,
+    criarOp: false,
     cor: '',
     prazo: '',
   })
@@ -283,7 +292,7 @@ export default function GuidedPieceFlowPage({
   const totalPieces = sizes.reduce((sum, size) => sum + Number(quantities[size] ?? 0), 0)
   const completedSections = [
     Boolean(piece.descricao.trim() && sizes.length > 0 && piece.construcao.trim()),
-    imageFiles.length > 0,
+    photoSlots.some((slot) => slot.file),
     Boolean(fabric.tecidoPrincipal.trim()),
     materials.some((item) => item.origem === 'existente' ? item.materialId : item.descricao.trim()),
     measurements.length > 0,
@@ -518,13 +527,13 @@ export default function GuidedPieceFlowPage({
         operacoes: technicalOperations,
       }
 
-      for (let index = 0; index < imageFiles.slice(0, 6).length; index += 1) {
-        const file = imageFiles[index]
+      for (const slot of photoSlots) {
+        if (!slot.file) continue
         const uploaded = await uploadTechnicalSheetImage(
           empresaId,
           generatedCode,
           draft.numero,
-          file,
+          slot.file,
         )
         draft = {
           ...draft,
@@ -533,7 +542,8 @@ export default function GuidedPieceFlowPage({
             {
               url: uploaded.url,
               path: uploaded.path,
-              legenda: index === 0 ? 'Imagem principal da peça' : `Referência ${index + 1}`,
+              legenda: slot.label,
+              tipo: slot.tipo,
               ordem: draft.imagens.length + 1,
             },
           ],
@@ -687,14 +697,24 @@ export default function GuidedPieceFlowPage({
           </div>
         </FormSection>
 
-        <FormSection number="2" icon={ImagePlus} title="Referências visuais" text="Fotos da peça, frente, costas e detalhes.">
-          <label className="piece-complete-upload">
-            <Upload size={24} />
-            <strong>Adicionar fotos da peça</strong>
-            <span>Até 6 imagens. Você pode selecionar várias de uma vez.</span>
-            <input type="file" accept="image/*" multiple onChange={(e) => setImageFiles(Array.from(e.target.files ?? []).slice(0, 6))} />
-          </label>
-          {imageFiles.length > 0 && <div className="piece-file-chips">{imageFiles.map((file) => <span key={file.name}>{file.name}</span>)}</div>}
+        <FormSection number="2" icon={ImagePlus} title="Fotos e referências visuais" text="Envie cada imagem no campo correto. A Ficha Técnica não cria imagens automaticamente.">
+          <div className="piece-photo-slot-grid">
+            {photoSlots.map((slot) => <label key={slot.tipo} className={`piece-photo-slot ${slot.file ? 'filled' : ''}`}>
+              <ImagePlus size={22} />
+              <strong>{slot.label}</strong>
+              <span>{slot.file?.name || 'Selecionar imagem'}</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setPhotoSlots(photoSlots.map((item) => item.tipo === slot.tipo
+                  ? { ...item, file: e.target.files?.[0] ?? null }
+                  : item))}
+              />
+            </label>)}
+          </div>
+          <div className="piece-photo-help">
+            Frente e costas alimentam o topo da Ficha. Detalhes ocupam os quadros menores. “Peça perfeita” alimenta o DNA do produto.
+          </div>
         </FormSection>
 
         <FormSection number="3" icon={FileText} title="Dados do tecido" text="Este bloco preenche diretamente o quadro DADOS DO TECIDO da Ficha Técnica.">
@@ -839,7 +859,7 @@ export default function GuidedPieceFlowPage({
         <strong>{completedSections}/12 blocos</strong>
         <ul>
           <li className={piece.descricao && piece.construcao ? 'done' : ''}>Identificação</li>
-          <li className={imageFiles.length ? 'done' : ''}>Fotos</li>
+          <li className={photoSlots.some((slot) => slot.file) ? 'done' : ''}>Fotos</li>
           <li className={fabric.tecidoPrincipal ? 'done' : ''}>Tecido</li>
           <li className={materials.some((item) => item.materialId || item.descricao) ? 'done' : ''}>Aviamentos</li>
           <li className={measurements.length ? 'done' : ''}>Medidas</li>
