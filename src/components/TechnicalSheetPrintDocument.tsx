@@ -39,10 +39,11 @@ function statusText(status: TechnicalRevision['status']) {
   return 'RASCUNHO'
 }
 
-function difficultyLabel(value: 'facil' | 'medio' | 'dificil') {
+function difficultyLabel(value: '' | 'facil' | 'medio' | 'dificil') {
   if (value === 'facil') return 'FÁCIL'
+  if (value === 'medio') return 'MÉDIO'
   if (value === 'dificil') return 'DIFÍCIL'
-  return 'MÉDIO'
+  return ''
 }
 
 function hasText(...values: Array<string | undefined | null>) {
@@ -115,7 +116,7 @@ export default function TechnicalSheetPrintDocument({
     ['FAMÍLIA', revision.familia],
     ['MODELO', revision.modelo],
     ['GRADE', revision.tamanhos.join(' / ')],
-    ['RESPONSÁVEL TÉCNICO', revision.responsavelTecnico || responsibleName || ''],
+    ['RESPONSÁVEL TÉCNICO', revision.responsavelTecnico],
   ].filter(([, value]) => hasText(value))
 
   const fabricRows = [
@@ -147,7 +148,8 @@ export default function TechnicalSheetPrintDocument({
     || totalTime != null
     || mainMachine
     || revision.dnaProduto.principaisErros.length
-    || activeAttachments.find((item) => item.tipo === 'video'),
+    || activeAttachments.find((item) => item.tipo === 'video')
+    || revision.dnaProduto.nivelDificuldade,
   )
 
   const contentBlocks = [
@@ -338,7 +340,7 @@ export default function TechnicalSheetPrintDocument({
                   {totalTime != null && <p><span>TEMPO PADRÃO</span><b>{formatNumber(totalTime)} min</b></p>}
                   {mainMachine && <p><span>MÁQUINA PRINCIPAL</span><b>{mainMachine}</b></p>}
                 </div>}
-                {(revision.dnaProduto.principaisErros.length > 0 || totalTime != null || mainMachine) && <div className="difficulty">
+                {revision.dnaProduto.nivelDificuldade && <div className="difficulty">
                   <strong>NÍVEL DE DIFICULDADE</strong>
                   <b>{difficultyLabel(revision.dnaProduto.nivelDificuldade)}</b>
                 </div>}
@@ -348,7 +350,7 @@ export default function TechnicalSheetPrintDocument({
 
           <footer className="ft-flex-footer">
             <span>Documento mestre do Processo Fácil.</span>
-            <strong>{revision.responsavelTecnico || responsibleName || company?.nomeFantasia || 'Processo Fácil'}</strong>
+            <strong>{revision.responsavelTecnico || company?.nomeFantasia || 'Processo Fácil'}</strong>
           </footer>
         </article>
       </div>
