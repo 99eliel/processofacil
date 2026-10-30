@@ -167,6 +167,15 @@ export default function TechnicalSheetPrintDocument({
     hasDna,
   ].filter(Boolean).length
 
+  const hasSecondPage = Boolean(
+    revision.operacoes.length > 0
+    || revision.agulhasLinhas.length > 0
+    || hasQuality
+    || cuttingRows.length > 0
+    || activeAttachments.length > 0
+    || hasDna,
+  )
+
   const print = () => window.setTimeout(() => window.print(), 60)
 
   return createPortal(
@@ -184,83 +193,103 @@ export default function TechnicalSheetPrintDocument({
 
       <div className="technical-print-root ft-flex-root">
         <article className="ft-flex-document">
-          <header className="ft-flex-header">
-            <div className="ft-flex-brand">
-              <div className="ft-flex-logo">
-                {company?.logoUrl ? <img src={company.logoUrl} alt="" /> : <span>PF</span>}
+          <div className={`ft-print-page ft-print-page-one ${hasSecondPage ? 'has-next' : ''}`}>
+            <header className="ft-flex-header">
+              <div className="ft-flex-brand">
+                <div className="ft-flex-logo">
+                  {company?.logoUrl ? <img src={company.logoUrl} alt="" /> : <span>PF</span>}
+                </div>
+                <div>
+                  <h1>FICHA TÉCNICA</h1>
+                  <p>PASSAPORTE DIGITAL DO PRODUTO</p>
+                </div>
               </div>
-              <div>
-                <h1>FICHA TÉCNICA</h1>
-                <p>PASSAPORTE DIGITAL DO PRODUTO</p>
+              <div className="ft-flex-meta">
+                <Meta label="REFERÊNCIA" value={revision.produtoCodigo} />
+                <Meta label="VERSÃO" value={String(revision.numero).padStart(2, '0')} />
+                {timestampDate(revision.aprovadoEm) && <Meta label="DATA" value={timestampDate(revision.aprovadoEm)} />}
+                <Meta label="STATUS" value={statusText(revision.status)} approved={revision.status === 'padrao'} />
               </div>
-            </div>
-            <div className="ft-flex-meta">
-              <Meta label="REFERÊNCIA" value={revision.produtoCodigo} />
-              <Meta label="VERSÃO" value={String(revision.numero).padStart(2, '0')} />
-              {timestampDate(revision.aprovadoEm) && <Meta label="DATA" value={timestampDate(revision.aprovadoEm)} />}
-              <Meta label="STATUS" value={statusText(revision.status)} approved={revision.status === 'padrao'} />
-            </div>
-          </header>
+            </header>
 
-          {contentBlocks === 0 ? (
-            <section className="ft-flex-empty">
-              <FileText size={34} />
-              <strong>Nenhum dado técnico foi cadastrado ainda.</strong>
-              <span>Preencha o cadastro da peça para montar a Ficha Técnica.</span>
-            </section>
-          ) : <>
-            {(photos.length > 0 || identityRows.length > 0) && (
-              <section className="ft-flex-hero-grid">
-                {photos.length > 0 && <div className="ft-flex-photo-grid">
-                  {photos.map(({ label, image }) => <figure key={label}>
-                    <figcaption>{label}</figcaption>
-                    <img src={image!.url} alt={label} />
-                  </figure>)}
-                </div>}
-                {identityRows.length > 0 && <DynamicBox title="IDENTIFICAÇÃO">
-                  <KeyValueRows rows={identityRows} />
-                </DynamicBox>}
+            {contentBlocks === 0 ? (
+              <section className="ft-flex-empty">
+                <FileText size={34} />
+                <strong>Nenhum dado técnico foi cadastrado ainda.</strong>
+                <span>Preencha o cadastro da peça para montar a Ficha Técnica.</span>
               </section>
-            )}
+            ) : <>
+              {(photos.length > 0 || identityRows.length > 0) && (
+                <section className="ft-flex-hero-grid">
+                  {photos.length > 0 && <div className="ft-flex-photo-grid">
+                    {photos.map(({ label, image }) => <figure key={label}>
+                      <figcaption>{label}</figcaption>
+                      <img src={image!.url} alt={label} />
+                    </figure>)}
+                  </div>}
+                  {identityRows.length > 0 && <DynamicBox title="IDENTIFICAÇÃO">
+                    <KeyValueRows rows={identityRows} />
+                  </DynamicBox>}
+                </section>
+              )}
 
-            {(fabricRows.length > 0 || linkedMaterials.length > 0) && (
-              <section className="ft-flex-two">
-                {fabricRows.length > 0 && <DynamicBox title="DADOS DO TECIDO">
-                  <KeyValueRows rows={fabricRows} />
-                </DynamicBox>}
-                {linkedMaterials.length > 0 && <DynamicBox title="AVIAMENTOS E MATERIAIS">
-                  <table className="ft-flex-table">
-                    <thead><tr><th>CÓDIGO</th><th>DESCRIÇÃO</th><th>FORNECEDOR</th><th>CONSUMO / PEÇA</th></tr></thead>
-                    <tbody>{linkedMaterials.map(({ line }) => <tr key={line.id}>
-                      <td>{line.codigoSnapshot}</td>
-                      <td>{line.descricaoSnapshot}</td>
-                      <td>{line.fornecedorSnapshot || ''}</td>
-                      <td>{formatNumber(line.consumo)} {line.unidade}</td>
-                    </tr>)}</tbody>
-                  </table>
-                </DynamicBox>}
-              </section>
-            )}
-
-            {(revision.medidas.length > 0 || technicalDrawing?.url) && (
-              <section className="ft-flex-two">
-                {revision.medidas.length > 0 && <DynamicBox title="TABELA DE MEDIDAS">
-                  <div className="ft-flex-table-scroll">
-                    <table className="ft-flex-table centered">
-                      <thead><tr><th>MEDIDA</th><th>TOL.</th>{revision.tamanhos.map((size) => <th key={size}>{size}</th>)}</tr></thead>
-                      <tbody>{revision.medidas.map((row) => <tr key={row.id}>
-                        <td>{row.ponto}</td>
-                        <td>± {formatNumber(row.tolerancia)}</td>
-                        {revision.tamanhos.map((size) => <td key={size}>{row.valores.find((value) => value.tamanho === size)?.valor ?? ''}</td>)}
+              {(fabricRows.length > 0 || linkedMaterials.length > 0) && (
+                <section className="ft-flex-two">
+                  {fabricRows.length > 0 && <DynamicBox title="DADOS DO TECIDO">
+                    <KeyValueRows rows={fabricRows} />
+                  </DynamicBox>}
+                  {linkedMaterials.length > 0 && <DynamicBox title="AVIAMENTOS E MATERIAIS">
+                    <table className="ft-flex-table">
+                      <thead><tr><th>CÓDIGO</th><th>DESCRIÇÃO</th><th>FORNECEDOR</th><th>CONSUMO / PEÇA</th></tr></thead>
+                      <tbody>{linkedMaterials.map(({ line }) => <tr key={line.id}>
+                        <td>{line.codigoSnapshot}</td>
+                        <td>{line.descricaoSnapshot}</td>
+                        <td>{line.fornecedorSnapshot || ''}</td>
+                        <td>{formatNumber(line.consumo)} {line.unidade}</td>
                       </tr>)}</tbody>
                     </table>
-                  </div>
-                </DynamicBox>}
-                {technicalDrawing?.url && <DynamicBox title="DESENHO TÉCNICO">
-                  <div className="ft-flex-drawing"><img src={technicalDrawing.url} alt="Desenho técnico" /></div>
-                </DynamicBox>}
-              </section>
-            )}
+                  </DynamicBox>}
+                </section>
+              )}
+
+              {(revision.medidas.length > 0 || technicalDrawing?.url) && (
+                <section className="ft-flex-two ft-print-page-one-bottom">
+                  {revision.medidas.length > 0 && <DynamicBox title="TABELA DE MEDIDAS">
+                    <div className="ft-flex-table-scroll">
+                      <table className="ft-flex-table centered">
+                        <thead><tr><th>MEDIDA</th><th>TOL.</th>{revision.tamanhos.map((size) => <th key={size}>{size}</th>)}</tr></thead>
+                        <tbody>{revision.medidas.map((row) => <tr key={row.id}>
+                          <td>{row.ponto}</td>
+                          <td>± {formatNumber(row.tolerancia)}</td>
+                          {revision.tamanhos.map((size) => <td key={size}>{row.valores.find((value) => value.tamanho === size)?.valor ?? ''}</td>)}
+                        </tr>)}</tbody>
+                      </table>
+                    </div>
+                  </DynamicBox>}
+                  {technicalDrawing?.url && <DynamicBox title="DESENHO TÉCNICO">
+                    <div className="ft-flex-drawing"><img src={technicalDrawing.url} alt="Desenho técnico" /></div>
+                  </DynamicBox>}
+                </section>
+              )}
+            </>}
+
+            {!hasSecondPage && <footer className="ft-flex-footer">
+              <span>Documento mestre do Processo Fácil.</span>
+              <strong>{revision.responsavelTecnico || company?.nomeFantasia || 'Processo Fácil'}</strong>
+            </footer>}
+          </div>
+
+          {hasSecondPage && <div className="ft-print-page ft-print-page-two">
+            <div className="ft-print-continuation-header">
+              <div>
+                <strong>FICHA TÉCNICA · CONTINUAÇÃO</strong>
+                <span>{revision.produtoDescricao}</span>
+              </div>
+              <div>
+                <span>REFERÊNCIA</span><strong>{revision.produtoCodigo}</strong>
+                <span>REV.</span><strong>{String(revision.numero).padStart(2, '0')}</strong>
+              </div>
+            </div>
 
             {revision.operacoes.length > 0 && <>
               <DynamicBox title="SEQUÊNCIA OPERACIONAL">
@@ -346,12 +375,12 @@ export default function TechnicalSheetPrintDocument({
                 </div>}
               </div>
             </section>}
-          </>}
 
-          <footer className="ft-flex-footer">
-            <span>Documento mestre do Processo Fácil.</span>
-            <strong>{revision.responsavelTecnico || company?.nomeFantasia || 'Processo Fácil'}</strong>
-          </footer>
+            <footer className="ft-flex-footer">
+              <span>Documento mestre do Processo Fácil.</span>
+              <strong>{revision.responsavelTecnico || company?.nomeFantasia || 'Processo Fácil'}</strong>
+            </footer>
+          </div>}
         </article>
       </div>
     </div>,
