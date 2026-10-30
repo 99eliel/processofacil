@@ -5,7 +5,6 @@ import {
   Play,
   Printer,
   QrCode,
-  Video,
   X,
 } from 'lucide-react'
 import type {
