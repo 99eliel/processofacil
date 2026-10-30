@@ -483,6 +483,67 @@ export async function importSimulationPackage(
   }
 }
 
+
+export async function importDemoTechnicalPiece(
+  empresaId: string,
+  uid: string,
+  raw: unknown,
+): Promise<SimulationImportResult> {
+  validatePackage(raw)
+  const pkg = raw
+  const imported = await importSimulationPackage(empresaId, uid, pkg)
+
+  const productCode = pkg.produto.codigo.trim().toUpperCase()
+  const orderId = `sim-${slug(pkg.id)}`
+  const batch = writeBatch(db)
+
+  batch.set(doc(db, 'empresas', empresaId, 'produtos', productCode), {
+    revisaoVigente: null,
+    ultimaRevisao: 1,
+    alteradoEm: serverTimestamp(),
+    alteradoPor: uid,
+  }, { merge: true })
+
+  batch.set(doc(db, 'empresas', empresaId, 'produtos', productCode, 'revisoes', '001'), {
+    status: 'rascunho',
+    aprovadoPor: '',
+    aprovadoEm: null,
+    motivoRevisao: 'Peça demonstrativa pronta para receber imagens e ajustes finais',
+    alteradoEm: serverTimestamp(),
+    alteradoPor: uid,
+  }, { merge: true })
+
+  batch.set(doc(db, 'empresas', empresaId, 'fichas', productCode), {
+    produtoCodigo: productCode,
+    produtoDescricao: pkg.produto.descricao.trim(),
+    revisaoVigente: null,
+    revisaoRascunho: 1,
+    status: 'rascunho',
+    alteradoEm: serverTimestamp(),
+    alteradoPor: uid,
+  }, { merge: true })
+
+  batch.delete(doc(db, 'empresas', empresaId, 'ordensProducao', orderId))
+
+  batch.set(doc(collection(db, 'empresas', empresaId, 'auditoria')), {
+    entidade: 'ficha_tecnica',
+    entidadeId: productCode,
+    acao: 'demo_tecnica_criada',
+    resumo: `${pkg.produto.descricao.trim()} · REV 01 em rascunho`,
+    uid,
+    em: serverTimestamp(),
+  })
+
+  await batch.commit()
+
+  return {
+    ...imported,
+    orderId: '',
+    orderNumber: '',
+    alreadyExists: imported.alreadyExists,
+  }
+}
+
 export async function resetSimulationJourney(
   empresaId: string,
   uid: string,
