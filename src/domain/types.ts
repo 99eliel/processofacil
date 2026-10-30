@@ -198,6 +198,53 @@ export type TechnicalOperation = {
   midias: TechnicalMedia[]
 }
 
+export type TechnicalFabricData = {
+  tecidoPrincipal: string
+  composicao: string
+  gramatura: string
+  largura: string
+  fornecedor: string
+  cor: string
+  encolhimentoMaximo: string
+  solidezCor: string
+}
+
+export type TechnicalCuttingProcess = {
+  encaixe: string
+  consumoTecido: string
+  comprimentoRisco: string
+  alturaEnfesto: string
+  numeroFolhas: string
+  perdasPercentual: string
+}
+
+export type TechnicalNeedleThread = {
+  id: string
+  maquina: string
+  agulha: string
+  linha: string
+}
+
+export type TechnicalQualityControl = {
+  pontosCriticos: string[]
+  defeitosNaoAceitos: string[]
+}
+
+export type TechnicalAttachment = {
+  id: string
+  tipo: 'molde' | 'encaixe' | 'desenho' | 'pop' | 'video' | 'relatorio_medidas' | 'aprovacao_cliente' | 'outro'
+  nome: string
+  url?: string
+  path?: string
+}
+
+export type TechnicalProductDna = {
+  tempoPadraoMin: number | null
+  maquinaPrincipal: string
+  nivelDificuldade: 'facil' | 'medio' | 'dificil'
+  principaisErros: string[]
+}
+
 export type TechnicalRevision = {
   id: string
   numero: number
@@ -206,6 +253,17 @@ export type TechnicalRevision = {
   produtoDescricao: string
   motivoRevisao?: string
   construcao: string
+  cliente: string
+  colecao: string
+  familia: string
+  modelo: string
+  responsavelTecnico: string
+  dadosTecido: TechnicalFabricData
+  processoCorte: TechnicalCuttingProcess
+  agulhasLinhas: TechnicalNeedleThread[]
+  controleQualidade: TechnicalQualityControl
+  anexos: TechnicalAttachment[]
+  dnaProduto: TechnicalProductDna
   blocos: {
     bom: boolean
     medidas: boolean
