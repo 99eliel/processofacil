@@ -12,6 +12,7 @@ import {
   Upload,
 } from 'lucide-react'
 import { useSystem } from '../system/SystemProvider'
+import { demoTechnicalPiece } from '../data/demoTechnicalPiece'
 import {
   importDemoTechnicalPiece,
   importSimulationPackage,
@@ -95,7 +96,17 @@ export default function SimulationPage({ notify, openOperator, openPassport }: P
     }
   }
 
-  const sampleUrl = `${import.meta.env.BASE_URL}samples/simulacao-polo-completa.json`
+  const downloadDemoJson = () => {
+    const blob = new Blob([JSON.stringify(demoTechnicalPiece, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'processo-facil-demo-polo-completa.json'
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(url)
+  }
 
   const createDemoPiece = async () => {
     if (!empresaId || !user) return
@@ -103,10 +114,7 @@ export default function SimulationPage({ notify, openOperator, openPassport }: P
     setError('')
     setResult(null)
     try {
-      const response = await fetch(sampleUrl, { cache: 'no-store' })
-      if (!response.ok) throw new Error('Não foi possível carregar a peça demonstrativa.')
-      const text = await response.text()
-      const parsed = parseSimulationFile(text)
+      const parsed = structuredClone(demoTechnicalPiece)
       setPkg(parsed)
       setFileName('Peça demonstrativa interna')
       const imported = await importDemoTechnicalPiece(empresaId, user.uid, parsed)
@@ -139,9 +147,9 @@ export default function SimulationPage({ notify, openOperator, openPassport }: P
           {busy ? <Loader2 className="spin" size={17} /> : <Sparkles size={17} />}
           Criar peça demo completa
         </button>
-        <a className="secondary-button simulation-download" href={sampleUrl} download>
+        <button className="secondary-button simulation-download" type="button" onClick={downloadDemoJson}>
           <FileText size={17} /> Baixar JSON
-        </a>
+        </button>
       </div>
     </section>
 
