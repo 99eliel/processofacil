@@ -32,6 +32,7 @@ import {
 } from '../firebase/productionOrderRepository'
 import {
   uploadOperationMedia,
+  uploadTechnicalAttachment,
   uploadTechnicalSheetImage,
 } from '../firebase/storageRepository'
 import type {
@@ -69,6 +70,19 @@ type MeasurementDraft = {
   valores: Record<string, number | ''>
 }
 
+type AttachmentDraft = {
+  tipo: 'molde' | 'encaixe' | 'desenho' | 'pop' | 'video' | 'relatorio_medidas' | 'aprovacao_cliente'
+  nome: string
+  file: File | null
+}
+
+type NeedleThreadDraft = {
+  id: string
+  maquina: string
+  agulha: string
+  linha: string
+}
+
 type OperationDraft = {
   id: string
   codigo: string
@@ -76,6 +90,8 @@ type OperationDraft = {
   descricao: string
   maquina: string
   tempoPadraoMin: number | ''
+  ferramenta: string
+  regulagem: string
   dificuldade: 'facil' | 'medio' | 'dificil'
   pontosCriticos: string
   instrucoes: string
@@ -121,6 +137,8 @@ function createEmptyOperation(order: number): OperationDraft {
     descricao: '',
     maquina: '',
     tempoPadraoMin: '',
+    ferramenta: '',
+    regulagem: '',
     dificuldade: 'medio',
     pontosCriticos: '',
     instrucoes: '',
@@ -197,9 +215,12 @@ export default function GuidedPieceFlowPage({
   const [piece, setPiece] = useState({
     descricao: '',
     codigo: '',
+    cliente: '',
+    colecao: '',
     familia: '',
     modelo: '',
     cor: '',
+    responsavelTecnico: '',
     tamanhos: 'P, M, G, GG',
     construcao: '',
   })
@@ -207,6 +228,44 @@ export default function GuidedPieceFlowPage({
   const sizes = useMemo(() => parseSizes(piece.tamanhos), [piece.tamanhos])
 
   const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [fabric, setFabric] = useState({
+    tecidoPrincipal: '',
+    composicao: '',
+    gramatura: '',
+    largura: '',
+    fornecedor: '',
+    cor: '',
+    encolhimentoMaximo: '',
+    solidezCor: '',
+  })
+  const [cutting, setCutting] = useState({
+    encaixe: '',
+    consumoTecido: '',
+    comprimentoRisco: '',
+    alturaEnfesto: '',
+    numeroFolhas: '',
+    perdasPercentual: '',
+  })
+  const [needleThreads, setNeedleThreads] = useState<NeedleThreadDraft[]>([
+    { id: crypto.randomUUID(), maquina: '', agulha: '', linha: '' },
+  ])
+  const [qualityCritical, setQualityCritical] = useState<string[]>([''])
+  const [qualityDefects, setQualityDefects] = useState<string[]>([''])
+  const [attachments, setAttachments] = useState<AttachmentDraft[]>([
+    { tipo: 'molde', nome: 'Molde PDF', file: null },
+    { tipo: 'encaixe', nome: 'Encaixe Audaces', file: null },
+    { tipo: 'desenho', nome: 'Desenho Técnico', file: null },
+    { tipo: 'pop', nome: 'Procedimento Operacional (POP)', file: null },
+    { tipo: 'video', nome: 'Vídeo Operacional', file: null },
+    { tipo: 'relatorio_medidas', nome: 'Relatório de Medidas', file: null },
+    { tipo: 'aprovacao_cliente', nome: 'Aprovação do Cliente', file: null },
+  ])
+  const [dna, setDna] = useState({
+    tempoPadraoMin: '',
+    maquinaPrincipal: '',
+    nivelDificuldade: 'medio' as 'facil' | 'medio' | 'dificil',
+    principaisErros: '',
+  })
   const [materials, setMaterials] = useState<MaterialDraft[]>([createEmptyMaterial()])
   const [measurements, setMeasurements] = useState<MeasurementDraft[]>([])
   const [operations, setOperations] = useState<OperationDraft[]>([createEmptyOperation(1)])
@@ -222,10 +281,15 @@ export default function GuidedPieceFlowPage({
   const completedSections = [
     Boolean(piece.descricao.trim() && sizes.length > 0 && piece.construcao.trim()),
     imageFiles.length > 0,
+    Boolean(fabric.tecidoPrincipal.trim()),
     materials.some((item) => item.origem === 'existente' ? item.materialId : item.descricao.trim()),
     measurements.length > 0,
     operations.some((item) => item.nome.trim() && item.descricao.trim()),
-    qualityItems.some((item) => item.trim()),
+    needleThreads.some((item) => item.maquina.trim() || item.agulha.trim() || item.linha.trim()),
+    qualityCritical.some((item) => item.trim()) || qualityDefects.some((item) => item.trim()),
+    Boolean(cutting.encaixe.trim() || cutting.consumoTecido.trim()),
+    attachments.some((item) => item.file),
+    Boolean(dna.maquinaPrincipal.trim() || dna.tempoPadraoMin || dna.principaisErros.trim()),
     !production.criarOp || totalPieces > 0,
   ].filter(Boolean).length
 
@@ -292,6 +356,10 @@ export default function GuidedPieceFlowPage({
         codigo: generatedCode,
         descricao: piece.descricao,
         classificacoes: {
+          cliente: piece.cliente.trim(),
+          colecao: piece.colecao.trim(),
+          cliente: piece.cliente.trim(),
+          colecao: piece.colecao.trim(),
           familia: piece.familia.trim(),
           modelo: piece.modelo.trim(),
           cor: piece.cor.trim(),
@@ -396,8 +464,8 @@ export default function GuidedPieceFlowPage({
           nome: item.nome.trim(),
           descricao: item.descricao.trim(),
           maquina: item.maquina.trim(),
-          regulagem: '',
-          ferramenta: '',
+          regulagem: item.regulagem.trim(),
+          ferramenta: item.ferramenta.trim(),
           tempoPadraoMin: item.tempoPadraoMin === '' ? null : Number(item.tempoPadraoMin),
           dificuldade: item.dificuldade,
           pontosCriticos: item.pontosCriticos
@@ -414,6 +482,27 @@ export default function GuidedPieceFlowPage({
       let draft: TechnicalRevision = {
         ...revision,
         construcao: piece.construcao.trim(),
+        cliente: piece.cliente.trim(),
+        colecao: piece.colecao.trim(),
+        familia: piece.familia.trim(),
+        modelo: piece.modelo.trim(),
+        responsavelTecnico: piece.responsavelTecnico.trim(),
+        dadosTecido: { ...fabric, cor: fabric.cor.trim() || piece.cor.trim() },
+        processoCorte: cutting,
+        agulhasLinhas: needleThreads
+          .filter((item) => item.maquina.trim() || item.agulha.trim() || item.linha.trim())
+          .map((item) => ({ ...item })),
+        controleQualidade: {
+          pontosCriticos: qualityCritical.map((item) => item.trim()).filter(Boolean),
+          defeitosNaoAceitos: qualityDefects.map((item) => item.trim()).filter(Boolean),
+        },
+        anexos: [],
+        dnaProduto: {
+          tempoPadraoMin: dna.tempoPadraoMin === '' ? null : Number(dna.tempoPadraoMin),
+          maquinaPrincipal: dna.maquinaPrincipal.trim(),
+          nivelDificuldade: dna.nivelDificuldade,
+          principaisErros: dna.principaisErros.split('\n').map((item) => item.trim()).filter(Boolean),
+        },
         tamanhos: sizes,
         blocos: {
           bom: bom.length > 0,
@@ -476,6 +565,27 @@ export default function GuidedPieceFlowPage({
       }
 
       draft = { ...draft, operacoes: operationsWithMedia }
+
+      const uploadedAttachments = []
+      for (const attachment of attachments) {
+        if (!attachment.file) continue
+        const uploaded = await uploadTechnicalAttachment(
+          empresaId,
+          generatedCode,
+          draft.numero,
+          attachment.tipo,
+          attachment.file,
+        )
+        uploadedAttachments.push({
+          id: crypto.randomUUID(),
+          tipo: attachment.tipo,
+          nome: attachment.nome,
+          url: uploaded.url,
+          path: uploaded.path,
+        })
+      }
+      draft = { ...draft, anexos: uploadedAttachments }
+
       await saveTechnicalDraft(empresaId, user.uid, draft)
       await submitTechnicalRevision(empresaId, user.uid, draft)
       await publishTechnicalRevision(empresaId, user.uid, {
