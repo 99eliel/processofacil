@@ -1420,3 +1420,115 @@
     max-width: 100% !important;
   }
 }
+
+
+/* Paginação planejada da Ficha Técnica */
+.ft-print-page {
+  display: contents;
+}
+.ft-print-continuation-header {
+  display: none;
+}
+
+@media print {
+  .ft-flex-document {
+    padding: 0 !important;
+    min-height: 0 !important;
+    background: transparent !important;
+  }
+
+  .ft-print-page {
+    display: block !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
+    box-sizing: border-box !important;
+    padding: 5mm !important;
+    background: white !important;
+  }
+
+  .ft-print-page-one.has-next {
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+
+  .ft-print-page-one,
+  .ft-print-page-two {
+    min-height: 297mm !important;
+  }
+
+  .ft-print-page-two {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+
+  .ft-print-continuation-header {
+    min-height: 14mm;
+    margin-bottom: 2mm;
+    padding: 2.5mm 3mm;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5mm;
+    color: white;
+    background: linear-gradient(105deg,#061a38,#0a355f 62%,#0c6d98);
+    border-radius: 2mm;
+  }
+
+  .ft-print-continuation-header > div:first-child strong,
+  .ft-print-continuation-header > div:first-child span {
+    display: block;
+  }
+
+  .ft-print-continuation-header > div:first-child strong {
+    font-size: 3mm;
+  }
+
+  .ft-print-continuation-header > div:first-child span {
+    margin-top: .7mm;
+    color: #b8d4e6;
+    font-size: 1.7mm;
+  }
+
+  .ft-print-continuation-header > div:last-child {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: .8mm 1.6mm;
+    align-items: center;
+  }
+
+  .ft-print-continuation-header > div:last-child span {
+    color: #a6c5d8;
+    font-size: 1.35mm;
+    font-weight: 900;
+  }
+
+  .ft-print-continuation-header > div:last-child strong {
+    color: white;
+    font-size: 1.8mm;
+  }
+
+  .ft-print-page .ft-flex-two,
+  .ft-print-page .ft-flex-box,
+  .ft-print-page .ft-flex-dna {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .ft-print-page-one-bottom {
+    margin-bottom: 0 !important;
+  }
+
+  .ft-print-page-two .ft-flex-box,
+  .ft-print-page-two .ft-flex-dna {
+    margin-top: 2mm !important;
+  }
+
+  .ft-print-page-two .ft-flex-two {
+    gap: 2mm !important;
+    margin-top: 2mm !important;
+  }
+
+  .ft-print-page-two .ft-flex-footer {
+    margin-top: 2mm !important;
+  }
+}
