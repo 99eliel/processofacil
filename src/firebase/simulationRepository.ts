@@ -161,18 +161,20 @@ export async function importSimulationPackage(
   empresaId: string,
   uid: string,
   raw: unknown,
+  options?: { draftOnly?: boolean },
 ): Promise<SimulationImportResult> {
   validatePackage(raw)
   const pkg = raw
   const productCode = pkg.produto.codigo.trim().toUpperCase()
   const orderId = `sim-${slug(pkg.id)}`
+  const draftOnly = options?.draftOnly === true
   const productRef = doc(db, 'empresas', empresaId, 'produtos', productCode)
   const existingProduct = await getDoc(productRef)
 
   if (existingProduct.exists()) {
     return {
       orderId,
-      orderNumber: pkg.op.numero,
+      orderNumber: draftOnly ? '' : pkg.op.numero,
       productCode,
       operations: pkg.ficha.operacoes.length,
       materials: pkg.materiais.length,
@@ -279,7 +281,7 @@ export async function importSimulationPackage(
 
   const revision = {
     numero: 1,
-    status: 'padrao',
+    status: draftOnly ? 'rascunho' : 'padrao',
     produtoCodigo: productCode,
     produtoDescricao: pkg.produto.descricao.trim(),
     construcao: pkg.ficha.construcao.trim(),
@@ -335,8 +337,8 @@ export async function importSimulationPackage(
       legenda: image.legenda ?? '',
       ordem: index + 1,
     })),
-    aprovadoPor: uid,
-    aprovadoEm: timestamp,
+    aprovadoPor: draftOnly ? '' : uid,
+    aprovadoEm: draftOnly ? null : timestamp,
     criadoEm: now,
     criadoPor: uid,
     alteradoEm: now,
@@ -349,7 +351,7 @@ export async function importSimulationPackage(
     descricao: pkg.produto.descricao.trim(),
     descricaoNormalizada: pkg.produto.descricao.trim().toUpperCase(),
     classificacoes: pkg.produto.classificacoes ?? {},
-    revisaoVigente: 1,
+    revisaoVigente: draftOnly ? null : 1,
     ultimaRevisao: 1,
     status: 'ativo',
     ativo: true,
@@ -365,9 +367,9 @@ export async function importSimulationPackage(
   batch.set(doc(db, 'empresas', empresaId, 'fichas', productCode), {
     produtoCodigo: productCode,
     produtoDescricao: pkg.produto.descricao.trim(),
-    revisaoVigente: 1,
-    revisaoRascunho: null,
-    status: 'padrao',
+    revisaoVigente: draftOnly ? null : 1,
+    revisaoRascunho: draftOnly ? 1 : null,
+    status: draftOnly ? 'rascunho' : 'padrao',
     simulacaoId: pkg.id,
     alteradoEm: now,
     alteradoPor: uid,
@@ -431,51 +433,62 @@ export async function importSimulationPackage(
     }
   }
 
-  batch.set(doc(db, 'empresas', empresaId, 'ordensProducao', orderId), {
-    numero: pkg.op.numero,
-    prazo: pkg.op.prazo ?? '',
-    status: 'em_fluxo',
-    workflowStageId: null,
-    itens: [{
-      id: itemId,
-      produtoCodigo: productCode,
-      produtoDescricao: pkg.produto.descricao.trim(),
-      revisao: 1,
-      cor: pkg.op.cor?.trim() ?? '',
-      variantes: variants,
-      quantidadeTotal,
-    }],
-    kit: Array.from(kitMap.values()),
-    operacoes: frozenOperations,
-    historico: [{
-      id: crypto.randomUUID(),
-      acao: 'Cenário de simulação importado e OP liberada',
+  if (!draftOnly) {
+    batch.set(doc(db, 'empresas', empresaId, 'ordensProducao', orderId), {
+      numero: pkg.op.numero,
+      prazo: pkg.op.prazo ?? '',
+      status: 'em_fluxo',
+      workflowStageId: null,
+      itens: [{
+        id: itemId,
+        produtoCodigo: productCode,
+        produtoDescricao: pkg.produto.descricao.trim(),
+        revisao: 1,
+        cor: pkg.op.cor?.trim() ?? '',
+        variantes: variants,
+        quantidadeTotal,
+      }],
+      kit: Array.from(kitMap.values()),
+      operacoes: frozenOperations,
+      historico: [{
+        id: crypto.randomUUID(),
+        acao: 'Cenário de simulação importado e OP liberada',
+        uid,
+        em: timestamp,
+      }],
+      simulacaoId: pkg.id,
+      criadoEm: now,
+      criadoPor: uid,
+      liberadaEm: now,
+      liberadaPor: uid,
+      alteradoEm: now,
+      alteradoPor: uid,
+    })
+  
+    batch.set(doc(collection(db, 'empresas', empresaId, 'auditoria')), {
+      entidade: 'simulacao',
+      entidadeId: pkg.id,
+      acao: 'importada',
+      resumo: `${pkg.nome} · ${productCode} · ${pkg.op.numero}`,
       uid,
-      em: timestamp,
-    }],
-    simulacaoId: pkg.id,
-    criadoEm: now,
-    criadoPor: uid,
-    liberadaEm: now,
-    liberadaPor: uid,
-    alteradoEm: now,
-    alteradoPor: uid,
-  })
-
-  batch.set(doc(collection(db, 'empresas', empresaId, 'auditoria')), {
-    entidade: 'simulacao',
-    entidadeId: pkg.id,
-    acao: 'importada',
-    resumo: `${pkg.nome} · ${productCode} · ${pkg.op.numero}`,
-    uid,
-    em: now,
-  })
+      em: now,
+    })
+  } else {
+    batch.set(doc(collection(db, 'empresas', empresaId, 'auditoria')), {
+      entidade: 'ficha_tecnica',
+      entidadeId: productCode,
+      acao: 'demo_tecnica_criada',
+      resumo: `${pkg.produto.descricao.trim()} · REV 01 em rascunho`,
+      uid,
+      em: now,
+    })
+  }
 
   await batch.commit()
 
   return {
-    orderId,
-    orderNumber: pkg.op.numero,
+    orderId: draftOnly ? '' : orderId,
+    orderNumber: draftOnly ? '' : pkg.op.numero,
     productCode,
     operations: operations.length,
     materials: pkg.materiais.length,
@@ -489,59 +502,7 @@ export async function importDemoTechnicalPiece(
   uid: string,
   raw: unknown,
 ): Promise<SimulationImportResult> {
-  validatePackage(raw)
-  const pkg = raw
-  const imported = await importSimulationPackage(empresaId, uid, pkg)
-
-  const productCode = pkg.produto.codigo.trim().toUpperCase()
-  const orderId = `sim-${slug(pkg.id)}`
-  const batch = writeBatch(db)
-
-  batch.set(doc(db, 'empresas', empresaId, 'produtos', productCode), {
-    revisaoVigente: null,
-    ultimaRevisao: 1,
-    alteradoEm: serverTimestamp(),
-    alteradoPor: uid,
-  }, { merge: true })
-
-  batch.set(doc(db, 'empresas', empresaId, 'produtos', productCode, 'revisoes', '001'), {
-    status: 'rascunho',
-    aprovadoPor: '',
-    aprovadoEm: null,
-    motivoRevisao: 'Peça demonstrativa pronta para receber imagens e ajustes finais',
-    alteradoEm: serverTimestamp(),
-    alteradoPor: uid,
-  }, { merge: true })
-
-  batch.set(doc(db, 'empresas', empresaId, 'fichas', productCode), {
-    produtoCodigo: productCode,
-    produtoDescricao: pkg.produto.descricao.trim(),
-    revisaoVigente: null,
-    revisaoRascunho: 1,
-    status: 'rascunho',
-    alteradoEm: serverTimestamp(),
-    alteradoPor: uid,
-  }, { merge: true })
-
-  batch.delete(doc(db, 'empresas', empresaId, 'ordensProducao', orderId))
-
-  batch.set(doc(collection(db, 'empresas', empresaId, 'auditoria')), {
-    entidade: 'ficha_tecnica',
-    entidadeId: productCode,
-    acao: 'demo_tecnica_criada',
-    resumo: `${pkg.produto.descricao.trim()} · REV 01 em rascunho`,
-    uid,
-    em: serverTimestamp(),
-  })
-
-  await batch.commit()
-
-  return {
-    ...imported,
-    orderId: '',
-    orderNumber: '',
-    alreadyExists: imported.alreadyExists,
-  }
+  return importSimulationPackage(empresaId, uid, raw, { draftOnly: true })
 }
 
 export async function resetSimulationJourney(
