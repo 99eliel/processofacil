@@ -1319,3 +1319,19 @@
     margin-bottom:-112mm;
   }
 }
+
+
+@media print {
+  html, body {
+    height:auto !important;
+    min-height:297mm !important;
+  }
+  .ft-print-preview-overlay {
+    height:auto !important;
+    min-height:297mm !important;
+    overflow:visible !important;
+  }
+  .technical-print-root.ft-flex-root {
+    height:auto !important;
+  }
+}
