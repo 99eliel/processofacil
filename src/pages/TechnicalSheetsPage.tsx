@@ -75,6 +75,8 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
   const [materialToAdd, setMaterialToAdd] = useState('')
   const [newSize, setNewSize] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [imageUploadError, setImageUploadError] = useState('')
+  const [imageUploadName, setImageUploadName] = useState('')
   const [imageTypeToUpload, setImageTypeToUpload] = useState<'frente' | 'costas' | 'detalhe_1' | 'detalhe_2' | 'peca_perfeita' | 'outro'>('frente')
   const [localError, setLocalError] = useState('')
   const [printPreview, setPrintPreview] = useState(false)
@@ -390,6 +392,8 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
     }
 
     setUploadingImage(true)
+    setImageUploadError('')
+    setImageUploadName(file.name)
     setLocalError('')
     let uploadedPath = ''
 
@@ -409,7 +413,8 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
           {
             url: uploaded.url,
             path: uploaded.path,
-            legenda: '',
+            legenda: imageTypeLabel(tipo),
+            tipo,
             ordem: editor.imagens.length + 1,
           },
         ],
@@ -427,11 +432,17 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
           console.warn('Não foi possível limpar o upload incompleto.', cleanupError)
         }
       }
-      setLocalError(
-        reason instanceof Error ? reason.message : 'Não foi possível enviar a imagem.',
+      const message = reason instanceof Error ? reason.message : 'Não foi possível enviar a imagem.'
+      setImageUploadError(
+        message.toLowerCase().includes('permission')
+          || message.toLowerCase().includes('unauthorized')
+          ? 'O Firebase Storage bloqueou o upload. Publique as regras de Storage do projeto processofacil-3f688.'
+          : message,
       )
+      setLocalError(message)
     } finally {
       setUploadingImage(false)
+      setImageUploadName('')
     }
   }
 
@@ -677,6 +688,15 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
               }}
             />
           </label>
+        </div>}
+
+        {uploadingImage && <div className="ft-upload-feedback loading">
+          <Loader2 className="spin" size={16} />
+          <span>Enviando {imageUploadName || 'imagem'} para o Firebase Storage...</span>
+        </div>}
+        {imageUploadError && <div className="ft-upload-feedback error">
+          <strong>Falha no upload</strong>
+          <span>{imageUploadError}</span>
         </div>}
 
         {editor.imagens.length === 0 ? (
