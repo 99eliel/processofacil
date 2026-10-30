@@ -1,16 +1,20 @@
 import { createPortal } from 'react-dom'
 import {
   CheckCircle2,
-  ClipboardCheck,
   FileText,
   Play,
   Printer,
-  Ruler,
-  Shirt,
+  QrCode,
   Video,
   X,
 } from 'lucide-react'
-import type { Company, Material, Product, TechnicalRevision } from '../domain/types'
+import type {
+  Company,
+  Material,
+  Product,
+  TechnicalProductImage,
+  TechnicalRevision,
+} from '../domain/types'
 
 type Props = {
   revision: TechnicalRevision
@@ -26,7 +30,7 @@ function timestampDate(value: unknown) {
     const timestamp = value as { toDate?: () => Date }
     if (typeof timestamp.toDate === 'function') return timestamp.toDate().toLocaleDateString('pt-BR')
   }
-  return '—'
+  return ''
 }
 
 function statusText(status: TechnicalRevision['status']) {
@@ -42,27 +46,16 @@ function difficultyLabel(value: 'facil' | 'medio' | 'dificil') {
   return 'MÉDIO'
 }
 
-function placeholder(label: string) {
-  return <div className="ft-doc-image-placeholder"><Shirt size={34} /><span>{label}</span></div>
+function hasText(...values: Array<string | undefined | null>) {
+  return values.some((value) => Boolean(value?.trim()))
 }
 
-function ProductImage({
-  src,
-  label,
-  className = '',
-}: {
-  src?: string
-  label: string
-  className?: string
-}) {
-  return <div className={`ft-doc-product-image ${className}`}>
-    <b>{label}</b>
-    {src ? <img src={src} alt={label} /> : placeholder(label)}
-  </div>
+function getPhoto(images: TechnicalProductImage[], type: TechnicalProductImage['tipo'], legacyIndex: number) {
+  return images.find((image) => image.tipo === type) ?? images[legacyIndex]
 }
 
 function QrVisual() {
-  return <div className="ft-doc-qr" aria-label="QR Code de acesso rápido">
+  return <div className="ft-flex-qr" aria-label="QR Code de acesso rápido">
     {Array.from({ length: 81 }).map((_, index) => (
       <i key={index} className={(index * 17 + Math.floor(index / 9) * 7 + index % 5) % 4 !== 0 ? 'on' : ''} />
     ))}
@@ -71,71 +64,116 @@ function QrVisual() {
 
 export default function TechnicalSheetPrintDocument({
   revision,
-  product,
+  product: _product,
   company,
   materials,
   responsibleName,
   onClose,
 }: Props) {
-  const linkedMaterials = revision.bom
-    .map((line) => ({
-      line,
-      material: materials.find((item) => item.id === line.materialId),
-    }))
+  const linkedMaterials = revision.bom.map((line) => ({
+    line,
+    material: materials.find((item) => item.id === line.materialId),
+  }))
 
-  const mainFabric = linkedMaterials.find(({ material }) => {
-    const category = material?.categoria?.toLowerCase() ?? ''
-    const description = material?.descricao?.toLowerCase() ?? ''
-    return category.includes('tecido')
-      || category.includes('malha')
-      || description.includes('tecido')
-      || description.includes('malha')
-  }) ?? linkedMaterials[0]
+  const images = [...revision.imagens].sort((a, b) => a.ordem - b.ordem)
+  const photos = [
+    { label: 'FRENTE', image: getPhoto(images, 'frente', 0) },
+    { label: 'COSTAS', image: getPhoto(images, 'costas', 1) },
+    { label: 'DETALHE 1', image: getPhoto(images, 'detalhe_1', 2) },
+    { label: 'DETALHE 2', image: getPhoto(images, 'detalhe_2', 3) },
+  ].filter((item) => Boolean(item.image?.url))
 
-  const notions = linkedMaterials
-    .filter(({ line }) => line.id !== mainFabric?.line.id)
-    .slice(0, 6)
+  const perfectPhoto = getPhoto(images, 'peca_perfeita', 4)
 
   const machines = Array.from(new Map(
     revision.operacoes
       .filter((operation) => operation.maquina.trim())
       .map((operation) => [operation.maquina.trim(), operation]),
-  ).values()).slice(0, 6)
+  ).values())
 
-  const machineAccessories = revision.operacoes
-    .filter((operation) => operation.ferramenta.trim() || operation.regulagem.trim())
-    .slice(0, 5)
-
-  const needlesAndThreads = revision.agulhasLinhas.slice(0, 6)
+  const machineAccessories = revision.operacoes.filter(
+    (operation) => hasText(operation.ferramenta, operation.regulagem),
+  )
 
   const calculatedTime = revision.operacoes.reduce(
     (sum, operation) => sum + Number(operation.tempoPadraoMin ?? 0),
     0,
   )
-  const totalTime = revision.dnaProduto.tempoPadraoMin ?? calculatedTime
+  const totalTime = revision.dnaProduto.tempoPadraoMin ?? (calculatedTime > 0 ? calculatedTime : null)
+  const mainMachine = revision.dnaProduto.maquinaPrincipal || machines[0]?.maquina || ''
 
-  const difficulty = revision.dnaProduto.nivelDificuldade
-  const mainMachine = revision.dnaProduto.maquinaPrincipal || machines[0]?.maquina || '—'
   const primaryVideo = revision.operacoes
     .flatMap((operation) => operation.midias.map((media) => ({ operation, media })))
     .find(({ media }) => media.tipo === 'video')
 
-  const criticalPoints = revision.controleQualidade.pontosCriticos.slice(0, 5)
-  const rejectedDefects = revision.controleQualidade.defeitosNaoAceitos.slice(0, 5)
-
-  const images = [...revision.imagens].sort((a, b) => a.ordem - b.ordem)
   const technicalDrawing = revision.anexos.find((item) => item.tipo === 'desenho' && item.url)
+  const activeAttachments = revision.anexos.filter((item) => item.url)
 
-  const print = () => {
-    window.setTimeout(() => window.print(), 60)
-  }
+  const identityRows = [
+    ['DESCRIÇÃO', revision.produtoDescricao],
+    ['CLIENTE', revision.cliente],
+    ['COLEÇÃO', revision.colecao],
+    ['FAMÍLIA', revision.familia],
+    ['MODELO', revision.modelo],
+    ['GRADE', revision.tamanhos.join(' / ')],
+    ['RESPONSÁVEL TÉCNICO', revision.responsavelTecnico || responsibleName || ''],
+  ].filter(([, value]) => hasText(value))
+
+  const fabricRows = [
+    ['TECIDO PRINCIPAL', revision.dadosTecido.tecidoPrincipal],
+    ['COMPOSIÇÃO', revision.dadosTecido.composicao],
+    ['GRAMATURA', revision.dadosTecido.gramatura],
+    ['LARGURA', revision.dadosTecido.largura],
+    ['FORNECEDOR', revision.dadosTecido.fornecedor],
+    ['COR', revision.dadosTecido.cor],
+    ['ENCOLHIMENTO MÁXIMO', revision.dadosTecido.encolhimentoMaximo],
+    ['SOLIDEZ DA COR', revision.dadosTecido.solidezCor],
+  ].filter(([, value]) => hasText(value))
+
+  const cuttingRows = [
+    ['ENCAIXE', revision.processoCorte.encaixe],
+    ['CONSUMO DE TECIDO', revision.processoCorte.consumoTecido],
+    ['COMPRIMENTO DO RISCO', revision.processoCorte.comprimentoRisco],
+    ['ALTURA DO ENFESTO', revision.processoCorte.alturaEnfesto],
+    ['Nº DE FOLHAS', revision.processoCorte.numeroFolhas],
+    ['PERDAS (%)', revision.processoCorte.perdasPercentual],
+  ].filter(([, value]) => hasText(value))
+
+  const hasQuality = revision.controleQualidade.pontosCriticos.length > 0
+    || revision.controleQualidade.defeitosNaoAceitos.length > 0
+
+  const hasDna = Boolean(
+    perfectPhoto?.url
+    || primaryVideo
+    || totalTime != null
+    || mainMachine
+    || revision.dnaProduto.principaisErros.length
+    || activeAttachments.find((item) => item.tipo === 'video'),
+  )
+
+  const contentBlocks = [
+    photos.length > 0,
+    identityRows.length > 0,
+    fabricRows.length > 0,
+    linkedMaterials.length > 0,
+    revision.medidas.length > 0,
+    Boolean(technicalDrawing?.url),
+    revision.operacoes.length > 0,
+    revision.agulhasLinhas.length > 0,
+    hasQuality,
+    cuttingRows.length > 0,
+    activeAttachments.length > 0,
+    hasDna,
+  ].filter(Boolean).length
+
+  const print = () => window.setTimeout(() => window.print(), 60)
 
   return createPortal(
     <div className="ft-print-preview-overlay">
       <div className="ft-print-preview-toolbar">
         <div>
           <strong>Ficha Técnica · {revision.produtoCodigo}</strong>
-          <span>Prévia A4 do documento oficial</span>
+          <span>Documento montado somente com dados cadastrados</span>
         </div>
         <div>
           <button onClick={onClose}><X size={17} /> Fechar</button>
@@ -143,11 +181,11 @@ export default function TechnicalSheetPrintDocument({
         </div>
       </div>
 
-      <div className="technical-print-root">
-        <article className="ft-document-sheet">
-          <header className="ft-doc-header">
-            <div className="ft-doc-brand">
-              <div className="ft-doc-logo">
+      <div className="technical-print-root ft-flex-root">
+        <article className="ft-flex-document">
+          <header className="ft-flex-header">
+            <div className="ft-flex-brand">
+              <div className="ft-flex-logo">
                 {company?.logoUrl ? <img src={company.logoUrl} alt="" /> : <span>PF</span>}
               </div>
               <div>
@@ -155,199 +193,163 @@ export default function TechnicalSheetPrintDocument({
                 <p>PASSAPORTE DIGITAL DO PRODUTO</p>
               </div>
             </div>
-            <div className="ft-doc-meta">
-              <div><span>REFERÊNCIA</span><strong>{revision.produtoCodigo}</strong></div>
-              <div><span>VERSÃO</span><strong>{String(revision.numero).padStart(2, '0')}</strong></div>
-              <div><span>DATA DE CRIAÇÃO</span><strong>{timestampDate(revision.aprovadoEm)}</strong></div>
-              <div><span>STATUS</span><strong className={revision.status === 'padrao' ? 'approved' : ''}>{revision.status === 'padrao' && <CheckCircle2 size={10} />} {statusText(revision.status)}</strong></div>
+            <div className="ft-flex-meta">
+              <Meta label="REFERÊNCIA" value={revision.produtoCodigo} />
+              <Meta label="VERSÃO" value={String(revision.numero).padStart(2, '0')} />
+              {timestampDate(revision.aprovadoEm) && <Meta label="DATA" value={timestampDate(revision.aprovadoEm)} />}
+              <Meta label="STATUS" value={statusText(revision.status)} approved={revision.status === 'padrao'} />
             </div>
           </header>
 
-          <section className="ft-doc-top-grid">
-            <div className="ft-doc-visuals">
-              <ProductImage src={images[0]?.url} label="FRENTE" className="front" />
-              <ProductImage src={images[1]?.url} label="COSTAS" className="back" />
-              <div className="ft-doc-detail-stack">
-                <ProductImage src={images[2]?.url} label="DETALHES" />
-                <ProductImage src={images[3]?.url} label="" />
-              </div>
-            </div>
+          {contentBlocks === 0 ? (
+            <section className="ft-flex-empty">
+              <FileText size={34} />
+              <strong>Nenhum dado técnico foi cadastrado ainda.</strong>
+              <span>Preencha o cadastro da peça para montar a Ficha Técnica.</span>
+            </section>
+          ) : <>
+            {(photos.length > 0 || identityRows.length > 0) && (
+              <section className="ft-flex-hero-grid">
+                {photos.length > 0 && <div className="ft-flex-photo-grid">
+                  {photos.map(({ label, image }) => <figure key={label}>
+                    <figcaption>{label}</figcaption>
+                    <img src={image!.url} alt={label} />
+                  </figure>)}
+                </div>}
+                {identityRows.length > 0 && <DynamicBox title="IDENTIFICAÇÃO">
+                  <KeyValueRows rows={identityRows} />
+                </DynamicBox>}
+              </section>
+            )}
 
-            <div className="ft-doc-identity">
-              <DocLine label="DESCRIÇÃO" value={revision.produtoDescricao} />
-              <DocLine label="CLIENTE" value={revision.cliente || '—'} />
-              <DocLine label="COLEÇÃO" value={revision.colecao || '—'} />
-              <DocLine label="FAMÍLIA" value={revision.familia || '—'} />
-              <DocLine label="MODELO" value={revision.modelo || '—'} />
-              <DocLine label="GRADE" value={revision.tamanhos.join(' / ') || '—'} />
-              <DocLine label="RESPONSÁVEL TÉCNICO" value={revision.responsavelTecnico || responsibleName || '—'} />
-            </div>
+            {(fabricRows.length > 0 || linkedMaterials.length > 0) && (
+              <section className="ft-flex-two">
+                {fabricRows.length > 0 && <DynamicBox title="DADOS DO TECIDO">
+                  <KeyValueRows rows={fabricRows} />
+                </DynamicBox>}
+                {linkedMaterials.length > 0 && <DynamicBox title="AVIAMENTOS E MATERIAIS">
+                  <table className="ft-flex-table">
+                    <thead><tr><th>CÓDIGO</th><th>DESCRIÇÃO</th><th>FORNECEDOR</th><th>CONSUMO / PEÇA</th></tr></thead>
+                    <tbody>{linkedMaterials.map(({ line }) => <tr key={line.id}>
+                      <td>{line.codigoSnapshot}</td>
+                      <td>{line.descricaoSnapshot}</td>
+                      <td>{line.fornecedorSnapshot || ''}</td>
+                      <td>{formatNumber(line.consumo)} {line.unidade}</td>
+                    </tr>)}</tbody>
+                  </table>
+                </DynamicBox>}
+              </section>
+            )}
 
-            <div className="ft-doc-top-right">
-              <DocBox title="DADOS DO TECIDO">
-                <MiniTable rows={[
-                  ['TECIDO PRINCIPAL', revision.dadosTecido.tecidoPrincipal || mainFabric?.line.descricaoSnapshot || '—'],
-                  ['COMPOSIÇÃO', revision.dadosTecido.composicao || '—'],
-                  ['GRAMATURA', revision.dadosTecido.gramatura || '—'],
-                  ['LARGURA', revision.dadosTecido.largura || '—'],
-                  ['FORNECEDOR', revision.dadosTecido.fornecedor || mainFabric?.line.fornecedorSnapshot || '—'],
-                  ['COR', revision.dadosTecido.cor || mainFabric?.line.corFixa || '—'],
-                  ['ENCOLHIMENTO MÁXIMO', revision.dadosTecido.encolhimentoMaximo || '—'],
-                  ['SOLIDEZ DA COR', revision.dadosTecido.solidezCor || '—'],
-                ]} />
-              </DocBox>
-              <DocBox title="AVIAMENTOS">
-                <table className="ft-doc-table compact">
-                  <thead><tr><th>CÓDIGO</th><th>DESCRIÇÃO</th><th>CONSUMO / PEÇA</th></tr></thead>
-                  <tbody>
-                    {notions.length > 0 ? notions.map(({ line }) => <tr key={line.id}><td>{line.codigoSnapshot}</td><td>{line.descricaoSnapshot}</td><td>{formatNumber(line.consumo)} {line.unidade}</td></tr>) : <tr><td colSpan={3}>—</td></tr>}
-                  </tbody>
+            {(revision.medidas.length > 0 || technicalDrawing?.url) && (
+              <section className="ft-flex-two">
+                {revision.medidas.length > 0 && <DynamicBox title="TABELA DE MEDIDAS">
+                  <div className="ft-flex-table-scroll">
+                    <table className="ft-flex-table centered">
+                      <thead><tr><th>MEDIDA</th><th>TOL.</th>{revision.tamanhos.map((size) => <th key={size}>{size}</th>)}</tr></thead>
+                      <tbody>{revision.medidas.map((row) => <tr key={row.id}>
+                        <td>{row.ponto}</td>
+                        <td>± {formatNumber(row.tolerancia)}</td>
+                        {revision.tamanhos.map((size) => <td key={size}>{row.valores.find((value) => value.tamanho === size)?.valor ?? ''}</td>)}
+                      </tr>)}</tbody>
+                    </table>
+                  </div>
+                </DynamicBox>}
+                {technicalDrawing?.url && <DynamicBox title="DESENHO TÉCNICO">
+                  <div className="ft-flex-drawing"><img src={technicalDrawing.url} alt="Desenho técnico" /></div>
+                </DynamicBox>}
+              </section>
+            )}
+
+            {revision.operacoes.length > 0 && <>
+              <DynamicBox title="SEQUÊNCIA OPERACIONAL">
+                <table className="ft-flex-table">
+                  <thead><tr><th>Nº</th><th>OPERAÇÃO</th><th>MÁQUINA</th><th>ACESSÓRIO</th><th>REGULAGEM</th><th>TEMPO</th></tr></thead>
+                  <tbody>{revision.operacoes.map((operation) => <tr key={operation.id}>
+                    <td>{operation.codigo || operation.ordem * 10}</td>
+                    <td>{operation.nome}</td>
+                    <td>{operation.maquina}</td>
+                    <td>{operation.ferramenta}</td>
+                    <td>{operation.regulagem}</td>
+                    <td>{operation.tempoPadraoMin == null ? '' : `${formatNumber(operation.tempoPadraoMin)} min`}</td>
+                  </tr>)}</tbody>
+                  {totalTime != null && <tfoot><tr><td colSpan={5}>TEMPO TOTAL DA PEÇA</td><td>{formatNumber(totalTime)} min</td></tr></tfoot>}
                 </table>
-              </DocBox>
-            </div>
-          </section>
+              </DynamicBox>
 
-          <section className="ft-doc-middle-grid">
-            <DocBox title="TABELA DE MEDIDAS (cm)">
-              <table className="ft-doc-table measures">
-                <thead>
-                  <tr><th>MEDIDA</th>{revision.tamanhos.slice(0, 6).map((size) => <th key={size}>{size}</th>)}</tr>
-                </thead>
-                <tbody>
-                  {revision.medidas.slice(0, 6).map((row) => <tr key={row.id}><td>{row.ponto}</td>{revision.tamanhos.slice(0, 6).map((size) => <td key={size}>{row.valores.find((value) => value.tamanho === size)?.valor ?? '—'}</td>)}</tr>)}
-                  {revision.medidas.length === 0 && <tr><td colSpan={Math.max(2, revision.tamanhos.slice(0, 6).length + 1)}>—</td></tr>}
-                </tbody>
-              </table>
-            </DocBox>
+              <section className="ft-flex-two">
+                {machines.length > 0 && <DynamicBox title="MÁQUINAS NECESSÁRIAS">
+                  <table className="ft-flex-table"><thead><tr><th>OPERAÇÃO</th><th>MÁQUINA</th></tr></thead><tbody>
+                    {machines.map((operation) => <tr key={operation.id}><td>{operation.nome}</td><td>{operation.maquina}</td></tr>)}
+                  </tbody></table>
+                </DynamicBox>}
+                {machineAccessories.length > 0 && <DynamicBox title="ACESSÓRIOS / REGULAGENS">
+                  <table className="ft-flex-table"><thead><tr><th>MÁQUINA</th><th>ACESSÓRIO</th><th>REGULAGEM</th></tr></thead><tbody>
+                    {machineAccessories.map((operation) => <tr key={operation.id}><td>{operation.maquina}</td><td>{operation.ferramenta}</td><td>{operation.regulagem}</td></tr>)}
+                  </tbody></table>
+                </DynamicBox>}
+              </section>
+            </>}
 
-            <DocBox title="DESENHO TÉCNICO">
-              <div className="ft-doc-drawing">
-                {technicalDrawing?.url ? (
-                  <img className="ft-doc-drawing-image" src={technicalDrawing.url} alt="Desenho técnico" />
-                ) : <>
-                  <div><Shirt strokeWidth={1} /><span>FRENTE</span></div>
-                  <div><Shirt strokeWidth={1} /><span>COSTAS</span></div>
-                </>}
-              </div>
-            </DocBox>
-
-            <div className="ft-doc-right-stack">
-              <DocBox title="ACESSÓRIOS DAS MÁQUINAS">
-                <table className="ft-doc-table compact"><thead><tr><th>MÁQUINA</th><th>ACESSÓRIO</th></tr></thead><tbody>
-                  {machineAccessories.length > 0 ? machineAccessories.map((operation) => <tr key={operation.id}><td>{operation.maquina || '—'}</td><td>{operation.ferramenta || operation.regulagem || '—'}</td></tr>) : <tr><td colSpan={2}>—</td></tr>}
-                </tbody></table>
-              </DocBox>
-              <DocBox title="AGULHAS E LINHAS">
-                <table className="ft-doc-table compact"><thead><tr><th>MÁQUINA</th><th>AGULHA</th><th>LINHA</th></tr></thead><tbody>
-                  {needlesAndThreads.length > 0 ? needlesAndThreads.map((item) => <tr key={item.id}><td>{item.maquina || '—'}</td><td>{item.agulha || '—'}</td><td>{item.linha || '—'}</td></tr>) : <tr><td colSpan={3}>—</td></tr>}
-                </tbody></table>
-              </DocBox>
-            </div>
-          </section>
-
-          <section className="ft-doc-sequence-grid">
-            <DocBox title="SEQUÊNCIA OPERACIONAL">
-              <table className="ft-doc-table operations">
-                <thead><tr><th>Nº</th><th>OPERAÇÃO</th><th>MÁQUINA</th><th>TEMPO PADRÃO (min)</th></tr></thead>
-                <tbody>
-                  {revision.operacoes.slice(0, 8).map((operation) => <tr key={operation.id}><td>{operation.codigo || operation.ordem * 10}</td><td>{operation.nome}</td><td>{operation.maquina || '—'}</td><td>{operation.tempoPadraoMin == null ? '—' : formatNumber(operation.tempoPadraoMin)}</td></tr>)}
-                  {revision.operacoes.length === 0 && <tr><td colSpan={4}>—</td></tr>}
-                </tbody>
-                <tfoot><tr><td colSpan={3}>TEMPO TOTAL DA PEÇA</td><td>{formatNumber(totalTime)} min</td></tr></tfoot>
-              </table>
-            </DocBox>
-
-            <DocBox title="MÁQUINAS NECESSÁRIAS">
-              <table className="ft-doc-table compact"><thead><tr><th>OPERAÇÃO</th><th>MÁQUINA</th></tr></thead><tbody>
-                {machines.length > 0 ? machines.map((operation) => <tr key={operation.id}><td>{operation.nome}</td><td>{operation.maquina}</td></tr>) : <tr><td colSpan={2}>—</td></tr>}
+            {revision.agulhasLinhas.length > 0 && <DynamicBox title="AGULHAS E LINHAS">
+              <table className="ft-flex-table"><thead><tr><th>MÁQUINA</th><th>AGULHA</th><th>LINHA</th></tr></thead><tbody>
+                {revision.agulhasLinhas.map((item) => <tr key={item.id}><td>{item.maquina}</td><td>{item.agulha}</td><td>{item.linha}</td></tr>)}
               </tbody></table>
-            </DocBox>
+            </DynamicBox>}
 
-            <div />
-          </section>
-
-          <section className="ft-doc-control-grid">
-            <DocBox title="CONTROLE DE QUALIDADE">
-              <div className="ft-doc-quality-columns">
-                <div><strong>PONTOS CRÍTICOS DE CONTROLE</strong>
-                  {criticalPoints.map((item) => <span className="ok" key={item}>✓ {item}</span>)}
-                  {criticalPoints.length === 0 && <span>—</span>}
+            {(hasQuality || cuttingRows.length > 0) && <section className="ft-flex-two">
+              {hasQuality && <DynamicBox title="CONTROLE DE QUALIDADE">
+                <div className="ft-flex-quality">
+                  {revision.controleQualidade.pontosCriticos.length > 0 && <div>
+                    <strong>PONTOS CRÍTICOS DE CONTROLE</strong>
+                    {revision.controleQualidade.pontosCriticos.map((item) => <span className="ok" key={item}>✓ {item}</span>)}
+                  </div>}
+                  {revision.controleQualidade.defeitosNaoAceitos.length > 0 && <div>
+                    <strong>DEFEITOS NÃO ACEITOS</strong>
+                    {revision.controleQualidade.defeitosNaoAceitos.map((item) => <span className="bad" key={item}>✕ {item}</span>)}
+                  </div>}
                 </div>
-                <div><strong>DEFEITOS NÃO ACEITOS</strong>
-                  {rejectedDefects.map((item) => <span className="bad" key={item}>✕ {item}</span>)}
-                  {rejectedDefects.length === 0 && <span>—</span>}
+              </DynamicBox>}
+              {cuttingRows.length > 0 && <DynamicBox title="PROCESSO DE CORTE">
+                <KeyValueRows rows={cuttingRows} />
+              </DynamicBox>}
+            </section>}
+
+            <section className="ft-flex-two">
+              <DynamicBox title="ACESSO RÁPIDO">
+                <div className="ft-flex-quick"><QrCode size={20} /><p>QR de acesso ao Passaporte Digital.</p><QrVisual /></div>
+              </DynamicBox>
+              {activeAttachments.length > 0 && <DynamicBox title="ANEXOS">
+                <div className="ft-flex-attachments">
+                  {activeAttachments.map((attachment) => <div key={attachment.id}>
+                    <FileText size={18} />
+                    <strong>{attachment.nome}</strong>
+                  </div>)}
                 </div>
-              </div>
-            </DocBox>
+              </DynamicBox>}
+            </section>
 
-            <DocBox title="PROCESSO DE CORTE">
-              <MiniTable rows={[
-                ['ENCAIXE', revision.processoCorte.encaixe || '—'],
-                ['CONSUMO DE TECIDO', revision.processoCorte.consumoTecido || (mainFabric ? `${formatNumber(mainFabric.line.consumo)} ${mainFabric.line.unidade} / peça` : '—')],
-                ['COMPRIMENTO DO RISCO', revision.processoCorte.comprimentoRisco || '—'],
-                ['ALTURA DO ENFESTO', revision.processoCorte.alturaEnfesto || '—'],
-                ['Nº DE FOLHAS', revision.processoCorte.numeroFolhas || '—'],
-                ['PERDAS (%)', revision.processoCorte.perdasPercentual || '—'],
-              ]} />
-            </DocBox>
+            {hasDna && <section className="ft-flex-dna">
+              <div className="ft-flex-section-title">DNA DO PRODUTO <small>INFORMAÇÃO QUE GERA QUALIDADE E PRODUTIVIDADE</small></div>
+              <div className="ft-flex-dna-grid">
+                {perfectPhoto?.url && <div><strong>PEÇA PERFEITA</strong><img src={perfectPhoto.url} alt="Peça perfeita" /></div>}
+                {revision.dnaProduto.principaisErros.length > 0 && <div className="errors"><strong>PRINCIPAIS ERROS</strong>{revision.dnaProduto.principaisErros.map((item) => <span key={item}>✕ {item}</span>)}</div>}
+                {primaryVideo && <div><strong>VÍDEO DE MONTAGEM</strong><div className="ft-flex-video"><Play size={22} /><span>{primaryVideo.operation.nome}</span></div></div>}
+                {(totalTime != null || mainMachine) && <div className="stats">
+                  {totalTime != null && <p><span>TEMPO PADRÃO</span><b>{formatNumber(totalTime)} min</b></p>}
+                  {mainMachine && <p><span>MÁQUINA PRINCIPAL</span><b>{mainMachine}</b></p>}
+                </div>}
+                {(revision.dnaProduto.principaisErros.length > 0 || totalTime != null || mainMachine) && <div className="difficulty">
+                  <strong>NÍVEL DE DIFICULDADE</strong>
+                  <b>{difficultyLabel(revision.dnaProduto.nivelDificuldade)}</b>
+                </div>}
+              </div>
+            </section>}
+          </>}
 
-            <DocBox title="ACESSO RÁPIDO">
-              <div className="ft-doc-quick-access">
-                <p>Aponte a câmera do celular para o QR Code e acesse todas as informações da peça.</p>
-                <QrVisual />
-              </div>
-            </DocBox>
-          </section>
-
-          <DocBox title="ANEXOS">
-            <div className="ft-doc-attachments">
-              <Attachment icon={<FileText />} label="Molde PDF" active={revision.anexos.some((item) => item.tipo === 'molde')} />
-              <Attachment icon={<Ruler />} label="Encaixe Audaces" active={revision.anexos.some((item) => item.tipo === 'encaixe')} />
-              <Attachment icon={<Shirt />} label="Desenho Técnico" active={revision.anexos.some((item) => item.tipo === 'desenho')} />
-              <Attachment icon={<ClipboardCheck />} label="Procedimento Operacional (POP)" active={revision.anexos.some((item) => item.tipo === 'pop')} />
-              <Attachment icon={<Video />} label="Vídeo Operacional" active={revision.anexos.some((item) => item.tipo === 'video') || Boolean(primaryVideo)} />
-              <Attachment icon={<Ruler />} label="Relatório de Medidas" active={revision.anexos.some((item) => item.tipo === 'relatorio_medidas')} />
-              <Attachment icon={<CheckCircle2 />} label="Aprovação do Cliente" active={revision.anexos.some((item) => item.tipo === 'aprovacao_cliente')} />
-            </div>
-          </DocBox>
-
-          <section className="ft-doc-dna">
-            <div className="ft-doc-section-title">DNA DO PRODUTO <small>INFORMAÇÃO QUE GERA QUALIDADE E PRODUTIVIDADE</small></div>
-            <div className="ft-doc-dna-grid">
-              <div className="ft-doc-perfect">
-                <strong>PEÇA PERFEITA</strong>
-                {images[0]?.url ? <img src={images[0].url} alt="Peça perfeita" /> : placeholder('PEÇA')}
-              </div>
-              <div className="ft-doc-errors">
-                <strong>PRINCIPAIS ERROS ENCONTRADOS</strong>
-                {(revision.dnaProduto.principaisErros.length > 0 ? revision.dnaProduto.principaisErros.slice(0, 5) : ['Sem erros cadastrados']).map((item) => <span key={item}>✕ {item}</span>)}
-              </div>
-              <div className="ft-doc-video">
-                <strong>VÍDEO DE MONTAGEM</strong>
-                <div className="ft-doc-video-card">
-                  <Play size={24} />
-                  <span>{primaryVideo?.operation.nome || 'Vídeo operacional'}</span>
-                </div>
-              </div>
-              <div className="ft-doc-dna-stats">
-                <div><span>TEMPO PADRÃO</span><strong>{formatNumber(totalTime)} min</strong></div>
-                <div><span>MÁQUINA PRINCIPAL</span><strong>{mainMachine}</strong></div>
-              </div>
-              <div className="ft-doc-difficulty">
-                <strong>NÍVEL DE DIFICULDADE</strong>
-                <div>
-                  <span className={difficulty === 'facil' ? 'active easy' : 'easy'} />
-                  <span className={difficulty === 'medio' ? 'active medium' : 'medium'} />
-                  <span className={difficulty === 'dificil' ? 'active hard' : 'hard'} />
-                </div>
-                <small>{difficultyLabel(difficulty)}</small>
-              </div>
-            </div>
-          </section>
-
-          <footer className="ft-doc-footer">
-            <span>Documento mestre orienta toda a produção. Manter sempre acessível no chão de fábrica.</span>
-            <strong>Revisão: {timestampDate(revision.aprovadoEm)} · {responsibleName || company?.nomeFantasia || 'Processo Fácil'}</strong>
+          <footer className="ft-flex-footer">
+            <span>Documento mestre do Processo Fácil.</span>
+            <strong>{revision.responsavelTecnico || responsibleName || company?.nomeFantasia || 'Processo Fácil'}</strong>
           </footer>
         </article>
       </div>
@@ -356,27 +358,20 @@ export default function TechnicalSheetPrintDocument({
   )
 }
 
-function DocBox({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="ft-doc-box">
-    <div className="ft-doc-section-title">{title}</div>
-    <div className="ft-doc-box-body">{children}</div>
+function Meta({ label, value, approved = false }: { label: string; value: string; approved?: boolean }) {
+  return <div><span>{label}</span><strong className={approved ? 'approved' : ''}>{approved && <CheckCircle2 size={10} />} {value}</strong></div>
+}
+
+function DynamicBox({ title, children }: { title: string; children: React.ReactNode }) {
+  return <section className="ft-flex-box">
+    <div className="ft-flex-section-title">{title}</div>
+    <div className="ft-flex-box-body">{children}</div>
   </section>
 }
 
-function DocLine({ label, value }: { label: string; value: string }) {
-  return <div className="ft-doc-line"><span>{label}</span><strong>{value || '—'}</strong></div>
-}
-
-function MiniTable({ rows }: { rows: Array<[string, string]> }) {
-  return <div className="ft-doc-mini-table">
-    {rows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value || '—'}</strong></div>)}
-  </div>
-}
-
-function Attachment({ icon, label, active }: { icon: React.ReactNode; label: string; active: boolean }) {
-  return <div className={`ft-doc-attachment ${active ? 'active' : ''}`}>
-    <span>{icon}</span>
-    <strong>{label}</strong>
+function KeyValueRows({ rows }: { rows: string[][] }) {
+  return <div className="ft-flex-kv">
+    {rows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
   </div>
 }
 
