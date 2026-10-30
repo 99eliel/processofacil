@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "tipo": "processo-facil-simulacao",
-  "id": "polo-completa-v1",
-  "nome": "Polo Masculina Azul Marinho — Fluxo Completo",
-  "descricao": "Cenário de teste ponta a ponta do Processo Fácil: materiais, produto, Passaporte Digital, POPs e OP liberada.",
+  "id": "polo-completa-v2-ficha-real",
+  "nome": "Polo Masculina Azul Marinho — Ficha Técnica Completa",
+  "descricao": "Cenário realista com todos os blocos da Ficha Técnica oficial, POPs e OP liberada.",
   "produto": {
-    "codigo": "SIM-POLO-001",
+    "codigo": "SIM-POLO-FT-001",
     "descricao": "Polo Masculina Azul Marinho",
     "classificacoes": {
       "familia": "Uniformes",
@@ -304,10 +304,84 @@
           "Realizar inspeção visual final."
         ]
       }
-    ]
+    ],
+    "cliente": "Empresa XYZ",
+    "colecao": "Corporativo 2027",
+    "familia": "Uniformes",
+    "modelo": "Polo masculina",
+    "responsavelTecnico": "Márcia Pedro",
+    "dadosTecido": {
+      "tecidoPrincipal": "Malha Piquet",
+      "composicao": "50% Algodão / 50% Poliéster",
+      "gramatura": "180 g/m²",
+      "largura": "1,75 m",
+      "fornecedor": "Malhas Brasil",
+      "cor": "Azul Marinho",
+      "encolhimentoMaximo": "3%",
+      "solidezCor": "Grau 4"
+    },
+    "processoCorte": {
+      "encaixe": "Corpo Polo 01",
+      "consumoTecido": "1,55 m/peça",
+      "comprimentoRisco": "6 m",
+      "alturaEnfesto": "98 cm",
+      "numeroFolhas": "10",
+      "perdasPercentual": "8%"
+    },
+    "agulhasLinhas": [
+      {
+        "maquina": "Overloque",
+        "agulha": "DCx27 nº 11",
+        "linha": "120 Poliéster"
+      },
+      {
+        "maquina": "Galoneira",
+        "agulha": "UY128 nº 11",
+        "linha": "120 Poliéster"
+      },
+      {
+        "maquina": "Reta",
+        "agulha": "DBx1 nº 11",
+        "linha": "120 Poliéster"
+      },
+      {
+        "maquina": "Botoneira",
+        "agulha": "UY128 nº 11",
+        "linha": "120 Poliéster"
+      }
+    ],
+    "controleQualidade": {
+      "pontosCriticos": [
+        "Ombros alinhados",
+        "Sem franzimento",
+        "Margem constante",
+        "Gola centralizada",
+        "Resistência da costura"
+      ],
+      "defeitosNaoAceitos": [
+        "Medida da gola fora da tolerância",
+        "Distância da bainha fora do padrão",
+        "Tonalidade não uniforme",
+        "Centralização da etiqueta incorreta",
+        "Falha de costura"
+      ]
+    },
+    "dnaProduto": {
+      "tempoPadraoMin": 2.85,
+      "maquinaPrincipal": "Overloque 5 fios",
+      "nivelDificuldade": "dificil",
+      "principaisErros": [
+        "Gola torta",
+        "Bainha ondulada",
+        "Etiqueta desalinhada",
+        "Costura aberta na cava",
+        "Diferença de tonalidade"
+      ]
+    },
+    "anexos": []
   },
   "op": {
-    "numero": "SIM-OP-001",
+    "numero": "SIM-OP-FT-001",
     "prazo": "2026-10-30",
     "cor": "Azul Marinho",
     "variantes": [
