@@ -8,6 +8,7 @@ import {
   MonitorPlay,
   PackageCheck,
   RotateCcw,
+  Sparkles,
   Upload,
 } from 'lucide-react'
 import { useSystem } from '../system/SystemProvider'
@@ -94,6 +95,33 @@ export default function SimulationPage({ notify, openOperator }: Props) {
 
   const sampleUrl = `${import.meta.env.BASE_URL}samples/simulacao-polo-completa.json`
 
+  const createDemoPiece = async () => {
+    if (!empresaId || !user) return
+    setBusy(true)
+    setError('')
+    setResult(null)
+    try {
+      const response = await fetch(sampleUrl, { cache: 'no-store' })
+      if (!response.ok) throw new Error('Não foi possível carregar a peça demonstrativa.')
+      const text = await response.text()
+      const parsed = parseSimulationFile(text)
+      setPkg(parsed)
+      setFileName('Peça demonstrativa interna')
+      const imported = await importSimulationPackage(empresaId, user.uid, parsed)
+      setResult(imported)
+      notify(
+        imported.alreadyExists
+          ? 'A peça demonstrativa já existe no sistema.'
+          : 'Peça demonstrativa completa criada. Agora você pode adicionar as imagens na Ficha Técnica.',
+      )
+    } catch (reason) {
+      console.error(reason)
+      setError(reason instanceof Error ? reason.message : 'Não foi possível criar a peça demonstrativa.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return <>
     <section className="page-intro">
       <div>
@@ -104,9 +132,15 @@ export default function SimulationPage({ notify, openOperator }: Props) {
           até a execução das operações no chão de fábrica.
         </p>
       </div>
-      <a className="secondary-button simulation-download" href={sampleUrl} download>
-        <FileText size={17} /> Baixar cenário exemplo
-      </a>
+      <div className="simulation-header-actions">
+        <button className="primary-button" disabled={busy} onClick={() => void createDemoPiece()}>
+          {busy ? <Loader2 className="spin" size={17} /> : <Sparkles size={17} />}
+          Criar peça demo completa
+        </button>
+        <a className="secondary-button simulation-download" href={sampleUrl} download>
+          <FileText size={17} /> Baixar JSON
+        </a>
+      </div>
     </section>
 
     <section className="simulation-flow panel">
@@ -141,7 +175,7 @@ export default function SimulationPage({ notify, openOperator }: Props) {
         <label className="simulation-dropzone">
           <Upload size={28} />
           <strong>{fileName || 'Escolha o arquivo .json'}</strong>
-          <span>Use o cenário exemplo ou outro pacote compatível.</span>
+          <span>Opcional. O botão “Criar peça demo completa” acima já faz o teste sem precisar baixar arquivo.</span>
           <input
             type="file"
             accept=".json,application/json"
