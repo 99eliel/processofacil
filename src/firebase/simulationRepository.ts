@@ -304,7 +304,7 @@ export async function importSimulationPackage(
     dnaProduto: {
       tempoPadraoMin: pkg.ficha.dnaProduto?.tempoPadraoMin ?? null,
       maquinaPrincipal: pkg.ficha.dnaProduto?.maquinaPrincipal ?? '',
-      nivelDificuldade: pkg.ficha.dnaProduto?.nivelDificuldade ?? 'medio',
+      nivelDificuldade: pkg.ficha.dnaProduto?.nivelDificuldade ?? '',
       principaisErros: pkg.ficha.dnaProduto?.principaisErros ?? [],
     },
     motivoRevisao: 'Revisão inicial criada pelo simulador',
