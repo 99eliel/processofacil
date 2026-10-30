@@ -3,11 +3,11 @@ import type { SimulationPackage } from '../firebase/simulationRepository'
 export const demoTechnicalPiece = {
   "schemaVersion": 1,
   "tipo": "processo-facil-simulacao",
-  "id": "polo-demo-completa-sem-imagens-v1",
+  "id": "polo-demo-completa-sem-imagens-v2",
   "nome": "Polo Corporativa Azul Marinho — Demo Completa",
   "descricao": "Peça demonstrativa com dados técnicos realistas para testar o Processo Fácil. Valores ilustrativos, não substituem especificação técnica do fabricante.",
   "produto": {
-    "codigo": "DEMO-POLO-001",
+    "codigo": "DEMO-POLO-002",
     "descricao": "Polo Masculina Azul Marinho",
     "classificacoes": {
       "familia": "Uniformes",
@@ -383,7 +383,7 @@ export const demoTechnicalPiece = {
     "anexos": []
   },
   "op": {
-    "numero": "DEMO-OP-001",
+    "numero": "DEMO-OP-002",
     "prazo": "2026-10-30",
     "cor": "Azul Marinho",
     "variantes": [
