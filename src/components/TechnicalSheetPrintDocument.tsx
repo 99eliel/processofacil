@@ -77,7 +77,6 @@ export default function TechnicalSheetPrintDocument({
   responsibleName,
   onClose,
 }: Props) {
-  const classifications = product?.classificacoes ?? {}
   const linkedMaterials = revision.bom
     .map((line) => ({
       line,
@@ -107,35 +106,22 @@ export default function TechnicalSheetPrintDocument({
     .filter((operation) => operation.ferramenta.trim() || operation.regulagem.trim())
     .slice(0, 5)
 
-  const needlesAndThreads = linkedMaterials
-    .filter(({ material, line }) => {
-      const text = `${material?.categoria ?? ''} ${line.descricaoSnapshot}`.toLowerCase()
-      return text.includes('linha') || text.includes('agulha')
-    })
-    .slice(0, 5)
+  const needlesAndThreads = revision.agulhasLinhas.slice(0, 6)
 
-  const totalTime = revision.operacoes.reduce(
+  const calculatedTime = revision.operacoes.reduce(
     (sum, operation) => sum + Number(operation.tempoPadraoMin ?? 0),
     0,
   )
+  const totalTime = revision.dnaProduto.tempoPadraoMin ?? calculatedTime
 
-  const difficultyRank = { facil: 1, medio: 2, dificil: 3 } as const
-  const difficulty = revision.operacoes.reduce<'facil' | 'medio' | 'dificil'>(
-    (current, operation) => difficultyRank[operation.dificuldade] > difficultyRank[current]
-      ? operation.dificuldade
-      : current,
-    'facil',
-  )
-
-  const mainMachine = machines[0]?.maquina ?? '—'
+  const difficulty = revision.dnaProduto.nivelDificuldade
+  const mainMachine = revision.dnaProduto.maquinaPrincipal || machines[0]?.maquina || '—'
   const primaryVideo = revision.operacoes
     .flatMap((operation) => operation.midias.map((media) => ({ operation, media })))
     .find(({ media }) => media.tipo === 'video')
 
-  const criticalPoints = revision.operacoes
-    .flatMap((operation) => operation.pontosCriticos)
-    .filter(Boolean)
-    .slice(0, 5)
+  const criticalPoints = revision.controleQualidade.pontosCriticos.slice(0, 5)
+  const rejectedDefects = revision.controleQualidade.defeitosNaoAceitos.slice(0, 5)
 
   const images = [...revision.imagens].sort((a, b) => a.ordem - b.ordem)
 
@@ -188,25 +174,25 @@ export default function TechnicalSheetPrintDocument({
 
             <div className="ft-doc-identity">
               <DocLine label="DESCRIÇÃO" value={revision.produtoDescricao} />
-              <DocLine label="CLIENTE" value={company?.nomeFantasia || company?.nome || '—'} />
-              <DocLine label="COLEÇÃO" value={classifications.colecao || classifications.linha || '—'} />
-              <DocLine label="FAMÍLIA" value={classifications.familia || '—'} />
-              <DocLine label="MODELO" value={classifications.modelo || '—'} />
+              <DocLine label="CLIENTE" value={revision.cliente || '—'} />
+              <DocLine label="COLEÇÃO" value={revision.colecao || '—'} />
+              <DocLine label="FAMÍLIA" value={revision.familia || '—'} />
+              <DocLine label="MODELO" value={revision.modelo || '—'} />
               <DocLine label="GRADE" value={revision.tamanhos.join(' / ') || '—'} />
-              <DocLine label="RESPONSÁVEL TÉCNICO" value={responsibleName || '—'} />
+              <DocLine label="RESPONSÁVEL TÉCNICO" value={revision.responsavelTecnico || responsibleName || '—'} />
             </div>
 
             <div className="ft-doc-top-right">
               <DocBox title="DADOS DO TECIDO">
                 <MiniTable rows={[
-                  ['TECIDO PRINCIPAL', mainFabric?.line.descricaoSnapshot || '—'],
-                  ['COMPOSIÇÃO', classifications.composicao || '—'],
-                  ['GRAMATURA', classifications.gramatura || '—'],
-                  ['LARGURA', classifications.largura || '—'],
-                  ['FORNECEDOR', mainFabric?.line.fornecedorSnapshot || '—'],
-                  ['COR', classifications.cor || mainFabric?.line.corFixa || '—'],
-                  ['ENCOLHIMENTO MÁXIMO', classifications.encolhimento || '—'],
-                  ['SOLIDEZ DA COR', classifications.solidez || '—'],
+                  ['TECIDO PRINCIPAL', revision.dadosTecido.tecidoPrincipal || mainFabric?.line.descricaoSnapshot || '—'],
+                  ['COMPOSIÇÃO', revision.dadosTecido.composicao || '—'],
+                  ['GRAMATURA', revision.dadosTecido.gramatura || '—'],
+                  ['LARGURA', revision.dadosTecido.largura || '—'],
+                  ['FORNECEDOR', revision.dadosTecido.fornecedor || mainFabric?.line.fornecedorSnapshot || '—'],
+                  ['COR', revision.dadosTecido.cor || mainFabric?.line.corFixa || '—'],
+                  ['ENCOLHIMENTO MÁXIMO', revision.dadosTecido.encolhimentoMaximo || '—'],
+                  ['SOLIDEZ DA COR', revision.dadosTecido.solidezCor || '—'],
                 ]} />
               </DocBox>
               <DocBox title="AVIAMENTOS">
@@ -248,7 +234,7 @@ export default function TechnicalSheetPrintDocument({
               </DocBox>
               <DocBox title="AGULHAS E LINHAS">
                 <table className="ft-doc-table compact"><thead><tr><th>ITEM</th><th>ESPECIFICAÇÃO</th></tr></thead><tbody>
-                  {needlesAndThreads.length > 0 ? needlesAndThreads.map(({ line }) => <tr key={line.id}><td>{line.codigoSnapshot}</td><td>{line.descricaoSnapshot}</td></tr>) : <tr><td colSpan={2}>—</td></tr>}
+                  {needlesAndThreads.length > 0 ? needlesAndThreads.map((item) => <tr key={item.id}><td>{item.maquina || '—'}</td><td>{[item.agulha, item.linha].filter(Boolean).join(' · ') || '—'}</td></tr>) : <tr><td colSpan={2}>—</td></tr>}
                 </tbody></table>
               </DocBox>
             </div>
@@ -279,24 +265,24 @@ export default function TechnicalSheetPrintDocument({
             <DocBox title="CONTROLE DE QUALIDADE">
               <div className="ft-doc-quality-columns">
                 <div><strong>PONTOS CRÍTICOS DE CONTROLE</strong>
-                  {(criticalPoints.length > 0 ? criticalPoints : revision.checklist.map((item) => item.descricao).slice(0, 5)).map((item) => <span className="ok" key={item}>✓ {item}</span>)}
-                  {criticalPoints.length === 0 && revision.checklist.length === 0 && <span>—</span>}
+                  {criticalPoints.map((item) => <span className="ok" key={item}>✓ {item}</span>)}
+                  {criticalPoints.length === 0 && <span>—</span>}
                 </div>
                 <div><strong>DEFEITOS NÃO ACEITOS</strong>
-                  {revision.checklist.slice(0, 5).map((item) => <span className="bad" key={item.id}>✕ {item.descricao}</span>)}
-                  {revision.checklist.length === 0 && <span>—</span>}
+                  {rejectedDefects.map((item) => <span className="bad" key={item}>✕ {item}</span>)}
+                  {rejectedDefects.length === 0 && <span>—</span>}
                 </div>
               </div>
             </DocBox>
 
             <DocBox title="PROCESSO DE CORTE">
               <MiniTable rows={[
-                ['ENCAIXE', classifications.encaixe || '—'],
-                ['CONSUMO DE TECIDO', mainFabric ? `${formatNumber(mainFabric.line.consumo)} ${mainFabric.line.unidade} / peça` : '—'],
-                ['COMPRIMENTO DO RISCO', classifications.risco || '—'],
-                ['ALTURA DO ENFESTO', classifications.enfesto || '—'],
-                ['Nº DE FOLHAS', classifications.folhas || '—'],
-                ['PERDAS (%)', mainFabric ? `${formatNumber(mainFabric.line.perdaPercentual)}%` : '—'],
+                ['ENCAIXE', revision.processoCorte.encaixe || '—'],
+                ['CONSUMO DE TECIDO', revision.processoCorte.consumoTecido || (mainFabric ? `${formatNumber(mainFabric.line.consumo)} ${mainFabric.line.unidade} / peça` : '—')],
+                ['COMPRIMENTO DO RISCO', revision.processoCorte.comprimentoRisco || '—'],
+                ['ALTURA DO ENFESTO', revision.processoCorte.alturaEnfesto || '—'],
+                ['Nº DE FOLHAS', revision.processoCorte.numeroFolhas || '—'],
+                ['PERDAS (%)', revision.processoCorte.perdasPercentual || '—'],
               ]} />
             </DocBox>
 
@@ -310,13 +296,13 @@ export default function TechnicalSheetPrintDocument({
 
           <DocBox title="ANEXOS">
             <div className="ft-doc-attachments">
-              <Attachment icon={<FileText />} label="Molde PDF" active={false} />
-              <Attachment icon={<Ruler />} label="Encaixe Audaces" active={false} />
-              <Attachment icon={<Shirt />} label="Desenho Técnico" active={revision.imagens.length > 0} />
-              <Attachment icon={<ClipboardCheck />} label="Procedimento Operacional (POP)" active={revision.operacoes.length > 0} />
-              <Attachment icon={<Video />} label="Vídeo Operacional" active={Boolean(primaryVideo)} />
-              <Attachment icon={<Ruler />} label="Relatório de Medidas" active={revision.medidas.length > 0} />
-              <Attachment icon={<CheckCircle2 />} label="Aprovação do Cliente" active={revision.status === 'padrao'} />
+              <Attachment icon={<FileText />} label="Molde PDF" active={revision.anexos.some((item) => item.tipo === 'molde')} />
+              <Attachment icon={<Ruler />} label="Encaixe Audaces" active={revision.anexos.some((item) => item.tipo === 'encaixe')} />
+              <Attachment icon={<Shirt />} label="Desenho Técnico" active={revision.anexos.some((item) => item.tipo === 'desenho')} />
+              <Attachment icon={<ClipboardCheck />} label="Procedimento Operacional (POP)" active={revision.anexos.some((item) => item.tipo === 'pop')} />
+              <Attachment icon={<Video />} label="Vídeo Operacional" active={revision.anexos.some((item) => item.tipo === 'video') || Boolean(primaryVideo)} />
+              <Attachment icon={<Ruler />} label="Relatório de Medidas" active={revision.anexos.some((item) => item.tipo === 'relatorio_medidas')} />
+              <Attachment icon={<CheckCircle2 />} label="Aprovação do Cliente" active={revision.anexos.some((item) => item.tipo === 'aprovacao_cliente')} />
             </div>
           </DocBox>
 
@@ -329,7 +315,7 @@ export default function TechnicalSheetPrintDocument({
               </div>
               <div className="ft-doc-errors">
                 <strong>PRINCIPAIS ERROS ENCONTRADOS</strong>
-                {(revision.checklist.length > 0 ? revision.checklist.slice(0, 5).map((item) => item.descricao) : ['Sem critérios cadastrados']).map((item) => <span key={item}>✕ {item}</span>)}
+                {(revision.dnaProduto.principaisErros.length > 0 ? revision.dnaProduto.principaisErros.slice(0, 5) : ['Sem erros cadastrados']).map((item) => <span key={item}>✕ {item}</span>)}
               </div>
               <div className="ft-doc-video">
                 <strong>VÍDEO DE MONTAGEM</strong>
