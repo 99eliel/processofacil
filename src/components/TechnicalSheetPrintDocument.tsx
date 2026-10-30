@@ -124,6 +124,7 @@ export default function TechnicalSheetPrintDocument({
   const rejectedDefects = revision.controleQualidade.defeitosNaoAceitos.slice(0, 5)
 
   const images = [...revision.imagens].sort((a, b) => a.ordem - b.ordem)
+  const technicalDrawing = revision.anexos.find((item) => item.tipo === 'desenho' && item.url)
 
   const print = () => {
     window.setTimeout(() => window.print(), 60)
@@ -221,8 +222,12 @@ export default function TechnicalSheetPrintDocument({
 
             <DocBox title="DESENHO TÉCNICO">
               <div className="ft-doc-drawing">
-                <div><Shirt strokeWidth={1} /><span>FRENTE</span></div>
-                <div><Shirt strokeWidth={1} /><span>COSTAS</span></div>
+                {technicalDrawing?.url ? (
+                  <img className="ft-doc-drawing-image" src={technicalDrawing.url} alt="Desenho técnico" />
+                ) : <>
+                  <div><Shirt strokeWidth={1} /><span>FRENTE</span></div>
+                  <div><Shirt strokeWidth={1} /><span>COSTAS</span></div>
+                </>}
               </div>
             </DocBox>
 
@@ -233,8 +238,8 @@ export default function TechnicalSheetPrintDocument({
                 </tbody></table>
               </DocBox>
               <DocBox title="AGULHAS E LINHAS">
-                <table className="ft-doc-table compact"><thead><tr><th>ITEM</th><th>ESPECIFICAÇÃO</th></tr></thead><tbody>
-                  {needlesAndThreads.length > 0 ? needlesAndThreads.map((item) => <tr key={item.id}><td>{item.maquina || '—'}</td><td>{[item.agulha, item.linha].filter(Boolean).join(' · ') || '—'}</td></tr>) : <tr><td colSpan={2}>—</td></tr>}
+                <table className="ft-doc-table compact"><thead><tr><th>MÁQUINA</th><th>AGULHA</th><th>LINHA</th></tr></thead><tbody>
+                  {needlesAndThreads.length > 0 ? needlesAndThreads.map((item) => <tr key={item.id}><td>{item.maquina || '—'}</td><td>{item.agulha || '—'}</td><td>{item.linha || '—'}</td></tr>) : <tr><td colSpan={3}>—</td></tr>}
                 </tbody></table>
               </DocBox>
             </div>
