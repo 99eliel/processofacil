@@ -2078,3 +2078,26 @@ body {
     grid-template-columns:1fr;
   }
 }
+
+
+.simulation-header-actions {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.simulation-header-actions .primary-button,
+.simulation-header-actions .secondary-button {
+  min-height:44px;
+}
+@media (max-width:700px) {
+  .simulation-header-actions {
+    width:100%;
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .simulation-header-actions > * {
+    width:100%;
+    justify-content:center;
+  }
+}
