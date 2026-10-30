@@ -649,7 +649,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media screen and (max-width: 900px) {
   .ft-print-preview-overlay { padding:12px; }
   .ft-print-preview-toolbar {
     width:100%;
@@ -1312,7 +1312,7 @@
   }
 }
 
-@media (max-width:900px) {
+@media screen and (max-width:900px) {
   .ft-flex-root {
     transform-origin:top left;
     transform:scale(.62);
@@ -1390,4 +1390,33 @@
 .ft-flex-two .ft-flex-table th:nth-child(3),
 .ft-flex-two .ft-flex-table td:nth-child(3) {
   width: 40%;
+}
+
+
+/* Impressão deve usar escala física A4 real, nunca a escala responsiva da prévia */
+@media print {
+  .technical-print-root,
+  .technical-print-root.ft-flex-root,
+  .ft-flex-root {
+    transform: none !important;
+    transform-origin: initial !important;
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
+  }
+
+  .ft-flex-document {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    min-height: 297mm !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .ft-flex-hero-grid,
+  .ft-flex-two {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
 }
