@@ -78,7 +78,7 @@
 .ft-document-sheet * { box-sizing:border-box; }
 
 .ft-doc-header {
-  height: 18mm;
+  height: 20mm;
   border-radius: 1.4mm 1.4mm 0 0;
   display: grid;
   grid-template-columns: 1.15fr 1fr;
@@ -153,10 +153,10 @@
 }
 
 .ft-doc-top-grid {
-  height: 66mm;
+  height: 72mm;
   margin-top:1.5mm;
   display:grid;
-  grid-template-columns: 77mm 41mm 1fr;
+  grid-template-columns: 72mm 43mm 1fr;
   gap:2mm;
 }
 .ft-doc-visuals {
@@ -282,12 +282,12 @@
 }
 .ft-doc-mini-table span {
   color:#263d54;
-  font-size:1.45mm;
+  font-size:1.58mm;
   font-weight:900;
 }
 .ft-doc-mini-table strong {
   color:#384b5e;
-  font-size:1.5mm;
+  font-size:1.62mm;
   font-weight:600;
 }
 
@@ -310,13 +310,13 @@
 .ft-doc-table th {
   color:#263d54;
   background:#f1f4f7;
-  font-size:1.35mm;
+  font-size:1.48mm;
   font-weight:900;
   text-align:left;
 }
 .ft-doc-table td {
   color:#3b4d5f;
-  font-size:1.46mm;
+  font-size:1.62mm;
 }
 .ft-doc-table.compact th,
 .ft-doc-table.compact td { padding:.58mm .7mm; }
@@ -334,10 +334,10 @@
 }
 
 .ft-doc-middle-grid {
-  height: 38mm;
+  height: 43mm;
   margin-top:1.5mm;
   display:grid;
-  grid-template-columns:75mm 43mm 1fr;
+  grid-template-columns:72mm 44mm 1fr;
   gap:2mm;
 }
 .ft-doc-drawing {
@@ -363,7 +363,7 @@
 .ft-doc-drawing span {
   margin-top:1mm;
   color:#68798a;
-  font-size:1.35mm;
+  font-size:1.48mm;
   font-weight:900;
 }
 .ft-doc-right-stack {
@@ -374,7 +374,7 @@
 }
 
 .ft-doc-sequence-grid {
-  height: 40mm;
+  height: 45mm;
   margin-top:1.5mm;
   display:grid;
   grid-template-columns:75mm 43mm 1fr;
@@ -383,10 +383,10 @@
 .ft-doc-sequence-grid > div:last-child { visibility:hidden; }
 
 .ft-doc-control-grid {
-  height: 29mm;
+  height: 35mm;
   margin-top:1.5mm;
   display:grid;
-  grid-template-columns:84mm 55mm 1fr;
+  grid-template-columns:82mm 56mm 1fr;
   gap:2mm;
 }
 .ft-doc-quality-columns {
@@ -402,7 +402,7 @@
   font-size:1.42mm;
 }
 .ft-doc-quality-columns span {
-  font-size:1.45mm;
+  font-size:1.58mm;
   line-height:1.18;
 }
 .ft-doc-quality-columns .ok { color:#277d55; }
@@ -436,7 +436,7 @@
 .ft-doc-qr i.on { background:#0b1725; }
 
 .ft-document-sheet > .ft-doc-box {
-  height: 19mm;
+  height: 22mm;
   margin-top:1.5mm;
 }
 .ft-doc-attachments {
@@ -468,10 +468,10 @@
 }
 .ft-doc-attachment.active span { background:#e8f5f9; }
 .ft-doc-attachment svg { width:4.6mm; height:4.6mm; }
-.ft-doc-attachment strong { font-size:1.4mm; line-height:1.15; }
+.ft-doc-attachment strong { font-size:1.52mm; line-height:1.15; }
 
 .ft-doc-dna {
-  height: 28mm;
+  height: 34mm;
   margin-top:1.5mm;
   border:.22mm solid var(--line);
   overflow:hidden;
@@ -493,7 +493,7 @@
 .ft-doc-dna-grid strong {
   display:block;
   color:#2f465b;
-  font-size:1.45mm;
+  font-size:1.58mm;
 }
 .ft-doc-perfect {
   display:grid;
@@ -513,7 +513,7 @@
 }
 .ft-doc-errors span {
   color:#b64046;
-  font-size:1.35mm;
+  font-size:1.48mm;
 }
 .ft-doc-video-card {
   height:20mm;
@@ -533,7 +533,7 @@
   background:rgba(255,255,255,.92);
   color:#0b4166;
 }
-.ft-doc-video-card span { font-size:1.4mm; }
+.ft-doc-video-card span { font-size:1.52mm; }
 .ft-doc-dna-stats {
   display:grid;
   align-content:center;
@@ -545,7 +545,7 @@
 }
 .ft-doc-dna-stats span {
   color:#6e7f8e;
-  font-size:1.35mm;
+  font-size:1.48mm;
   font-weight:900;
 }
 .ft-doc-dna-stats strong {
@@ -575,12 +575,12 @@
 .ft-doc-difficulty .hard { background:#e55858; }
 .ft-doc-difficulty small {
   color:#516779;
-  font-size:1.4mm;
+  font-size:1.52mm;
   font-weight:900;
 }
 
 .ft-doc-footer {
-  height: 5.5mm;
+  height: 6mm;
   margin-top:1mm;
   display:flex;
   align-items:center;
@@ -588,12 +588,12 @@
   gap:4mm;
   padding:0 1mm;
   color:#617181;
-  font-size:1.4mm;
+  font-size:1.52mm;
   border-top:.18mm solid #dce3e8;
 }
 .ft-doc-footer strong {
   color:#4a5c6c;
-  font-size:1.35mm;
+  font-size:1.48mm;
 }
 
 @page {
@@ -661,5 +661,194 @@
     transform-origin:top left;
     transform:scale(.65);
     margin-bottom:-103mm;
+  }
+}
+
+
+/* v2 — fidelidade visual à referência */
+.ft-document-sheet {
+  font-size: 2.18mm;
+}
+
+.ft-doc-section-title {
+  min-height: 5.7mm;
+  padding: 1.35mm 2mm 1.1mm;
+  font-size: 1.9mm;
+  letter-spacing: .02mm;
+}
+
+.ft-doc-box-body {
+  height: calc(100% - 5.7mm);
+}
+
+.ft-doc-table th,
+.ft-doc-table td {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-word;
+  line-height: 1.12;
+}
+
+.ft-doc-table th {
+  font-size: 1.48mm;
+}
+
+.ft-doc-table td {
+  font-size: 1.62mm;
+}
+
+.ft-doc-table.compact th,
+.ft-doc-table.compact td {
+  padding: .7mm .75mm;
+}
+
+.ft-doc-mini-table > div {
+  min-height: 4.6mm;
+}
+
+.ft-doc-mini-table span {
+  font-size: 1.58mm;
+}
+
+.ft-doc-mini-table strong {
+  font-size: 1.62mm;
+}
+
+.ft-doc-line {
+  grid-template-columns: 18mm minmax(0,1fr);
+  gap: 1.4mm;
+}
+
+.ft-doc-line span {
+  font-size: 1.65mm;
+}
+
+.ft-doc-line strong {
+  font-size: 1.9mm;
+}
+
+.ft-doc-identity {
+  padding: 5mm 1.5mm 0;
+  gap: 1.7mm;
+}
+
+.ft-doc-product-image > b {
+  font-size: 1.9mm;
+}
+
+.ft-doc-image-placeholder {
+  background:
+    linear-gradient(135deg, rgba(12,62,100,.035), rgba(12,62,100,.08)),
+    #f7f9fb;
+  border: .22mm solid #ccd9e3;
+}
+
+.ft-doc-image-placeholder svg {
+  width: 10mm;
+  height: 10mm;
+  color: #698398;
+}
+
+.ft-doc-image-placeholder span {
+  font-size: 1.72mm;
+}
+
+.ft-doc-drawing svg {
+  width: 29mm;
+  height: 31mm;
+}
+
+.ft-doc-quality-columns {
+  gap: 2mm;
+  padding: 2mm 2.2mm;
+}
+
+.ft-doc-quality-columns strong {
+  font-size: 1.52mm;
+}
+
+.ft-doc-quality-columns span {
+  font-size: 1.56mm;
+}
+
+.ft-doc-quick-access p {
+  font-size: 1.62mm;
+}
+
+.ft-doc-attachment strong {
+  font-size: 1.5mm;
+}
+
+.ft-doc-dna-grid strong {
+  font-size: 1.55mm;
+}
+
+.ft-doc-errors span {
+  font-size: 1.45mm;
+}
+
+.ft-doc-video-card span {
+  font-size: 1.5mm;
+}
+
+.ft-doc-dna-stats span {
+  font-size: 1.45mm;
+}
+
+.ft-doc-dna-stats strong {
+  font-size: 2.15mm;
+}
+
+.ft-doc-difficulty small {
+  font-size: 1.5mm;
+}
+
+.ft-doc-footer {
+  font-size: 1.45mm;
+}
+
+.ft-doc-footer strong {
+  font-size: 1.45mm;
+}
+
+/* Cabeçalho mais próximo da referência */
+.ft-doc-header {
+  grid-template-columns: 1.2fr .95fr;
+}
+
+.ft-doc-brand {
+  padding: 3mm 4.2mm;
+}
+
+.ft-doc-brand h1 {
+  font-size: 5.7mm;
+}
+
+.ft-doc-brand p {
+  font-size: 2.65mm;
+}
+
+.ft-doc-meta > div {
+  padding: 3.2mm 2.2mm 2.1mm;
+}
+
+.ft-doc-meta span {
+  font-size: 1.55mm;
+}
+
+.ft-doc-meta strong {
+  margin-top: 1.9mm;
+  font-size: 2.25mm;
+}
+
+/* Visualização maior na tela sem alterar a impressão */
+@media screen and (min-width: 1100px) {
+  .ft-print-preview-toolbar {
+    width: min(1280px, calc(100vw - 56px));
+  }
+
+  .technical-print-root {
+    width: 210mm;
   }
 }
