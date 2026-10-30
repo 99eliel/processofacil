@@ -242,7 +242,11 @@ export default function App() {
       {page === 'workflow' && <WorkflowPage notify={notify} />}
       {page === 'ordens' && <ProductionOrdersPage notify={notify} />}
       {page === 'simulador' && (
-        <SimulationPage notify={notify} openOperator={() => open('operador')} />
+        <SimulationPage
+          notify={notify}
+          openOperator={() => open('operador')}
+          openPassport={() => open('fichas')}
+        />
       )}
       {page === 'operador' && <OperatorPage notify={notify} />}
       {page === 'qualidade' && <QualityPage notify={notify} />}
