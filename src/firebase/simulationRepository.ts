@@ -35,6 +35,42 @@ export type SimulationPackage = {
   }>
   ficha: {
     construcao: string
+    cliente?: string
+    colecao?: string
+    familia?: string
+    modelo?: string
+    responsavelTecnico?: string
+    dadosTecido?: {
+      tecidoPrincipal: string
+      composicao: string
+      gramatura: string
+      largura: string
+      fornecedor: string
+      cor: string
+      encolhimentoMaximo: string
+      solidezCor: string
+    }
+    processoCorte?: {
+      encaixe: string
+      consumoTecido: string
+      comprimentoRisco: string
+      alturaEnfesto: string
+      numeroFolhas: string
+      perdasPercentual: string
+    }
+    agulhasLinhas?: Array<{ maquina: string; agulha: string; linha: string }>
+    controleQualidade?: { pontosCriticos: string[]; defeitosNaoAceitos: string[] }
+    dnaProduto?: {
+      tempoPadraoMin?: number
+      maquinaPrincipal?: string
+      nivelDificuldade?: 'facil' | 'medio' | 'dificil'
+      principaisErros?: string[]
+    }
+    anexos?: Array<{
+      tipo: 'molde' | 'encaixe' | 'desenho' | 'pop' | 'video' | 'relatorio_medidas' | 'aprovacao_cliente' | 'outro'
+      nome: string
+      url: string
+    }>
     tamanhos: string[]
     imagens?: Array<{ url: string; legenda: string }>
     bom: Array<{
@@ -247,6 +283,30 @@ export async function importSimulationPackage(
     produtoCodigo: productCode,
     produtoDescricao: pkg.produto.descricao.trim(),
     construcao: pkg.ficha.construcao.trim(),
+    cliente: pkg.ficha.cliente?.trim() ?? '',
+    colecao: pkg.ficha.colecao?.trim() ?? '',
+    familia: pkg.ficha.familia?.trim() ?? pkg.produto.classificacoes?.familia ?? '',
+    modelo: pkg.ficha.modelo?.trim() ?? pkg.produto.classificacoes?.modelo ?? '',
+    responsavelTecnico: pkg.ficha.responsavelTecnico?.trim() ?? '',
+    dadosTecido: pkg.ficha.dadosTecido ?? {
+      tecidoPrincipal: '', composicao: '', gramatura: '', largura: '', fornecedor: '',
+      cor: pkg.op.cor?.trim() ?? '', encolhimentoMaximo: '', solidezCor: '',
+    },
+    processoCorte: pkg.ficha.processoCorte ?? {
+      encaixe: '', consumoTecido: '', comprimentoRisco: '', alturaEnfesto: '',
+      numeroFolhas: '', perdasPercentual: '',
+    },
+    agulhasLinhas: (pkg.ficha.agulhasLinhas ?? []).map((item) => ({
+      id: crypto.randomUUID(), ...item,
+    })),
+    controleQualidade: pkg.ficha.controleQualidade ?? { pontosCriticos: [], defeitosNaoAceitos: [] },
+    anexos: (pkg.ficha.anexos ?? []).map((item) => ({ id: crypto.randomUUID(), ...item })),
+    dnaProduto: {
+      tempoPadraoMin: pkg.ficha.dnaProduto?.tempoPadraoMin ?? null,
+      maquinaPrincipal: pkg.ficha.dnaProduto?.maquinaPrincipal ?? '',
+      nivelDificuldade: pkg.ficha.dnaProduto?.nivelDificuldade ?? 'medio',
+      principaisErros: pkg.ficha.dnaProduto?.principaisErros ?? [],
+    },
     motivoRevisao: 'Revisão inicial criada pelo simulador',
     blocos: {
       bom: true,
