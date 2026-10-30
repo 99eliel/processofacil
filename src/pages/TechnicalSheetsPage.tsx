@@ -527,6 +527,104 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
         </section>
       </div>
 
+      <section className="panel ft-complete-data-panel">
+        <div className="panel-head">
+          <div>
+            <span className="section-kicker">Dados da impressão</span>
+            <h3>Campos completos da Ficha Técnica</h3>
+          </div>
+          <FileText size={20} />
+        </div>
+
+        <div className="ft-complete-subsection">
+          <h4>Identificação</h4>
+          <div className="form-grid">
+            <label><span>Cliente</span><input disabled={!editable} value={editor.cliente} onChange={(e) => setEditor({ ...editor, cliente: e.target.value })} /></label>
+            <label><span>Coleção / projeto</span><input disabled={!editable} value={editor.colecao} onChange={(e) => setEditor({ ...editor, colecao: e.target.value })} /></label>
+            <label><span>Família / linha</span><input disabled={!editable} value={editor.familia} onChange={(e) => setEditor({ ...editor, familia: e.target.value })} /></label>
+            <label><span>Modelo</span><input disabled={!editable} value={editor.modelo} onChange={(e) => setEditor({ ...editor, modelo: e.target.value })} /></label>
+            <label className="wide"><span>Responsável técnico</span><input disabled={!editable} value={editor.responsavelTecnico} onChange={(e) => setEditor({ ...editor, responsavelTecnico: e.target.value })} /></label>
+          </div>
+        </div>
+
+        <div className="ft-complete-subsection">
+          <h4>Dados do tecido</h4>
+          <div className="form-grid">
+            <label><span>Tecido principal</span><input disabled={!editable} value={editor.dadosTecido.tecidoPrincipal} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, tecidoPrincipal: e.target.value } })} /></label>
+            <label><span>Composição</span><input disabled={!editable} value={editor.dadosTecido.composicao} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, composicao: e.target.value } })} /></label>
+            <label><span>Gramatura</span><input disabled={!editable} value={editor.dadosTecido.gramatura} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, gramatura: e.target.value } })} /></label>
+            <label><span>Largura</span><input disabled={!editable} value={editor.dadosTecido.largura} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, largura: e.target.value } })} /></label>
+            <label><span>Fornecedor</span><input disabled={!editable} value={editor.dadosTecido.fornecedor} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, fornecedor: e.target.value } })} /></label>
+            <label><span>Cor</span><input disabled={!editable} value={editor.dadosTecido.cor} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, cor: e.target.value } })} /></label>
+            <label><span>Encolhimento máximo</span><input disabled={!editable} value={editor.dadosTecido.encolhimentoMaximo} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, encolhimentoMaximo: e.target.value } })} /></label>
+            <label><span>Solidez da cor</span><input disabled={!editable} value={editor.dadosTecido.solidezCor} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, solidezCor: e.target.value } })} /></label>
+          </div>
+        </div>
+
+        <div className="ft-complete-subsection">
+          <h4>Processo de corte</h4>
+          <div className="form-grid">
+            <label><span>Encaixe</span><input disabled={!editable} value={editor.processoCorte.encaixe} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, encaixe: e.target.value } })} /></label>
+            <label><span>Consumo de tecido</span><input disabled={!editable} value={editor.processoCorte.consumoTecido} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, consumoTecido: e.target.value } })} /></label>
+            <label><span>Comprimento do risco</span><input disabled={!editable} value={editor.processoCorte.comprimentoRisco} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, comprimentoRisco: e.target.value } })} /></label>
+            <label><span>Altura do enfesto</span><input disabled={!editable} value={editor.processoCorte.alturaEnfesto} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, alturaEnfesto: e.target.value } })} /></label>
+            <label><span>Nº de folhas</span><input disabled={!editable} value={editor.processoCorte.numeroFolhas} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, numeroFolhas: e.target.value } })} /></label>
+            <label><span>Perdas (%)</span><input disabled={!editable} value={editor.processoCorte.perdasPercentual} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, perdasPercentual: e.target.value } })} /></label>
+          </div>
+        </div>
+
+        <div className="ft-complete-subsection">
+          <h4>Controle de qualidade</h4>
+          <div className="form-grid">
+            <label><span>Pontos críticos de controle · um por linha</span><textarea rows={6} disabled={!editable} value={editor.controleQualidade.pontosCriticos.join('\n')} onChange={(e) => setEditor({ ...editor, controleQualidade: { ...editor.controleQualidade, pontosCriticos: e.target.value.split('\n').map((item) => item.trim()).filter(Boolean) } })} /></label>
+            <label><span>Defeitos não aceitos · um por linha</span><textarea rows={6} disabled={!editable} value={editor.controleQualidade.defeitosNaoAceitos.join('\n')} onChange={(e) => setEditor({ ...editor, controleQualidade: { ...editor.controleQualidade, defeitosNaoAceitos: e.target.value.split('\n').map((item) => item.trim()).filter(Boolean) } })} /></label>
+          </div>
+        </div>
+
+        <div className="ft-complete-subsection">
+          <div className="ft-complete-subhead">
+            <h4>Agulhas e linhas</h4>
+            {editable && <button type="button" className="secondary-button compact" onClick={() => setEditor({ ...editor, agulhasLinhas: [...editor.agulhasLinhas, { id: crypto.randomUUID(), maquina: '', agulha: '', linha: '' }] })}><Plus size={15} /> Linha</button>}
+          </div>
+          {editor.agulhasLinhas.length === 0 ? <div className="empty-state small-empty"><span>Nenhuma especificação cadastrada.</span></div> :
+            <div className="ft-needle-list">{editor.agulhasLinhas.map((item) => <div key={item.id}>
+              <input disabled={!editable} value={item.maquina} onChange={(e) => setEditor({ ...editor, agulhasLinhas: editor.agulhasLinhas.map((row) => row.id === item.id ? { ...row, maquina: e.target.value } : row) })} placeholder="Máquina" />
+              <input disabled={!editable} value={item.agulha} onChange={(e) => setEditor({ ...editor, agulhasLinhas: editor.agulhasLinhas.map((row) => row.id === item.id ? { ...row, agulha: e.target.value } : row) })} placeholder="Agulha" />
+              <input disabled={!editable} value={item.linha} onChange={(e) => setEditor({ ...editor, agulhasLinhas: editor.agulhasLinhas.map((row) => row.id === item.id ? { ...row, linha: e.target.value } : row) })} placeholder="Linha" />
+              {editable && <button className="icon-button danger-icon" onClick={() => setEditor({ ...editor, agulhasLinhas: editor.agulhasLinhas.filter((row) => row.id !== item.id) })}><Trash2 size={14} /></button>}
+            </div>)}</div>}
+        </div>
+
+        <div className="ft-complete-subsection">
+          <h4>DNA do produto</h4>
+          <div className="form-grid">
+            <label><span>Tempo padrão total (min)</span><input type="number" step="0.01" disabled={!editable} value={editor.dnaProduto.tempoPadraoMin ?? ''} onChange={(e) => setEditor({ ...editor, dnaProduto: { ...editor.dnaProduto, tempoPadraoMin: e.target.value === '' ? null : Number(e.target.value) } })} /></label>
+            <label><span>Máquina principal</span><input disabled={!editable} value={editor.dnaProduto.maquinaPrincipal} onChange={(e) => setEditor({ ...editor, dnaProduto: { ...editor.dnaProduto, maquinaPrincipal: e.target.value } })} /></label>
+            <label><span>Nível de dificuldade</span><select disabled={!editable} value={editor.dnaProduto.nivelDificuldade} onChange={(e) => setEditor({ ...editor, dnaProduto: { ...editor.dnaProduto, nivelDificuldade: e.target.value as TechnicalRevision['dnaProduto']['nivelDificuldade'] } })}><option value="">Não informado</option><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option></select></label>
+            <label className="wide"><span>Principais erros encontrados · um por linha</span><textarea rows={5} disabled={!editable} value={editor.dnaProduto.principaisErros.join('\n')} onChange={(e) => setEditor({ ...editor, dnaProduto: { ...editor.dnaProduto, principaisErros: e.target.value.split('\n').map((item) => item.trim()).filter(Boolean) } })} /></label>
+          </div>
+        </div>
+
+        <div className="ft-complete-subsection">
+          <h4>Anexos da Ficha Técnica</h4>
+          <div className="ft-editor-attachment-grid">
+            {attachmentDefinitions.map((attachment) => {
+              const current = editor.anexos.find((item) => item.tipo === attachment.tipo)
+              return <label key={attachment.tipo} className={`ft-editor-attachment ${current ? 'filled' : ''}`}>
+                <FileText size={17} />
+                <strong>{attachment.nome}</strong>
+                <span>{current ? 'Arquivo vinculado' : 'Selecionar arquivo'}</span>
+                {editable && <input type="file" disabled={busy} onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (file) void uploadAttachment(attachment.tipo, attachment.nome, file)
+                  event.currentTarget.value = ''
+                }} />}
+              </label>
+            })}
+          </div>
+        </div>
+      </section>
+
       <section className="panel ft-images-panel">
         <div className="panel-head">
           <div><span className="section-kicker">Referência visual</span><h3>Imagens da revisão</h3></div>
