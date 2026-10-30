@@ -29,7 +29,11 @@ import {
   saveTechnicalDraft,
   submitTechnicalRevision,
 } from '../firebase/technicalSheetRepository'
-import { deleteTechnicalSheetImage, uploadTechnicalSheetImage } from '../firebase/storageRepository'
+import {
+  deleteTechnicalSheetImage,
+  uploadTechnicalAttachment,
+  uploadTechnicalSheetImage,
+} from '../firebase/storageRepository'
 import TechnicalOperationsEditor from '../components/TechnicalOperationsEditor'
 import TechnicalSheetPrintDocument from '../components/TechnicalSheetPrintDocument'
 import type { BomLine, Material, MaterialSupplier, Product, TechnicalRevision, TechnicalSheetSummary } from '../domain/types'
@@ -48,6 +52,7 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
   const [materialToAdd, setMaterialToAdd] = useState('')
   const [newSize, setNewSize] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [imageTypeToUpload, setImageTypeToUpload] = useState<'frente' | 'costas' | 'detalhe_1' | 'detalhe_2' | 'peca_perfeita' | 'outro'>('frente')
   const [localError, setLocalError] = useState('')
   const [printPreview, setPrintPreview] = useState(false)
 
@@ -351,7 +356,10 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
     })
   }
 
-  const uploadImage = async (file: File) => {
+  const uploadImage = async (
+    file: File,
+    tipo: 'frente' | 'costas' | 'detalhe_1' | 'detalhe_2' | 'peca_perfeita' | 'outro',
+  ) => {
     if (!editor || !editable || !empresaId || !user) return
     if (editor.imagens.length >= 6) {
       setLocalError('A revisão aceita no máximo 6 imagens.')
@@ -430,6 +438,46 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
     } catch (reason) {
       console.error(reason)
       setLocalError('Não foi possível atualizar a revisão antes de remover a imagem.')
+    }
+  }
+
+  const uploadAttachment = async (
+    tipo: TechnicalRevision['anexos'][number]['tipo'],
+    nome: string,
+    file: File,
+  ) => {
+    if (!editor || !editable || !empresaId || !user) return
+    setBusy(true)
+    setLocalError('')
+    try {
+      const uploaded = await uploadTechnicalAttachment(
+        empresaId,
+        editor.produtoCodigo,
+        editor.numero,
+        tipo,
+        file,
+      )
+      const nextEditor: TechnicalRevision = {
+        ...editor,
+        anexos: [
+          ...editor.anexos.filter((item) => item.tipo !== tipo),
+          {
+            id: crypto.randomUUID(),
+            tipo,
+            nome,
+            url: uploaded.url,
+            path: uploaded.path,
+          },
+        ],
+      }
+      await saveTechnicalDraft(empresaId, user.uid, nextEditor)
+      setEditor(nextEditor)
+      notify(`${nome} vinculado à Ficha Técnica.`)
+    } catch (reason) {
+      console.error(reason)
+      setLocalError(reason instanceof Error ? reason.message : 'Não foi possível enviar o anexo.')
+    } finally {
+      setBusy(false)
     }
   }
 
