@@ -1807,3 +1807,102 @@ body {
   .piece-material-fields { grid-template-columns:1fr; }
   .piece-complete-summary ul { grid-template-columns:1fr; }
 }
+
+
+/* Ficha completa alinhada ao documento técnico */
+.piece-triple-row {
+  display:grid !important;
+  grid-template-columns:1fr 1fr 1fr 36px !important;
+  gap:8px !important;
+}
+.piece-triple-row input {
+  min-height:42px;
+  border:1px solid #dce5ec;
+  border-radius:11px;
+  padding:9px 10px;
+  font:inherit;
+  font-size:11.5px;
+}
+.piece-two-list-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+}
+.piece-two-list-grid > div {
+  padding:14px;
+  border:1px solid #e1e8ee;
+  border-radius:15px;
+  background:#fbfcfd;
+}
+.piece-two-list-grid > div > strong {
+  display:block;
+  margin-bottom:10px;
+  color:#29455e;
+  font-size:12px;
+}
+.piece-defect-mark {
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:#fff0f0;
+  color:#c74b4b;
+  font-size:17px;
+  font-weight:900;
+}
+.piece-attachment-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.piece-attachment-upload {
+  min-height:86px;
+  border:1px dashed #bfd7e5;
+  border-radius:14px;
+  padding:13px;
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr);
+  grid-template-rows:auto auto;
+  column-gap:10px;
+  align-items:center;
+  background:#f8fbfd;
+  color:#0a6ab0;
+  cursor:pointer;
+}
+.piece-attachment-upload.filled {
+  border-style:solid;
+  border-color:#9fd3c0;
+  background:#f3fbf7;
+  color:#2b865e;
+}
+.piece-attachment-upload > svg {
+  grid-row:1/3;
+}
+.piece-attachment-upload strong {
+  color:#2c465e;
+  font-size:11px;
+}
+.piece-attachment-upload span {
+  color:#8193a2;
+  font-size:9.5px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.piece-attachment-upload input {
+  display:none;
+}
+
+@media (max-width:900px) {
+  .piece-two-list-grid,
+  .piece-attachment-grid {
+    grid-template-columns:1fr;
+  }
+  .piece-triple-row {
+    grid-template-columns:1fr !important;
+  }
+  .piece-triple-row button {
+    justify-self:end;
+  }
+}
