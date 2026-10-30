@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useSystem } from '../system/SystemProvider'
 import {
+  importDemoTechnicalPiece,
   importSimulationPackage,
   parseSimulationFile,
   resetSimulationJourney,
@@ -23,9 +24,10 @@ import {
 type Props = {
   notify: (message: string) => void
   openOperator: () => void
+  openPassport: () => void
 }
 
-export default function SimulationPage({ notify, openOperator }: Props) {
+export default function SimulationPage({ notify, openOperator, openPassport }: Props) {
   const { activeCompany, user } = useSystem()
   const empresaId = activeCompany?.id
   const [pkg, setPkg] = useState<SimulationPackage | null>(null)
@@ -107,12 +109,12 @@ export default function SimulationPage({ notify, openOperator }: Props) {
       const parsed = parseSimulationFile(text)
       setPkg(parsed)
       setFileName('Peça demonstrativa interna')
-      const imported = await importSimulationPackage(empresaId, user.uid, parsed)
+      const imported = await importDemoTechnicalPiece(empresaId, user.uid, parsed)
       setResult(imported)
       notify(
         imported.alreadyExists
-          ? 'A peça demonstrativa já existe no sistema.'
-          : 'Peça demonstrativa completa criada. Agora você pode adicionar as imagens na Ficha Técnica.',
+          ? 'A peça demonstrativa já existe e está disponível para edição.'
+          : 'Peça demonstrativa criada como rascunho. Agora só falta adicionar as imagens.',
       )
     } catch (reason) {
       console.error(reason)
@@ -223,28 +225,37 @@ export default function SimulationPage({ notify, openOperator }: Props) {
           <div className="simulation-success">
             <CheckCircle2 size={26} />
             <div>
-              <strong>{result.alreadyExists ? 'Cenário já disponível' : 'Cenário criado com sucesso'}</strong>
-              <span>{result.orderNumber} · {result.productCode}</span>
+              <strong>{result.orderNumber ? (result.alreadyExists ? 'Cenário já disponível' : 'Cenário criado com sucesso') : (result.alreadyExists ? 'Peça demo já disponível' : 'Peça demo criada com sucesso')}</strong>
+              <span>{result.orderNumber ? `${result.orderNumber} · ${result.productCode}` : `${result.productCode} · REV 01 em rascunho`}</span>
             </div>
           </div>
 
           <div className="simulation-created-list">
             <div><span>Materiais</span><strong>{result.materials}</strong></div>
             <div><span>Produto</span><strong>{result.productCode}</strong></div>
-            <div><span>Revisão publicada</span><strong>REV 01</strong></div>
-            <div><span>Operações congeladas</span><strong>{result.operations}</strong></div>
-            <div><span>OP</span><strong>{result.orderNumber}</strong></div>
-            <div><span>Status inicial</span><strong>Em fluxo</strong></div>
+            <div><span>Ficha Técnica</span><strong>REV 01</strong></div>
+            <div><span>Operações / POPs</span><strong>{result.operations}</strong></div>
+            {result.orderNumber ? <>
+              <div><span>OP</span><strong>{result.orderNumber}</strong></div>
+              <div><span>Status inicial</span><strong>Em fluxo</strong></div>
+            </> : <>
+              <div><span>Status</span><strong>Rascunho editável</strong></div>
+              <div><span>Falta</span><strong>Adicionar imagens</strong></div>
+            </>}
           </div>
 
           <div className="simulation-actions">
-            <button className="primary-button" onClick={openOperator}>
-              <MonitorPlay size={17} /> Abrir Modo Operador
-            </button>
-            <button className="secondary-button" disabled={busy || !pkg} onClick={reset}>
-              {busy ? <Loader2 className="spin" size={16} /> : <RotateCcw size={16} />}
-              Reiniciar trajeto
-            </button>
+            {result.orderNumber ? <>
+              <button className="primary-button" onClick={openOperator}>
+                <MonitorPlay size={17} /> Abrir Modo Operador
+              </button>
+              <button className="secondary-button" disabled={busy || !pkg} onClick={reset}>
+                {busy ? <Loader2 className="spin" size={16} /> : <RotateCcw size={16} />}
+                Reiniciar trajeto
+              </button>
+            </> : <button className="primary-button" onClick={openPassport}>
+              <FileText size={17} /> Abrir Ficha Técnica e adicionar imagens
+            </button>}
           </div>
         </>}
       </section>
