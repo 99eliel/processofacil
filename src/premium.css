@@ -2101,3 +2101,30 @@ body {
     justify-content:center;
   }
 }
+
+
+.ft-upload-feedback {
+  margin: 10px 0 4px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:10.5px;
+}
+.ft-upload-feedback.loading {
+  color:#0b6da2;
+  background:#edf7fb;
+  border:1px solid #c9e5f1;
+}
+.ft-upload-feedback.error {
+  align-items:flex-start;
+  flex-direction:column;
+  gap:3px;
+  color:#9f3131;
+  background:#fff1f1;
+  border:1px solid #f0caca;
+}
+.ft-upload-feedback.error strong {
+  font-size:11px;
+}
