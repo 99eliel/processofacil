@@ -1335,3 +1335,59 @@
     height:auto !important;
   }
 }
+
+
+/* Correção de overflow horizontal no documento dinâmico */
+.ft-flex-hero-grid,
+.ft-flex-two {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.ft-flex-hero-grid > *,
+.ft-flex-two > *,
+.ft-flex-box,
+.ft-flex-box-body {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ft-flex-box {
+  overflow: hidden;
+}
+
+.ft-flex-table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+}
+
+.ft-flex-table th,
+.ft-flex-table td {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.ft-flex-two .ft-flex-table th,
+.ft-flex-two .ft-flex-table td {
+  padding-left: 1mm;
+  padding-right: 1mm;
+}
+
+.ft-flex-two .ft-flex-table th:first-child,
+.ft-flex-two .ft-flex-table td:first-child {
+  width: 31%;
+}
+
+.ft-flex-two .ft-flex-table th:nth-child(2),
+.ft-flex-two .ft-flex-table td:nth-child(2) {
+  width: 29%;
+}
+
+.ft-flex-two .ft-flex-table th:nth-child(3),
+.ft-flex-two .ft-flex-table td:nth-child(3) {
+  width: 40%;
+}
