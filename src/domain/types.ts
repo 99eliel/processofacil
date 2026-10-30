@@ -238,6 +238,22 @@ export type TechnicalAttachment = {
   path?: string
 }
 
+export type TechnicalProductImageType =
+  | 'frente'
+  | 'costas'
+  | 'detalhe_1'
+  | 'detalhe_2'
+  | 'peca_perfeita'
+  | 'outro'
+
+export type TechnicalProductImage = {
+  url: string
+  path?: string
+  legenda: string
+  ordem: number
+  tipo?: TechnicalProductImageType
+}
+
 export type TechnicalProductDna = {
   tempoPadraoMin: number | null
   maquinaPrincipal: string
@@ -274,7 +290,7 @@ export type TechnicalRevision = {
   medidas: MeasurementRow[]
   checklist: TechnicalChecklistItem[]
   operacoes: TechnicalOperation[]
-  imagens: Array<{ url: string; path?: string; legenda: string; ordem: number }>
+  imagens: TechnicalProductImage[]
   aprovadoPor?: string
   aprovadoEm?: unknown
 }
