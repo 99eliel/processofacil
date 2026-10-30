@@ -1532,3 +1532,232 @@
     margin-top: 2mm !important;
   }
 }
+
+
+/* v4 - impressao robusta: fluxo continuo, sem paginacao artificial */
+.ft-flex-two .ft-flex-table th:first-child,
+.ft-flex-two .ft-flex-table td:first-child,
+.ft-flex-two .ft-flex-table th:nth-child(2),
+.ft-flex-two .ft-flex-table td:nth-child(2),
+.ft-flex-two .ft-flex-table th:nth-child(3),
+.ft-flex-two .ft-flex-table td:nth-child(3) {
+  width: auto;
+}
+
+/* Larguras especificas por tipo de tabela */
+.ft-materials-table th:nth-child(1),
+.ft-materials-table td:nth-child(1) { width: 18%; }
+.ft-materials-table th:nth-child(2),
+.ft-materials-table td:nth-child(2) { width: 37%; }
+.ft-materials-table th:nth-child(3),
+.ft-materials-table td:nth-child(3) { width: 25%; }
+.ft-materials-table th:nth-child(4),
+.ft-materials-table td:nth-child(4) { width: 20%; }
+
+.ft-measures-table th:first-child,
+.ft-measures-table td:first-child { width: 22%; }
+.ft-measures-table th:nth-child(2),
+.ft-measures-table td:nth-child(2) { width: 10%; }
+
+.ft-operations-table th:nth-child(1),
+.ft-operations-table td:nth-child(1) { width: 6%; }
+.ft-operations-table th:nth-child(2),
+.ft-operations-table td:nth-child(2) { width: 20%; }
+.ft-operations-table th:nth-child(3),
+.ft-operations-table td:nth-child(3) { width: 16%; }
+.ft-operations-table th:nth-child(4),
+.ft-operations-table td:nth-child(4) { width: 18%; }
+.ft-operations-table th:nth-child(5),
+.ft-operations-table td:nth-child(5) { width: 30%; }
+.ft-operations-table th:nth-child(6),
+.ft-operations-table td:nth-child(6) { width: 10%; }
+
+.ft-machines-table th:nth-child(1),
+.ft-machines-table td:nth-child(1) { width: 60%; }
+.ft-machines-table th:nth-child(2),
+.ft-machines-table td:nth-child(2) { width: 40%; }
+
+.ft-accessories-table th:nth-child(1),
+.ft-accessories-table td:nth-child(1) { width: 28%; }
+.ft-accessories-table th:nth-child(2),
+.ft-accessories-table td:nth-child(2) { width: 30%; }
+.ft-accessories-table th:nth-child(3),
+.ft-accessories-table td:nth-child(3) { width: 42%; }
+
+.ft-needles-table th:nth-child(1),
+.ft-needles-table td:nth-child(1) { width: 30%; }
+.ft-needles-table th:nth-child(2),
+.ft-needles-table td:nth-child(2) { width: 30%; }
+.ft-needles-table th:nth-child(3),
+.ft-needles-table td:nth-child(3) { width: 40%; }
+
+@media print {
+  /* desfaz completamente a paginacao planejada anterior */
+  .ft-flex-document {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    min-height: 297mm !important;
+    height: auto !important;
+    padding: 5mm !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  .ft-print-page,
+  .ft-print-page-one,
+  .ft-print-page-two,
+  .ft-print-page-one.has-next {
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    break-before: auto !important;
+    break-after: auto !important;
+    page-break-before: auto !important;
+    page-break-after: auto !important;
+  }
+
+  .ft-print-continuation-header {
+    display: none !important;
+  }
+
+  /* deixa o fluxo usar o espaco restante da folha */
+  .ft-print-page .ft-flex-two {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  .ft-print-page .ft-flex-box,
+  .ft-print-page .ft-flex-dna,
+  .ft-flex-photo-grid figure {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* compactacao somente do PDF */
+  .ft-flex-header {
+    min-height: 0 !important;
+  }
+
+  .ft-flex-brand {
+    min-height: 17mm !important;
+    padding: 2.7mm 4mm !important;
+  }
+
+  .ft-flex-brand h1 {
+    font-size: 5mm !important;
+  }
+
+  .ft-flex-brand p {
+    margin-top: .8mm !important;
+    font-size: 2.1mm !important;
+  }
+
+  .ft-flex-meta > div {
+    padding: 2.7mm 1.7mm !important;
+  }
+
+  .ft-flex-hero-grid,
+  .ft-flex-two {
+    gap: 2mm !important;
+    margin-top: 2mm !important;
+  }
+
+  .ft-flex-photo-grid {
+    gap: 1.5mm !important;
+  }
+
+  .ft-flex-photo-grid figure {
+    min-height: 35mm !important;
+  }
+
+  .ft-flex-photo-grid img {
+    height: 31mm !important;
+  }
+
+  .ft-flex-photo-grid figcaption {
+    padding: 1mm 1.5mm !important;
+  }
+
+  .ft-flex-box,
+  .ft-flex-dna {
+    margin-top: 2mm !important;
+  }
+
+  .ft-flex-section-title {
+    padding: 1.15mm 1.8mm !important;
+    font-size: 1.65mm !important;
+  }
+
+  .ft-flex-kv > div {
+    min-height: 4mm !important;
+  }
+
+  .ft-flex-kv span,
+  .ft-flex-kv strong {
+    padding: .85mm 1.1mm !important;
+  }
+
+  .ft-flex-table th,
+  .ft-flex-table td {
+    padding: .8mm .9mm !important;
+    font-size: 1.45mm !important;
+    line-height: 1.12 !important;
+  }
+
+  .ft-flex-table th {
+    font-size: 1.35mm !important;
+  }
+
+  .ft-flex-drawing {
+    min-height: 42mm !important;
+    padding: 2mm !important;
+  }
+
+  .ft-flex-drawing img {
+    max-height: 45mm !important;
+  }
+
+  .ft-flex-quality {
+    padding: 1.5mm !important;
+    gap: 1.5mm !important;
+  }
+
+  .ft-flex-quick {
+    min-height: 27mm !important;
+    padding: 2mm !important;
+  }
+
+  .ft-flex-qr {
+    width: 22mm !important;
+    height: 22mm !important;
+  }
+
+  .ft-flex-attachments {
+    padding: 1.5mm !important;
+    gap: 1mm !important;
+  }
+
+  .ft-flex-attachments > div {
+    min-height: 12mm !important;
+    padding: 1.5mm !important;
+  }
+
+  .ft-flex-dna-grid > div {
+    min-height: 28mm !important;
+    padding: 1.8mm !important;
+  }
+
+  .ft-flex-dna-grid img {
+    height: 21mm !important;
+  }
+
+  .ft-flex-footer {
+    margin-top: 2mm !important;
+    padding-top: 1.5mm !important;
+  }
+}
