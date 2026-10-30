@@ -16,7 +16,6 @@ import {
   ShieldCheck,
   Sparkles,
   Trash2,
-  Upload,
   Video,
 } from 'lucide-react'
 import { useSystem } from '../system/SystemProvider'
