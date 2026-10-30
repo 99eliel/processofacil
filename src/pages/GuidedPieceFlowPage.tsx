@@ -6,6 +6,9 @@ import {
   FileText,
   ImagePlus,
   Loader2,
+  Paperclip,
+  Scissors,
+  Wrench,
   MonitorPlay,
   PackageCheck,
   Plus,
@@ -358,8 +361,6 @@ export default function GuidedPieceFlowPage({
         classificacoes: {
           cliente: piece.cliente.trim(),
           colecao: piece.colecao.trim(),
-          cliente: piece.cliente.trim(),
-          colecao: piece.colecao.trim(),
           familia: piece.familia.trim(),
           modelo: piece.modelo.trim(),
           cor: piece.cor.trim(),
@@ -372,6 +373,8 @@ export default function GuidedPieceFlowPage({
         codigo: generatedCode,
         descricao: piece.descricao.trim(),
         classificacoes: {
+          cliente: piece.cliente.trim(),
+          colecao: piece.colecao.trim(),
           familia: piece.familia.trim(),
           modelo: piece.modelo.trim(),
           cor: piece.cor.trim(),
@@ -446,7 +449,7 @@ export default function GuidedPieceFlowPage({
         })),
       }))
 
-      const checklist: TechnicalChecklistItem[] = qualityItems
+      const checklist: TechnicalChecklistItem[] = qualityCritical
         .map((item) => item.trim())
         .filter(Boolean)
         .map((descricao) => ({
@@ -660,7 +663,7 @@ export default function GuidedPieceFlowPage({
         <p>Preencha tudo em uma única tela. O sistema cria o produto, publica o Passaporte e, se quiser, já libera a primeira OP.</p>
       </div>
       <div className="piece-complete-score">
-        <strong>{completedSections}/7</strong>
+        <strong>{completedSections}/12</strong>
         <span>blocos preenchidos</span>
       </div>
     </section>
@@ -673,8 +676,11 @@ export default function GuidedPieceFlowPage({
           <div className="guided-form-grid">
             <label className="guided-field wide"><span>Nome da peça *</span><input value={piece.descricao} onChange={(e) => setPiece({ ...piece, descricao: e.target.value })} placeholder="Ex.: Polo Masculina Corporativa" autoFocus /></label>
             <label className="guided-field"><span>Referência / código</span><input value={piece.codigo} onChange={(e) => setPiece({ ...piece, codigo: e.target.value.toUpperCase() })} placeholder="Opcional · gerado automaticamente" /></label>
+            <label className="guided-field"><span>Cliente</span><input value={piece.cliente} onChange={(e) => setPiece({ ...piece, cliente: e.target.value })} placeholder="Ex.: Empresa XYZ" /></label>
+            <label className="guided-field"><span>Coleção / projeto</span><input value={piece.colecao} onChange={(e) => setPiece({ ...piece, colecao: e.target.value })} placeholder="Ex.: Corporativo 2027" /></label>
             <label className="guided-field"><span>Família / linha</span><input value={piece.familia} onChange={(e) => setPiece({ ...piece, familia: e.target.value })} placeholder="Ex.: Uniformes" /></label>
             <label className="guided-field"><span>Modelo</span><input value={piece.modelo} onChange={(e) => setPiece({ ...piece, modelo: e.target.value })} placeholder="Ex.: Polo masculina" /></label>
+            <label className="guided-field"><span>Responsável técnico</span><input value={piece.responsavelTecnico} onChange={(e) => setPiece({ ...piece, responsavelTecnico: e.target.value })} placeholder="Ex.: Márcia Pedro" /></label>
             <label className="guided-field"><span>Cor principal</span><input value={piece.cor} onChange={(e) => { setPiece({ ...piece, cor: e.target.value }); setProduction((p) => ({ ...p, cor: e.target.value })) }} placeholder="Ex.: Azul Marinho" /></label>
             <label className="guided-field wide"><span>Tamanhos / variantes *</span><input value={piece.tamanhos} onChange={(e) => updateSizes(e.target.value)} placeholder="P, M, G, GG" /><small>Separe por vírgula.</small></label>
             <label className="guided-field wide"><span>Como a peça é construída? *</span><textarea rows={5} value={piece.construcao} onChange={(e) => setPiece({ ...piece, construcao: e.target.value })} placeholder="Descreva material, formato, montagem e acabamento de forma simples." /></label>
@@ -691,7 +697,20 @@ export default function GuidedPieceFlowPage({
           {imageFiles.length > 0 && <div className="piece-file-chips">{imageFiles.map((file) => <span key={file.name}>{file.name}</span>)}</div>}
         </FormSection>
 
-        <FormSection number="3" icon={Boxes} title="Materiais e consumo" text="Escolha um material existente ou cadastre um material rápido aqui mesmo.">
+        <FormSection number="3" icon={FileText} title="Dados do tecido" text="Este bloco preenche diretamente o quadro DADOS DO TECIDO da Ficha Técnica.">
+          <div className="guided-form-grid">
+            <label className="guided-field"><span>Tecido principal</span><input value={fabric.tecidoPrincipal} onChange={(e) => setFabric({ ...fabric, tecidoPrincipal: e.target.value })} placeholder="Ex.: Malha Piquet" /></label>
+            <label className="guided-field"><span>Composição</span><input value={fabric.composicao} onChange={(e) => setFabric({ ...fabric, composicao: e.target.value })} placeholder="Ex.: 50% algodão / 50% poliéster" /></label>
+            <label className="guided-field"><span>Gramatura</span><input value={fabric.gramatura} onChange={(e) => setFabric({ ...fabric, gramatura: e.target.value })} placeholder="Ex.: 180 g/m²" /></label>
+            <label className="guided-field"><span>Largura</span><input value={fabric.largura} onChange={(e) => setFabric({ ...fabric, largura: e.target.value })} placeholder="Ex.: 1,75 m" /></label>
+            <label className="guided-field"><span>Fornecedor</span><input value={fabric.fornecedor} onChange={(e) => setFabric({ ...fabric, fornecedor: e.target.value })} placeholder="Ex.: Malhas Brasil" /></label>
+            <label className="guided-field"><span>Cor do tecido</span><input value={fabric.cor} onChange={(e) => setFabric({ ...fabric, cor: e.target.value })} placeholder={piece.cor || 'Ex.: Azul Marinho'} /></label>
+            <label className="guided-field"><span>Encolhimento máximo</span><input value={fabric.encolhimentoMaximo} onChange={(e) => setFabric({ ...fabric, encolhimentoMaximo: e.target.value })} placeholder="Ex.: 3%" /></label>
+            <label className="guided-field"><span>Solidez da cor</span><input value={fabric.solidezCor} onChange={(e) => setFabric({ ...fabric, solidezCor: e.target.value })} placeholder="Ex.: Grau 4" /></label>
+          </div>
+        </FormSection>
+
+        <FormSection number="4" icon={Boxes} title="Aviamentos e materiais" text="Itens que aparecem na tabela de aviamentos, com consumo por peça.">
           <div className="piece-material-list">
             {materials.map((row, index) => <article className="piece-material-row" key={row.id}>
               <div className="piece-row-number">{index + 1}</div>
@@ -711,14 +730,14 @@ export default function GuidedPieceFlowPage({
           <button className="guided-secondary-button piece-add-button" onClick={addMaterial}><Plus size={16} /> Adicionar material</button>
         </FormSection>
 
-        <FormSection number="4" icon={Ruler} title="Tabela de medidas" text="Opcional, mas muito útil para padronização e qualidade.">
+        <FormSection number="5" icon={Ruler} title="Tabela de medidas" text="Opcional, mas muito útil para padronização e qualidade.">
           <div className="piece-measure-table-wrap">
             {measurements.length > 0 && <table className="piece-measure-table"><thead><tr><th>Ponto</th><th>Tolerância</th>{sizes.map((size) => <th key={size}>{size}</th>)}<th /></tr></thead><tbody>{measurements.map((row) => <tr key={row.id}><td><input value={row.ponto} onChange={(e) => setMeasurements(measurements.map((item) => item.id === row.id ? { ...item, ponto: e.target.value } : item))} placeholder="Ex.: Peito" /></td><td><input type="number" step="0.1" value={row.tolerancia} onChange={(e) => setMeasurements(measurements.map((item) => item.id === row.id ? { ...item, tolerancia: Number(e.target.value) } : item))} /></td>{sizes.map((size) => <td key={size}><input type="number" step="0.1" value={row.valores[size] ?? ''} onChange={(e) => setMeasurements(measurements.map((item) => item.id === row.id ? { ...item, valores: { ...item.valores, [size]: e.target.value === '' ? '' : Number(e.target.value) } } : item))} /></td>)}<td><button className="piece-row-remove" onClick={() => setMeasurements(measurements.filter((item) => item.id !== row.id))}><Trash2 size={15} /></button></td></tr>)}</tbody></table>}
           </div>
           <button className="guided-secondary-button piece-add-button" onClick={addMeasurement}><Plus size={16} /> Adicionar medida</button>
         </FormSection>
 
-        <FormSection number="5" icon={Factory} title="Operações e POP" text="É aqui que você explica como a peça será produzida no chão de fábrica.">
+        <FormSection number="6" icon={Factory} title="Sequência operacional, máquinas e POP" text="É aqui que você explica como a peça será produzida no chão de fábrica.">
           <div className="piece-section-toolbar"><button className="guided-example-button" onClick={() => setOperations(exampleOperations())}><Sparkles size={16} /> Preencher exemplo</button><button className="guided-secondary-button" onClick={addOperation}><Plus size={16} /> Nova operação</button></div>
           <div className="piece-operation-list">
             {operations.map((row, index) => <article className="piece-operation-row" key={row.id}>
@@ -726,6 +745,8 @@ export default function GuidedPieceFlowPage({
               <div className="guided-form-grid">
                 <label className="guided-field"><span>Nome *</span><input value={row.nome} onChange={(e) => setOperations(operations.map((item) => item.id === row.id ? { ...item, nome: e.target.value } : item))} placeholder="Ex.: Pregar manga" /></label>
                 <label className="guided-field"><span>Máquina</span><input value={row.maquina} onChange={(e) => setOperations(operations.map((item) => item.id === row.id ? { ...item, maquina: e.target.value } : item))} placeholder="Ex.: Overloque 5 fios" /></label>
+                <label className="guided-field"><span>Acessório / aparelho</span><input value={row.ferramenta} onChange={(e) => setOperations(operations.map((item) => item.id === row.id ? { ...item, ferramenta: e.target.value } : item))} placeholder="Ex.: Calcador guia" /></label>
+                <label className="guided-field"><span>Regulagem</span><input value={row.regulagem} onChange={(e) => setOperations(operations.map((item) => item.id === row.id ? { ...item, regulagem: e.target.value } : item))} placeholder="Ex.: Ponto 3,5 mm" /></label>
                 <label className="guided-field"><span>Tempo padrão (min)</span><input type="number" min="0" step="0.01" value={row.tempoPadraoMin} onChange={(e) => setOperations(operations.map((item) => item.id === row.id ? { ...item, tempoPadraoMin: e.target.value === '' ? '' : Number(e.target.value) } : item))} /></label>
                 <label className="guided-field"><span>Dificuldade</span><select value={row.dificuldade} onChange={(e) => setOperations(operations.map((item) => item.id === row.id ? { ...item, dificuldade: e.target.value as OperationDraft['dificuldade'] } : item))}><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option></select></label>
                 <label className="guided-field wide"><span>Instrução principal *</span><textarea rows={3} value={row.descricao} onChange={(e) => setOperations(operations.map((item) => item.id === row.id ? { ...item, descricao: e.target.value } : item))} placeholder="Explique o que deve ser feito nesta operação." /></label>
@@ -737,12 +758,65 @@ export default function GuidedPieceFlowPage({
           </div>
         </FormSection>
 
-        <FormSection number="6" icon={ShieldCheck} title="Pontos de qualidade" text="O que precisa ser conferido para considerar a peça correta.">
-          <div className="piece-quality-list">{qualityItems.map((item, index) => <div key={index}><CheckCircle2 size={17} /><input value={item} onChange={(e) => setQualityItems(qualityItems.map((value, itemIndex) => itemIndex === index ? e.target.value : value))} placeholder="Ex.: Costura sem franzimento" /><button onClick={() => setQualityItems(qualityItems.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={15} /></button></div>)}</div>
-          <button className="guided-secondary-button piece-add-button" onClick={() => setQualityItems([...qualityItems, ''])}><Plus size={16} /> Adicionar ponto</button>
+        <FormSection number="7" icon={Wrench} title="Agulhas e linhas" text="Preenche o quadro AGULHAS E LINHAS da Ficha Técnica.">
+          <div className="piece-quality-list">
+            {needleThreads.map((row) => <div key={row.id} className="piece-triple-row">
+              <input value={row.maquina} onChange={(e) => setNeedleThreads(needleThreads.map((item) => item.id === row.id ? { ...item, maquina: e.target.value } : item))} placeholder="Máquina" />
+              <input value={row.agulha} onChange={(e) => setNeedleThreads(needleThreads.map((item) => item.id === row.id ? { ...item, agulha: e.target.value } : item))} placeholder="Agulha · Ex.: DBx1 nº 11" />
+              <input value={row.linha} onChange={(e) => setNeedleThreads(needleThreads.map((item) => item.id === row.id ? { ...item, linha: e.target.value } : item))} placeholder="Linha · Ex.: 120 Poliéster" />
+              <button onClick={() => setNeedleThreads(needleThreads.filter((item) => item.id !== row.id))}><Trash2 size={15} /></button>
+            </div>)}
+          </div>
+          <button className="guided-secondary-button piece-add-button" onClick={() => setNeedleThreads([...needleThreads, { id: crypto.randomUUID(), maquina: '', agulha: '', linha: '' }])}><Plus size={16} /> Adicionar máquina / agulha / linha</button>
         </FormSection>
 
-        <FormSection number="7" icon={MonitorPlay} title="Primeira produção" text="Se quiser, o cadastro já termina com a primeira OP liberada.">
+        <FormSection number="8" icon={ShieldCheck} title="Controle de qualidade" text="Cadastre exatamente as duas colunas do quadro CONTROLE DE QUALIDADE.">
+          <div className="piece-two-list-grid">
+            <div>
+              <strong>Pontos críticos de controle</strong>
+              <div className="piece-quality-list">{qualityCritical.map((item, index) => <div key={index}><CheckCircle2 size={17} /><input value={item} onChange={(e) => setQualityCritical(qualityCritical.map((value, itemIndex) => itemIndex === index ? e.target.value : value))} placeholder="Ex.: Ombros alinhados" /><button onClick={() => setQualityCritical(qualityCritical.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={15} /></button></div>)}</div>
+              <button className="guided-secondary-button piece-add-button" onClick={() => setQualityCritical([...qualityCritical, ''])}><Plus size={16} /> Adicionar controle</button>
+            </div>
+            <div>
+              <strong>Defeitos não aceitos</strong>
+              <div className="piece-quality-list">{qualityDefects.map((item, index) => <div key={index}><span className="piece-defect-mark">×</span><input value={item} onChange={(e) => setQualityDefects(qualityDefects.map((value, itemIndex) => itemIndex === index ? e.target.value : value))} placeholder="Ex.: Gola torta" /><button onClick={() => setQualityDefects(qualityDefects.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={15} /></button></div>)}</div>
+              <button className="guided-secondary-button piece-add-button" onClick={() => setQualityDefects([...qualityDefects, ''])}><Plus size={16} /> Adicionar defeito</button>
+            </div>
+          </div>
+        </FormSection>
+
+        <FormSection number="9" icon={Scissors} title="Processo de corte" text="Preenche diretamente o quadro PROCESSO DE CORTE.">
+          <div className="guided-form-grid">
+            <label className="guided-field"><span>Encaixe</span><input value={cutting.encaixe} onChange={(e) => setCutting({ ...cutting, encaixe: e.target.value })} placeholder="Ex.: Corpo Polo 01" /></label>
+            <label className="guided-field"><span>Consumo de tecido</span><input value={cutting.consumoTecido} onChange={(e) => setCutting({ ...cutting, consumoTecido: e.target.value })} placeholder="Ex.: 155 m/peça" /></label>
+            <label className="guided-field"><span>Comprimento do risco</span><input value={cutting.comprimentoRisco} onChange={(e) => setCutting({ ...cutting, comprimentoRisco: e.target.value })} placeholder="Ex.: 6 m" /></label>
+            <label className="guided-field"><span>Altura do enfesto</span><input value={cutting.alturaEnfesto} onChange={(e) => setCutting({ ...cutting, alturaEnfesto: e.target.value })} placeholder="Ex.: 98 cm" /></label>
+            <label className="guided-field"><span>Nº de folhas</span><input value={cutting.numeroFolhas} onChange={(e) => setCutting({ ...cutting, numeroFolhas: e.target.value })} placeholder="Ex.: 10" /></label>
+            <label className="guided-field"><span>Perdas (%)</span><input value={cutting.perdasPercentual} onChange={(e) => setCutting({ ...cutting, perdasPercentual: e.target.value })} placeholder="Ex.: 8%" /></label>
+          </div>
+        </FormSection>
+
+        <FormSection number="10" icon={Paperclip} title="Anexos" text="Os mesmos anexos exibidos na faixa inferior da Ficha Técnica.">
+          <div className="piece-attachment-grid">
+            {attachments.map((attachment) => <label key={attachment.tipo} className={`piece-attachment-upload ${attachment.file ? 'filled' : ''}`}>
+              <Paperclip size={17} />
+              <strong>{attachment.nome}</strong>
+              <span>{attachment.file?.name || 'Selecionar arquivo'}</span>
+              <input type="file" onChange={(e) => setAttachments(attachments.map((item) => item.tipo === attachment.tipo ? { ...item, file: e.target.files?.[0] ?? null } : item))} />
+            </label>)}
+          </div>
+        </FormSection>
+
+        <FormSection number="11" icon={Sparkles} title="DNA do produto" text="Campos finais que aparecem no rodapé visual da Ficha Técnica.">
+          <div className="guided-form-grid">
+            <label className="guided-field"><span>Tempo padrão total (min)</span><input type="number" step="0.01" value={dna.tempoPadraoMin} onChange={(e) => setDna({ ...dna, tempoPadraoMin: e.target.value })} placeholder="Ex.: 2,85" /></label>
+            <label className="guided-field"><span>Máquina principal</span><input value={dna.maquinaPrincipal} onChange={(e) => setDna({ ...dna, maquinaPrincipal: e.target.value })} placeholder="Ex.: Overloque 5 fios" /></label>
+            <label className="guided-field"><span>Nível de dificuldade</span><select value={dna.nivelDificuldade} onChange={(e) => setDna({ ...dna, nivelDificuldade: e.target.value as typeof dna.nivelDificuldade })}><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option></select></label>
+            <label className="guided-field wide"><span>Principais erros encontrados</span><textarea rows={5} value={dna.principaisErros} onChange={(e) => setDna({ ...dna, principaisErros: e.target.value })} placeholder={"Um por linha\nEx.: Gola torta\nBainha ondulada\nEtiqueta desalinhada"} /></label>
+          </div>
+        </FormSection>
+
+        <FormSection number="12" icon={MonitorPlay} title="Primeira produção" text="Se quiser, o cadastro já termina com a primeira OP liberada.">
           <label className="piece-production-toggle"><input type="checkbox" checked={production.criarOp} onChange={(e) => setProduction({ ...production, criarOp: e.target.checked })} /><span><strong>Criar e liberar a primeira OP agora</strong><small>Desmarque se quiser apenas cadastrar e publicar a peça.</small></span></label>
           {production.criarOp && <div className="piece-production-box">
             <div className="guided-form-grid"><label className="guided-field"><span>Cor / variante</span><input value={production.cor} onChange={(e) => setProduction({ ...production, cor: e.target.value })} /></label><label className="guided-field"><span>Prazo</span><input type="date" value={production.prazo} onChange={(e) => setProduction({ ...production, prazo: e.target.value })} /></label></div>
@@ -761,15 +835,20 @@ export default function GuidedPieceFlowPage({
         <span className="section-kicker">Resumo</span>
         <h3>{piece.descricao || 'Nova peça'}</h3>
         <p>{piece.codigo || 'Código automático'}</p>
-        <div className="piece-summary-progress"><i style={{ width: `${Math.round(completedSections / 7 * 100)}%` }} /></div>
-        <strong>{completedSections}/7 blocos</strong>
+        <div className="piece-summary-progress"><i style={{ width: `${Math.round(completedSections / 12 * 100)}%` }} /></div>
+        <strong>{completedSections}/12 blocos</strong>
         <ul>
           <li className={piece.descricao && piece.construcao ? 'done' : ''}>Identificação</li>
           <li className={imageFiles.length ? 'done' : ''}>Fotos</li>
-          <li className={materials.some((item) => item.materialId || item.descricao) ? 'done' : ''}>Materiais</li>
+          <li className={fabric.tecidoPrincipal ? 'done' : ''}>Tecido</li>
+          <li className={materials.some((item) => item.materialId || item.descricao) ? 'done' : ''}>Aviamentos</li>
           <li className={measurements.length ? 'done' : ''}>Medidas</li>
           <li className={operations.some((item) => item.nome && item.descricao) ? 'done' : ''}>Operações</li>
-          <li className={qualityItems.some((item) => item.trim()) ? 'done' : ''}>Qualidade</li>
+          <li className={needleThreads.some((item) => item.maquina || item.agulha || item.linha) ? 'done' : ''}>Agulhas / linhas</li>
+          <li className={qualityCritical.some(Boolean) || qualityDefects.some(Boolean) ? 'done' : ''}>Qualidade</li>
+          <li className={cutting.encaixe || cutting.consumoTecido ? 'done' : ''}>Corte</li>
+          <li className={attachments.some((item) => item.file) ? 'done' : ''}>Anexos</li>
+          <li className={dna.maquinaPrincipal || dna.tempoPadraoMin || dna.principaisErros ? 'done' : ''}>DNA</li>
           <li className={!production.criarOp || totalPieces > 0 ? 'done' : ''}>Produção</li>
         </ul>
         <div className="piece-summary-note"><Sparkles size={16} /><span>Você pode cadastrar tudo aqui e depois editar detalhes no Passaporte completo.</span></div>
