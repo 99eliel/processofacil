@@ -625,10 +625,9 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
               </label>
             })()}
           </div>
-          <div className="form-grid">
-            <label><span>Pontos críticos de controle · um por linha</span><textarea rows={6} disabled={!editable} value={editor.controleQualidade.pontosCriticos.join('\n')} onChange={(e) => setEditor({ ...editor, controleQualidade: { ...editor.controleQualidade, pontosCriticos: e.target.value.split('\n').map((item) => item.trim()).filter(Boolean) } })} /></label>
-            <label><span>Defeitos não aceitos · um por linha</span><textarea rows={6} disabled={!editable} value={editor.controleQualidade.defeitosNaoAceitos.join('\n')} onChange={(e) => setEditor({ ...editor, controleQualidade: { ...editor.controleQualidade, defeitosNaoAceitos: e.target.value.split('\n').map((item) => item.trim()).filter(Boolean) } })} /></label>
-          </div>
+          <p className="helper-text quality-file-helper">
+            Os dados de qualidade desta revisão ficam concentrados no arquivo anexado acima.
+          </p>
         </div>
 
         <div className="ft-complete-subsection">
