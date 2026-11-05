@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
   Boxes,
-  CheckCircle2,
   Factory,
   FileText,
   ImagePlus,
@@ -263,8 +262,6 @@ export default function GuidedPieceFlowPage({
     perdasPercentual: '',
   })
   const [needleThreads, setNeedleThreads] = useState<NeedleThreadDraft[]>([])
-  const [qualityCritical, setQualityCritical] = useState<string[]>([])
-  const [qualityDefects, setQualityDefects] = useState<string[]>([])
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([
     { tipo: 'molde', nome: 'Molde PDF', file: null },
     { tipo: 'encaixe', nome: 'Encaixe Audaces', file: null },
@@ -299,7 +296,7 @@ export default function GuidedPieceFlowPage({
     measurements.length > 0,
     operations.some((item) => item.nome.trim() && item.descricao.trim()),
     needleThreads.some((item) => item.maquina.trim() || item.agulha.trim() || item.linha.trim()),
-    qualityCritical.some((item) => item.trim()) || qualityDefects.some((item) => item.trim()),
+    Boolean(attachments.find((item) => item.tipo === 'qualidade')?.file),
     Boolean(cutting.encaixe.trim() || cutting.consumoTecido.trim()),
     attachments.some((item) => item.file),
     Boolean(dna.maquinaPrincipal.trim() || dna.tempoPadraoMin || dna.nivelDificuldade),
@@ -459,14 +456,7 @@ export default function GuidedPieceFlowPage({
         })),
       }))
 
-      const checklist: TechnicalChecklistItem[] = qualityCritical
-        .map((item) => item.trim())
-        .filter(Boolean)
-        .map((descricao) => ({
-          id: crypto.randomUUID(),
-          descricao,
-          obrigatorio: true,
-        }))
+      const checklist: TechnicalChecklistItem[] = []
 
       const technicalOperations: TechnicalOperation[] = operations
         .filter((item) => item.nome.trim() && item.descricao.trim())
@@ -506,8 +496,8 @@ export default function GuidedPieceFlowPage({
           .filter((item) => item.maquina.trim() || item.agulha.trim() || item.linha.trim())
           .map((item) => ({ ...item })),
         controleQualidade: {
-          pontosCriticos: qualityCritical.map((item) => item.trim()).filter(Boolean),
-          defeitosNaoAceitos: qualityDefects.map((item) => item.trim()).filter(Boolean),
+          pontosCriticos: [],
+          defeitosNaoAceitos: [],
         },
         anexos: [],
         dnaProduto: {
@@ -800,18 +790,7 @@ export default function GuidedPieceFlowPage({
               </label>
             })()}
           </div>
-          <div className="piece-two-list-grid">
-            <div>
-              <strong>Pontos críticos de controle</strong>
-              <div className="piece-quality-list">{qualityCritical.map((item, index) => <div key={index}><CheckCircle2 size={17} /><input value={item} onChange={(e) => setQualityCritical(qualityCritical.map((value, itemIndex) => itemIndex === index ? e.target.value : value))} placeholder="Ex.: Ombros alinhados" /><button onClick={() => setQualityCritical(qualityCritical.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={15} /></button></div>)}</div>
-              <button className="guided-secondary-button piece-add-button" onClick={() => setQualityCritical([...qualityCritical, ''])}><Plus size={16} /> Adicionar controle</button>
-            </div>
-            <div>
-              <strong>Defeitos não aceitos</strong>
-              <div className="piece-quality-list">{qualityDefects.map((item, index) => <div key={index}><span className="piece-defect-mark">×</span><input value={item} onChange={(e) => setQualityDefects(qualityDefects.map((value, itemIndex) => itemIndex === index ? e.target.value : value))} placeholder="Ex.: Gola torta" /><button onClick={() => setQualityDefects(qualityDefects.filter((_, itemIndex) => itemIndex !== index))}><Trash2 size={15} /></button></div>)}</div>
-              <button className="guided-secondary-button piece-add-button" onClick={() => setQualityDefects([...qualityDefects, ''])}><Plus size={16} /> Adicionar defeito</button>
-            </div>
-          </div>
+          <p className="piece-photo-help">Os dados de qualidade serão consultados pelo arquivo anexado.</p>
         </FormSection>
 
         <FormSection number="9" icon={Scissors} title="Processo de corte" text="Preenche diretamente o quadro PROCESSO DE CORTE.">
@@ -873,7 +852,7 @@ export default function GuidedPieceFlowPage({
           <li className={measurements.length ? 'done' : ''}>Medidas</li>
           <li className={operations.some((item) => item.nome && item.descricao) ? 'done' : ''}>Operações</li>
           <li className={needleThreads.some((item) => item.maquina || item.agulha || item.linha) ? 'done' : ''}>Agulhas / linhas</li>
-          <li className={qualityCritical.some(Boolean) || qualityDefects.some(Boolean) ? 'done' : ''}>Qualidade</li>
+          <li className={attachments.find((item) => item.tipo === 'qualidade')?.file ? 'done' : ''}>Qualidade</li>
           <li className={cutting.encaixe || cutting.consumoTecido ? 'done' : ''}>Corte</li>
           <li className={attachments.some((item) => item.file) ? 'done' : ''}>Anexos</li>
           <li className={dna.maquinaPrincipal || dna.tempoPadraoMin || dna.nivelDificuldade ? 'done' : ''}>DNA</li>
