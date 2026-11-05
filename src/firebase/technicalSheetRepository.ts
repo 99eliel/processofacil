@@ -24,7 +24,7 @@ function normalizeRevision(id: string, data: Record<string, unknown>): Technical
     modelo: raw.modelo ?? '',
     responsavelTecnico: raw.responsavelTecnico ?? '',
     dadosTecido: raw.dadosTecido ?? {
-      tecidoPrincipal: '', composicao: '', gramatura: '', largura: '', fornecedor: '',
+      tecidoPrincipal: '', composicao: '', gramatura: '', largura: '', rendimento: '', fornecedor: '',
       cor: '', encolhimentoMaximo: '', solidezCor: '',
     },
     processoCorte: raw.processoCorte ?? {
@@ -126,7 +126,7 @@ export async function openOrCreateTechnicalDraft(
       modelo: base?.modelo ?? product.classificacoes?.modelo ?? '',
       responsavelTecnico: base?.responsavelTecnico ?? '',
       dadosTecido: base?.dadosTecido ?? {
-        tecidoPrincipal: '', composicao: '', gramatura: '', largura: '', fornecedor: '',
+        tecidoPrincipal: '', composicao: '', gramatura: '', largura: '', rendimento: '', fornecedor: '',
         cor: product.classificacoes?.cor ?? '', encolhimentoMaximo: '', solidezCor: '',
       },
       processoCorte: base?.processoCorte ?? {
