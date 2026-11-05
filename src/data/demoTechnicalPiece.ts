@@ -317,6 +317,7 @@ export const demoTechnicalPiece = {
       "composicao": "50% Algodão / 50% Poliéster",
       "gramatura": "180 g/m²",
       "largura": "1,75 m",
+      "rendimento": "2,70 m/kg",
       "fornecedor": "Malhas Brasil",
       "cor": "Azul Marinho",
       "encolhimentoMaximo": "3%",
@@ -371,14 +372,7 @@ export const demoTechnicalPiece = {
     "dnaProduto": {
       "tempoPadraoMin": 2.85,
       "maquinaPrincipal": "Overloque 5 fios",
-      "nivelDificuldade": "dificil",
-      "principaisErros": [
-        "Gola torta",
-        "Bainha ondulada",
-        "Etiqueta desalinhada",
-        "Costura aberta na cava",
-        "Diferença de tonalidade"
-      ]
+      "nivelDificuldade": "dificil"
     },
     "anexos": []
   },
