@@ -124,6 +124,7 @@ export default function TechnicalSheetPrintDocument({
     ['COMPOSIÇÃO', revision.dadosTecido.composicao],
     ['GRAMATURA', revision.dadosTecido.gramatura],
     ['LARGURA', revision.dadosTecido.largura],
+    ['RENDIMENTO', revision.dadosTecido.rendimento],
     ['FORNECEDOR', revision.dadosTecido.fornecedor],
     ['COR', revision.dadosTecido.cor],
     ['ENCOLHIMENTO MÁXIMO', revision.dadosTecido.encolhimentoMaximo],
@@ -147,7 +148,6 @@ export default function TechnicalSheetPrintDocument({
     || primaryVideo
     || totalTime != null
     || mainMachine
-    || revision.dnaProduto.principaisErros.length
     || activeAttachments.find((item) => item.tipo === 'video')
     || revision.dnaProduto.nivelDificuldade,
   )
@@ -363,7 +363,6 @@ export default function TechnicalSheetPrintDocument({
               <div className="ft-flex-section-title">DNA DO PRODUTO <small>INFORMAÇÃO QUE GERA QUALIDADE E PRODUTIVIDADE</small></div>
               <div className="ft-flex-dna-grid">
                 {perfectPhoto?.url && <div><strong>PEÇA PERFEITA</strong><img src={perfectPhoto.url} alt="Peça perfeita" /></div>}
-                {revision.dnaProduto.principaisErros.length > 0 && <div className="errors"><strong>PRINCIPAIS ERROS</strong>{revision.dnaProduto.principaisErros.map((item) => <span key={item}>✕ {item}</span>)}</div>}
                 {primaryVideo && <div><strong>VÍDEO DE MONTAGEM</strong><div className="ft-flex-video"><Play size={22} /><span>{primaryVideo.operation.nome}</span></div></div>}
                 {(totalTime != null || mainMachine) && <div className="stats">
                   {totalTime != null && <p><span>TEMPO PADRÃO</span><b>{formatNumber(totalTime)} min</b></p>}
