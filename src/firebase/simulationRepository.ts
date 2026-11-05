@@ -291,11 +291,15 @@ export async function importSimulationPackage(
     familia: pkg.ficha.familia?.trim() ?? pkg.produto.classificacoes?.familia ?? '',
     modelo: pkg.ficha.modelo?.trim() ?? pkg.produto.classificacoes?.modelo ?? '',
     responsavelTecnico: pkg.ficha.responsavelTecnico?.trim() ?? '',
-    dadosTecido: {
-      tecidoPrincipal: '', composicao: '', gramatura: '', largura: '', rendimento: '', fornecedor: '',
-      cor: pkg.op.cor?.trim() ?? '', encolhimentoMaximo: '', solidezCor: '',
-      ...(pkg.ficha.dadosTecido ?? {}),
-    },
+    dadosTecido: pkg.ficha.dadosTecido
+      ? {
+          ...pkg.ficha.dadosTecido,
+          rendimento: pkg.ficha.dadosTecido.rendimento ?? '',
+        }
+      : {
+          tecidoPrincipal: '', composicao: '', gramatura: '', largura: '', rendimento: '', fornecedor: '',
+          cor: pkg.op.cor?.trim() ?? '', encolhimentoMaximo: '', solidezCor: '',
+        },
     processoCorte: pkg.ficha.processoCorte ?? {
       encaixe: '', consumoTecido: '', comprimentoRisco: '', alturaEnfesto: '',
       numeroFolhas: '', perdasPercentual: '',
