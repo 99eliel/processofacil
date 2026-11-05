@@ -2128,3 +2128,42 @@ body {
 .ft-upload-feedback.error strong {
   font-size:11px;
 }
+
+
+/* Arquivo informativo de qualidade */
+.quality-info-upload {
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid #cbdde8;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f5fafc;
+  color: #0a6ea3;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+.quality-info-upload.filled {
+  border-color: #9fd2bd;
+  background: #f2faf6;
+  color: #2d835e;
+}
+.quality-info-upload input {
+  display: none;
+}
+.piece-quality-file-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+/* Modo operador simplificado após remoção de passo a passo/pontos críticos */
+.operator-info-grid.simplified,
+.presentation-content .operator-info-grid.simplified {
+  grid-template-columns: 1fr !important;
+}
+.operator-info-grid.simplified .operator-info-card.technical {
+  width: 100%;
+}
