@@ -6,6 +6,7 @@ import {
   FileText,
   History,
   ImagePlus,
+  Info,
   ListChecks,
   Loader2,
   PackagePlus,
@@ -588,6 +589,7 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
             <label><span>Composição</span><input disabled={!editable} value={editor.dadosTecido.composicao} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, composicao: e.target.value } })} /></label>
             <label><span>Gramatura</span><input disabled={!editable} value={editor.dadosTecido.gramatura} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, gramatura: e.target.value } })} /></label>
             <label><span>Largura</span><input disabled={!editable} value={editor.dadosTecido.largura} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, largura: e.target.value } })} /></label>
+            <label><span>Rendimento</span><input disabled={!editable} value={editor.dadosTecido.rendimento ?? ''} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, rendimento: e.target.value } })} placeholder="Ex.: 2,70 m/kg" /></label>
             <label><span>Fornecedor</span><input disabled={!editable} value={editor.dadosTecido.fornecedor} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, fornecedor: e.target.value } })} /></label>
             <label><span>Cor</span><input disabled={!editable} value={editor.dadosTecido.cor} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, cor: e.target.value } })} /></label>
             <label><span>Encolhimento máximo</span><input disabled={!editable} value={editor.dadosTecido.encolhimentoMaximo} onChange={(e) => setEditor({ ...editor, dadosTecido: { ...editor.dadosTecido, encolhimentoMaximo: e.target.value } })} /></label>
@@ -608,7 +610,21 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
         </div>
 
         <div className="ft-complete-subsection">
-          <h4>Controle de qualidade</h4>
+          <div className="ft-complete-subhead">
+            <h4>Controle de qualidade</h4>
+            {(() => {
+              const qualityFile = editor.anexos.find((item) => item.tipo === 'qualidade')
+              return <label className={`quality-info-upload ${qualityFile ? 'filled' : ''}`} title="Anexar arquivo com informações de qualidade">
+                <Info size={17} />
+                <span>{qualityFile ? 'Arquivo de qualidade vinculado' : 'Anexar arquivo de qualidade'}</span>
+                {editable && <input type="file" disabled={busy} onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (file) void uploadAttachment('qualidade', 'Dados de qualidade', file)
+                  event.currentTarget.value = ''
+                }} />}
+              </label>
+            })()}
+          </div>
           <div className="form-grid">
             <label><span>Pontos críticos de controle · um por linha</span><textarea rows={6} disabled={!editable} value={editor.controleQualidade.pontosCriticos.join('\n')} onChange={(e) => setEditor({ ...editor, controleQualidade: { ...editor.controleQualidade, pontosCriticos: e.target.value.split('\n').map((item) => item.trim()).filter(Boolean) } })} /></label>
             <label><span>Defeitos não aceitos · um por linha</span><textarea rows={6} disabled={!editable} value={editor.controleQualidade.defeitosNaoAceitos.join('\n')} onChange={(e) => setEditor({ ...editor, controleQualidade: { ...editor.controleQualidade, defeitosNaoAceitos: e.target.value.split('\n').map((item) => item.trim()).filter(Boolean) } })} /></label>
@@ -635,7 +651,6 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
             <label><span>Tempo padrão total (min)</span><input type="number" step="0.01" disabled={!editable} value={editor.dnaProduto.tempoPadraoMin ?? ''} onChange={(e) => setEditor({ ...editor, dnaProduto: { ...editor.dnaProduto, tempoPadraoMin: e.target.value === '' ? null : Number(e.target.value) } })} /></label>
             <label><span>Máquina principal</span><input disabled={!editable} value={editor.dnaProduto.maquinaPrincipal} onChange={(e) => setEditor({ ...editor, dnaProduto: { ...editor.dnaProduto, maquinaPrincipal: e.target.value } })} /></label>
             <label><span>Nível de dificuldade</span><select disabled={!editable} value={editor.dnaProduto.nivelDificuldade} onChange={(e) => setEditor({ ...editor, dnaProduto: { ...editor.dnaProduto, nivelDificuldade: e.target.value as TechnicalRevision['dnaProduto']['nivelDificuldade'] } })}><option value="">Não informado</option><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option></select></label>
-            <label className="wide"><span>Principais erros encontrados · um por linha</span><textarea rows={5} disabled={!editable} value={editor.dnaProduto.principaisErros.join('\n')} onChange={(e) => setEditor({ ...editor, dnaProduto: { ...editor.dnaProduto, principaisErros: e.target.value.split('\n').map((item) => item.trim()).filter(Boolean) } })} /></label>
           </div>
         </div>
 
