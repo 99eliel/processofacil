@@ -23,9 +23,10 @@ function normalizeRevision(id: string, data: Record<string, unknown>): Technical
     familia: raw.familia ?? '',
     modelo: raw.modelo ?? '',
     responsavelTecnico: raw.responsavelTecnico ?? '',
-    dadosTecido: raw.dadosTecido ?? {
+    dadosTecido: {
       tecidoPrincipal: '', composicao: '', gramatura: '', largura: '', rendimento: '', fornecedor: '',
       cor: '', encolhimentoMaximo: '', solidezCor: '',
+      ...(raw.dadosTecido ?? {}),
     },
     processoCorte: raw.processoCorte ?? {
       encaixe: '', consumoTecido: '', comprimentoRisco: '', alturaEnfesto: '',
