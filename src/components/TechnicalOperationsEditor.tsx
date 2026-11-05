@@ -8,10 +8,8 @@ import {
   ListChecks,
   Loader2,
   Plus,
-  Settings2,
   Trash2,
   Video,
-  Wrench,
 } from 'lucide-react'
 import { deleteOperationMedia, uploadOperationMedia } from '../firebase/storageRepository'
 import type { TechnicalOperation, TechnicalRevision } from '../domain/types'
@@ -38,7 +36,7 @@ function emptyOperation(order: number): TechnicalOperation {
     tempoPadraoMin: null,
     dificuldade: 'medio',
     pontosCriticos: [],
-    instrucoes: [''],
+    instrucoes: [],
     midias: [],
   }
 }
@@ -95,14 +93,6 @@ export default function TechnicalOperationsEditor({
     setEditor({
       ...editor,
       operacoes: next.map((item, itemIndex) => ({ ...item, ordem: itemIndex + 1 })),
-    })
-  }
-
-  const updateInstruction = (operation: TechnicalOperation, index: number, value: string) => {
-    update(operation.id, {
-      instrucoes: operation.instrucoes.map((item, itemIndex) =>
-        itemIndex === index ? value : item,
-      ),
     })
   }
 
@@ -164,8 +154,7 @@ export default function TechnicalOperationsEditor({
     </div>
 
     <p className="helper-text">
-      Cada operação vira uma instrução de chão de fábrica com passo a passo, máquina,
-      regulagem, tempo, pontos críticos, fotos e vídeo.
+      Cada operação concentra máquina, regulagem, tempo, instrução principal, fotos e vídeo.
     </p>
 
     {editor.operacoes.length === 0 ? (
@@ -217,18 +206,6 @@ export default function TechnicalOperationsEditor({
                 <label><span>Dificuldade</span><select value={operation.dificuldade} disabled={!editable} onChange={(event) => update(operation.id, { dificuldade: event.target.value as TechnicalOperation['dificuldade'] })}><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option></select></label>
                 <label className="span-2"><span>Regulagem</span><input value={operation.regulagem} disabled={!editable} onChange={(event) => update(operation.id, { regulagem: event.target.value })} placeholder="Ponto, tensão, margem, velocidade ou outra regulagem importante" /></label>
                 <label className="span-2"><span>Objetivo / instrução principal *</span><textarea rows={3} value={operation.descricao} disabled={!editable} onChange={(event) => update(operation.id, { descricao: event.target.value })} placeholder="Explique o que deve ser feito nesta operação." /></label>
-              </div>
-
-              <div className="pop-section">
-                <div className="pop-section-head"><div><Wrench size={17} /><strong>Passo a passo</strong></div>{editable && <button type="button" className="text-button" onClick={() => update(operation.id, { instrucoes: [...operation.instrucoes, ''] })}><Plus size={14} /> Passo</button>}</div>
-                <div className="pop-steps">
-                  {operation.instrucoes.map((instruction, instructionIndex) => <div className="pop-step-row" key={instructionIndex}><span>{instructionIndex + 1}</span>{editable ? <input value={instruction} onChange={(event) => updateInstruction(operation, instructionIndex, event.target.value)} placeholder="Descreva este passo..." /> : <strong>{instruction || '—'}</strong>}{editable && operation.instrucoes.length > 1 && <button type="button" className="icon-button" onClick={() => update(operation.id, { instrucoes: operation.instrucoes.filter((_, itemIndex) => itemIndex !== instructionIndex) })}><Trash2 size={13} /></button>}</div>)}
-                </div>
-              </div>
-
-              <div className="pop-section">
-                <div className="pop-section-head"><div><Settings2 size={17} /><strong>Pontos críticos de qualidade</strong></div>{editable && <button type="button" className="text-button" onClick={() => update(operation.id, { pontosCriticos: [...operation.pontosCriticos, ''] })}><Plus size={14} /> Ponto</button>}</div>
-                {operation.pontosCriticos.length === 0 ? <p className="helper-text">Nenhum ponto crítico definido.</p> : <div className="critical-points-editor">{operation.pontosCriticos.map((point, pointIndex) => <div key={pointIndex}>{editable ? <input value={point} onChange={(event) => update(operation.id, { pontosCriticos: operation.pontosCriticos.map((item, itemIndex) => itemIndex === pointIndex ? event.target.value : item) })} placeholder="Ex.: Não franzir a manga" /> : <span>{point}</span>}{editable && <button type="button" className="icon-button" onClick={() => update(operation.id, { pontosCriticos: operation.pontosCriticos.filter((_, itemIndex) => itemIndex !== pointIndex) })}><Trash2 size={13} /></button>}</div>)}</div>}
               </div>
 
               <div className="pop-section">
