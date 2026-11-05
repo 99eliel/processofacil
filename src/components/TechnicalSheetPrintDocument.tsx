@@ -140,8 +140,7 @@ export default function TechnicalSheetPrintDocument({
     ['PERDAS (%)', revision.processoCorte.perdasPercentual],
   ].filter(([, value]) => hasText(value))
 
-  const hasQuality = revision.controleQualidade.pontosCriticos.length > 0
-    || revision.controleQualidade.defeitosNaoAceitos.length > 0
+  const hasQualityFile = activeAttachments.some((item) => item.tipo === 'qualidade')
 
   const hasDna = Boolean(
     perfectPhoto?.url
@@ -161,7 +160,7 @@ export default function TechnicalSheetPrintDocument({
     Boolean(technicalDrawing?.url),
     revision.operacoes.length > 0,
     revision.agulhasLinhas.length > 0,
-    hasQuality,
+    hasQualityFile,
     cuttingRows.length > 0,
     activeAttachments.length > 0,
     hasDna,
@@ -170,7 +169,7 @@ export default function TechnicalSheetPrintDocument({
   const hasSecondPage = Boolean(
     revision.operacoes.length > 0
     || revision.agulhasLinhas.length > 0
-    || hasQuality
+    || hasQualityFile
     || cuttingRows.length > 0
     || activeAttachments.length > 0
     || hasDna,
@@ -327,22 +326,10 @@ export default function TechnicalSheetPrintDocument({
               </tbody></table>
             </DynamicBox>}
 
-            {(hasQuality || cuttingRows.length > 0) && <section className="ft-flex-two">
-              {hasQuality && <DynamicBox title="CONTROLE DE QUALIDADE">
-                <div className="ft-flex-quality">
-                  {revision.controleQualidade.pontosCriticos.length > 0 && <div>
-                    <strong>PONTOS CRÍTICOS DE CONTROLE</strong>
-                    {revision.controleQualidade.pontosCriticos.map((item) => <span className="ok" key={item}>✓ {item}</span>)}
-                  </div>}
-                  {revision.controleQualidade.defeitosNaoAceitos.length > 0 && <div>
-                    <strong>DEFEITOS NÃO ACEITOS</strong>
-                    {revision.controleQualidade.defeitosNaoAceitos.map((item) => <span className="bad" key={item}>✕ {item}</span>)}
-                  </div>}
-                </div>
-              </DynamicBox>}
-              {cuttingRows.length > 0 && <DynamicBox title="PROCESSO DE CORTE">
+            {cuttingRows.length > 0 && <section className="ft-flex-two">
+              <DynamicBox title="PROCESSO DE CORTE">
                 <KeyValueRows rows={cuttingRows} />
-              </DynamicBox>}
+              </DynamicBox>
             </section>}
 
             <section className="ft-flex-two">
