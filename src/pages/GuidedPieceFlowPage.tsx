@@ -5,6 +5,7 @@ import {
   Factory,
   FileText,
   ImagePlus,
+  Info,
   Loader2,
   Paperclip,
   Scissors,
@@ -79,7 +80,7 @@ type MeasurementDraft = {
 }
 
 type AttachmentDraft = {
-  tipo: 'molde' | 'encaixe' | 'desenho' | 'pop' | 'video' | 'relatorio_medidas' | 'aprovacao_cliente'
+  tipo: 'molde' | 'encaixe' | 'desenho' | 'pop' | 'video' | 'relatorio_medidas' | 'aprovacao_cliente' | 'qualidade'
   nome: string
   file: File | null
 }
@@ -247,6 +248,7 @@ export default function GuidedPieceFlowPage({
     composicao: '',
     gramatura: '',
     largura: '',
+    rendimento: '',
     fornecedor: '',
     cor: '',
     encolhimentoMaximo: '',
@@ -271,12 +273,12 @@ export default function GuidedPieceFlowPage({
     { tipo: 'video', nome: 'Vídeo Operacional', file: null },
     { tipo: 'relatorio_medidas', nome: 'Relatório de Medidas', file: null },
     { tipo: 'aprovacao_cliente', nome: 'Aprovação do Cliente', file: null },
+    { tipo: 'qualidade', nome: 'Dados de qualidade', file: null },
   ])
   const [dna, setDna] = useState({
     tempoPadraoMin: '',
     maquinaPrincipal: '',
     nivelDificuldade: '' as '' | 'facil' | 'medio' | 'dificil',
-    principaisErros: '',
   })
   const [materials, setMaterials] = useState<MaterialDraft[]>([])
   const [measurements, setMeasurements] = useState<MeasurementDraft[]>([])
@@ -300,7 +302,7 @@ export default function GuidedPieceFlowPage({
     qualityCritical.some((item) => item.trim()) || qualityDefects.some((item) => item.trim()),
     Boolean(cutting.encaixe.trim() || cutting.consumoTecido.trim()),
     attachments.some((item) => item.file),
-    Boolean(dna.maquinaPrincipal.trim() || dna.tempoPadraoMin || dna.principaisErros.trim()),
+    Boolean(dna.maquinaPrincipal.trim() || dna.tempoPadraoMin || dna.nivelDificuldade),
     !production.criarOp || totalPieces > 0,
   ].filter(Boolean).length
 
@@ -512,7 +514,7 @@ export default function GuidedPieceFlowPage({
           tempoPadraoMin: dna.tempoPadraoMin === '' ? null : Number(dna.tempoPadraoMin),
           maquinaPrincipal: dna.maquinaPrincipal.trim(),
           nivelDificuldade: dna.nivelDificuldade,
-          principaisErros: dna.principaisErros.split('\n').map((item) => item.trim()).filter(Boolean),
+          principaisErros: [],
         },
         tamanhos: sizes,
         blocos: {
@@ -722,6 +724,7 @@ export default function GuidedPieceFlowPage({
             <label className="guided-field"><span>Composição</span><input value={fabric.composicao} onChange={(e) => setFabric({ ...fabric, composicao: e.target.value })} placeholder="Ex.: 50% algodão / 50% poliéster" /></label>
             <label className="guided-field"><span>Gramatura</span><input value={fabric.gramatura} onChange={(e) => setFabric({ ...fabric, gramatura: e.target.value })} placeholder="Ex.: 180 g/m²" /></label>
             <label className="guided-field"><span>Largura</span><input value={fabric.largura} onChange={(e) => setFabric({ ...fabric, largura: e.target.value })} placeholder="Ex.: 1,75 m" /></label>
+            <label className="guided-field"><span>Rendimento</span><input value={fabric.rendimento} onChange={(e) => setFabric({ ...fabric, rendimento: e.target.value })} placeholder="Ex.: 2,70 m/kg" /></label>
             <label className="guided-field"><span>Fornecedor</span><input value={fabric.fornecedor} onChange={(e) => setFabric({ ...fabric, fornecedor: e.target.value })} placeholder="Ex.: Malhas Brasil" /></label>
             <label className="guided-field"><span>Cor do tecido</span><input value={fabric.cor} onChange={(e) => setFabric({ ...fabric, cor: e.target.value })} placeholder={piece.cor || 'Ex.: Azul Marinho'} /></label>
             <label className="guided-field"><span>Encolhimento máximo</span><input value={fabric.encolhimentoMaximo} onChange={(e) => setFabric({ ...fabric, encolhimentoMaximo: e.target.value })} placeholder="Ex.: 3%" /></label>
@@ -769,8 +772,6 @@ export default function GuidedPieceFlowPage({
                 <label className="guided-field"><span>Tempo padrão (min)</span><input type="number" min="0" step="0.01" value={row.tempoPadraoMin} onChange={(e) => setOperations(operations.map((item) => item.id === row.id ? { ...item, tempoPadraoMin: e.target.value === '' ? '' : Number(e.target.value) } : item))} /></label>
                 <label className="guided-field"><span>Dificuldade</span><select value={row.dificuldade} onChange={(e) => setOperations(operations.map((item) => item.id === row.id ? { ...item, dificuldade: e.target.value as OperationDraft['dificuldade'] } : item))}><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option></select></label>
                 <label className="guided-field wide"><span>Instrução principal *</span><textarea rows={3} value={row.descricao} onChange={(e) => setOperations(operations.map((item) => item.id === row.id ? { ...item, descricao: e.target.value } : item))} placeholder="Explique o que deve ser feito nesta operação." /></label>
-                <label className="guided-field wide"><span>Passo a passo</span><textarea rows={4} value={row.instrucoes} onChange={(e) => setOperations(operations.map((item) => item.id === row.id ? { ...item, instrucoes: e.target.value } : item))} placeholder={"Um passo por linha\nEx.: Posicionar a peça\nAlinhar marcações\nCosturar"} /></label>
-                <label className="guided-field wide"><span>Pontos críticos</span><textarea rows={3} value={row.pontosCriticos} onChange={(e) => setOperations(operations.map((item) => item.id === row.id ? { ...item, pontosCriticos: e.target.value } : item))} placeholder={"Um ponto por linha\nEx.: Sem franzimento\nMargem uniforme"} /></label>
                 <label className="piece-operation-media"><Video size={18} /><span>{row.mediaFile ? row.mediaFile.name : 'Adicionar foto ou vídeo da operação'}</span><input type="file" accept="image/*,video/*" onChange={(e) => setOperations(operations.map((item) => item.id === row.id ? { ...item, mediaFile: e.target.files?.[0] ?? null } : item))} /></label>
               </div>
             </article>)}
@@ -789,7 +790,17 @@ export default function GuidedPieceFlowPage({
           <button className="guided-secondary-button piece-add-button" onClick={() => setNeedleThreads([...needleThreads, { id: crypto.randomUUID(), maquina: '', agulha: '', linha: '' }])}><Plus size={16} /> Adicionar máquina / agulha / linha</button>
         </FormSection>
 
-        <FormSection number="8" icon={ShieldCheck} title="Controle de qualidade" text="Cadastre exatamente as duas colunas do quadro CONTROLE DE QUALIDADE.">
+        <FormSection number="8" icon={ShieldCheck} title="Controle de qualidade" text="Cadastre os controles e, se quiser, anexe o arquivo técnico de qualidade do produto.">
+          <div className="piece-quality-file-row">
+            {(() => {
+              const qualityAttachment = attachments.find((item) => item.tipo === 'qualidade')
+              return <label className={`quality-info-upload ${qualityAttachment?.file ? 'filled' : ''}`}>
+                <Info size={18} />
+                <span>{qualityAttachment?.file ? qualityAttachment.file.name : 'Anexar arquivo com dados de qualidade'}</span>
+                <input type="file" onChange={(e) => setAttachments(attachments.map((item) => item.tipo === 'qualidade' ? { ...item, file: e.target.files?.[0] ?? null } : item))} />
+              </label>
+            })()}
+          </div>
           <div className="piece-two-list-grid">
             <div>
               <strong>Pontos críticos de controle</strong>
@@ -817,7 +828,7 @@ export default function GuidedPieceFlowPage({
 
         <FormSection number="10" icon={Paperclip} title="Anexos" text="Os mesmos anexos exibidos na faixa inferior da Ficha Técnica.">
           <div className="piece-attachment-grid">
-            {attachments.map((attachment) => <label key={attachment.tipo} className={`piece-attachment-upload ${attachment.file ? 'filled' : ''}`}>
+            {attachments.filter((attachment) => attachment.tipo !== 'qualidade').map((attachment) => <label key={attachment.tipo} className={`piece-attachment-upload ${attachment.file ? 'filled' : ''}`}>
               <Paperclip size={17} />
               <strong>{attachment.nome}</strong>
               <span>{attachment.file?.name || 'Selecionar arquivo'}</span>
@@ -831,7 +842,6 @@ export default function GuidedPieceFlowPage({
             <label className="guided-field"><span>Tempo padrão total (min)</span><input type="number" step="0.01" value={dna.tempoPadraoMin} onChange={(e) => setDna({ ...dna, tempoPadraoMin: e.target.value })} placeholder="Ex.: 2,85" /></label>
             <label className="guided-field"><span>Máquina principal</span><input value={dna.maquinaPrincipal} onChange={(e) => setDna({ ...dna, maquinaPrincipal: e.target.value })} placeholder="Ex.: Overloque 5 fios" /></label>
             <label className="guided-field"><span>Nível de dificuldade</span><select value={dna.nivelDificuldade} onChange={(e) => setDna({ ...dna, nivelDificuldade: e.target.value as typeof dna.nivelDificuldade })}><option value="">Selecione...</option><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option></select></label>
-            <label className="guided-field wide"><span>Principais erros encontrados</span><textarea rows={5} value={dna.principaisErros} onChange={(e) => setDna({ ...dna, principaisErros: e.target.value })} placeholder={"Um por linha\nEx.: Gola torta\nBainha ondulada\nEtiqueta desalinhada"} /></label>
           </div>
         </FormSection>
 
