@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   Boxes,
+  CheckCircle2,
   Factory,
   FileText,
   ImagePlus,
