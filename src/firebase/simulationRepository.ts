@@ -45,6 +45,7 @@ export type SimulationPackage = {
       composicao: string
       gramatura: string
       largura: string
+      rendimento?: string
       fornecedor: string
       cor: string
       encolhimentoMaximo: string
@@ -67,7 +68,7 @@ export type SimulationPackage = {
       principaisErros?: string[]
     }
     anexos?: Array<{
-      tipo: 'molde' | 'encaixe' | 'desenho' | 'pop' | 'video' | 'relatorio_medidas' | 'aprovacao_cliente' | 'outro'
+      tipo: 'molde' | 'encaixe' | 'desenho' | 'pop' | 'video' | 'relatorio_medidas' | 'aprovacao_cliente' | 'qualidade' | 'outro'
       nome: string
       url: string
     }>
@@ -291,7 +292,7 @@ export async function importSimulationPackage(
     modelo: pkg.ficha.modelo?.trim() ?? pkg.produto.classificacoes?.modelo ?? '',
     responsavelTecnico: pkg.ficha.responsavelTecnico?.trim() ?? '',
     dadosTecido: pkg.ficha.dadosTecido ?? {
-      tecidoPrincipal: '', composicao: '', gramatura: '', largura: '', fornecedor: '',
+      tecidoPrincipal: '', composicao: '', gramatura: '', largura: '', rendimento: '', fornecedor: '',
       cor: pkg.op.cor?.trim() ?? '', encolhimentoMaximo: '', solidezCor: '',
     },
     processoCorte: pkg.ficha.processoCorte ?? {
