@@ -23,11 +23,12 @@ function normalizeRevision(id: string, data: Record<string, unknown>): Technical
     familia: raw.familia ?? '',
     modelo: raw.modelo ?? '',
     responsavelTecnico: raw.responsavelTecnico ?? '',
-    dadosTecido: {
-      tecidoPrincipal: '', composicao: '', gramatura: '', largura: '', rendimento: '', fornecedor: '',
-      cor: '', encolhimentoMaximo: '', solidezCor: '',
-      ...(raw.dadosTecido ?? {}),
-    },
+    dadosTecido: raw.dadosTecido
+      ? { ...raw.dadosTecido, rendimento: raw.dadosTecido.rendimento ?? '' }
+      : {
+          tecidoPrincipal: '', composicao: '', gramatura: '', largura: '', rendimento: '', fornecedor: '',
+          cor: '', encolhimentoMaximo: '', solidezCor: '',
+        },
     processoCorte: raw.processoCorte ?? {
       encaixe: '', consumoTecido: '', comprimentoRisco: '', alturaEnfesto: '',
       numeroFolhas: '', perdasPercentual: '',
