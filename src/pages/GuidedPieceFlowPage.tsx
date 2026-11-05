@@ -514,7 +514,6 @@ export default function GuidedPieceFlowPage({
           tempoPadraoMin: dna.tempoPadraoMin === '' ? null : Number(dna.tempoPadraoMin),
           maquinaPrincipal: dna.maquinaPrincipal.trim(),
           nivelDificuldade: dna.nivelDificuldade,
-          principaisErros: [],
         },
         tamanhos: sizes,
         blocos: {
@@ -877,7 +876,7 @@ export default function GuidedPieceFlowPage({
           <li className={qualityCritical.some(Boolean) || qualityDefects.some(Boolean) ? 'done' : ''}>Qualidade</li>
           <li className={cutting.encaixe || cutting.consumoTecido ? 'done' : ''}>Corte</li>
           <li className={attachments.some((item) => item.file) ? 'done' : ''}>Anexos</li>
-          <li className={dna.maquinaPrincipal || dna.tempoPadraoMin || dna.principaisErros ? 'done' : ''}>DNA</li>
+          <li className={dna.maquinaPrincipal || dna.tempoPadraoMin || dna.nivelDificuldade ? 'done' : ''}>DNA</li>
           <li className={!production.criarOp || totalPieces > 0 ? 'done' : ''}>Produção</li>
         </ul>
         <div className="piece-summary-note"><Sparkles size={16} /><span>Você pode cadastrar tudo aqui e depois editar detalhes no Passaporte completo.</span></div>
