@@ -11,8 +11,6 @@ import {
   MonitorPlay,
   Play,
   RotateCcw,
-  ShieldAlert,
-  Wrench,
   X,
 } from 'lucide-react'
 import { useSystem } from '../system/SystemProvider'
@@ -255,30 +253,7 @@ export default function OperatorPage({ notify }: { notify: (message: string) => 
             </div>
           </section>}
 
-          <div className="operator-info-grid">
-            <section className="operator-info-card">
-              <div className="operator-info-title"><Wrench size={18} /><strong>Como fazer</strong></div>
-              <ol>
-                {(task.operacao.instrucoes ?? []).filter(Boolean).map((instruction) => (
-                  <li key={instruction}>{instruction}</li>
-                ))}
-              </ol>
-              {(task.operacao.instrucoes ?? []).filter(Boolean).length === 0 && (
-                <p>Use a instrução principal desta operação.</p>
-              )}
-            </section>
-
-            <section className="operator-info-card">
-              <div className="operator-info-title"><ShieldAlert size={18} /><strong>Pontos críticos</strong></div>
-              {(task.operacao.pontosCriticos ?? []).filter(Boolean).length > 0 ? (
-                <ul>
-                  {task.operacao.pontosCriticos.filter(Boolean).map((point) => (
-                    <li key={point}>{point}</li>
-                  ))}
-                </ul>
-              ) : <p>Nenhum ponto crítico cadastrado.</p>}
-            </section>
-
+          <div className="operator-info-grid simplified">
             <section className="operator-info-card technical">
               <div className="operator-info-title"><Factory size={18} /><strong>Preparação técnica</strong></div>
               <dl>
