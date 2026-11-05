@@ -203,6 +203,7 @@ export type TechnicalFabricData = {
   composicao: string
   gramatura: string
   largura: string
+  rendimento: string
   fornecedor: string
   cor: string
   encolhimentoMaximo: string
@@ -232,7 +233,7 @@ export type TechnicalQualityControl = {
 
 export type TechnicalAttachment = {
   id: string
-  tipo: 'molde' | 'encaixe' | 'desenho' | 'pop' | 'video' | 'relatorio_medidas' | 'aprovacao_cliente' | 'outro'
+  tipo: 'molde' | 'encaixe' | 'desenho' | 'pop' | 'video' | 'relatorio_medidas' | 'aprovacao_cliente' | 'qualidade' | 'outro'
   nome: string
   url?: string
   path?: string
@@ -258,7 +259,7 @@ export type TechnicalProductDna = {
   tempoPadraoMin: number | null
   maquinaPrincipal: string
   nivelDificuldade: '' | 'facil' | 'medio' | 'dificil'
-  principaisErros: string[]
+  principaisErros?: string[]
 }
 
 export type TechnicalRevision = {
