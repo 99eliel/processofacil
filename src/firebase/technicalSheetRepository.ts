@@ -452,6 +452,376 @@ export async function publishTechnicalRevision(
   })
 }
 
+
+
+export async function cloneTechnicalRevisionToProduct(
+  empresaId: string,
+  uid: string,
+  sourceProductCode: string,
+  sourceRevisionNumber: number,
+  targetProduct: Product,
+) {
+  const sourceSnap = await getDoc(
+    revisionRef(empresaId, sourceProductCode, sourceRevisionNumber),
+  )
+  if (!sourceSnap.exists()) {
+    throw new Error('A Ficha Técnica de origem não foi encontrada.')
+  }
+
+  const source = normalizeRevision(sourceSnap.id, sourceSnap.data())
+  const targetProductRef = doc(db, 'empresas', empresaId, 'produtos', targetProduct.codigo)
+  const targetRevisionRef = revisionRef(empresaId, targetProduct.codigo, 1)
+  const targetSummaryRef = summaryRef(empresaId, targetProduct.codigo)
+  const existingTarget = await getDoc(targetRevisionRef)
+  if (existingTarget.exists()) {
+    throw new Error('O produto de destino já possui uma revisão técnica.')
+  }
+
+  const now = serverTimestamp()
+  const cloned: Omit<TechnicalRevision, 'id'> = {
+    numero: 1,
+    status: 'rascunho',
+    produtoCodigo: targetProduct.codigo,
+    produtoDescricao: targetProduct.descricao,
+    motivoRevisao: 'Ficha criada a partir de outro produto',
+    construcao: source.construcao,
+    cliente: source.cliente,
+    colecao: source.colecao,
+    familia: source.familia || targetProduct.classificacoes?.familia || '',
+    modelo: source.modelo || targetProduct.classificacoes?.modelo || '',
+    responsavelTecnico: source.responsavelTecnico,
+    dadosTecido: { ...source.dadosTecido },
+    processoCorte: { ...source.processoCorte },
+    agulhasLinhas: source.agulhasLinhas.map((item) => ({
+      ...item,
+      id: crypto.randomUUID(),
+    })),
+    controleQualidade: {
+      pontosCriticos: [...(source.controleQualidade?.pontosCriticos ?? [])],
+      defeitosNaoAceitos: [...(source.controleQualidade?.defeitosNaoAceitos ?? [])],
+    },
+    anexos: source.anexos.map((item) => ({
+      ...item,
+      id: crypto.randomUUID(),
+      path: undefined,
+    })),
+    dnaProduto: {
+      ...source.dnaProduto,
+      principaisErros: [...(source.dnaProduto.principaisErros ?? [])],
+    },
+    blocos: { ...source.blocos },
+    bom: source.bom.map((line) => ({
+      ...line,
+      id: crypto.randomUUID(),
+      consumoPorTamanho: line.consumoPorTamanho
+        ? { ...line.consumoPorTamanho }
+        : {},
+    })),
+    tamanhos: [...source.tamanhos],
+    medidas: source.medidas.map((row) => ({
+      ...row,
+      id: crypto.randomUUID(),
+      valores: row.valores.map((value) => ({ ...value })),
+    })),
+    checklist: source.checklist.map((item) => ({
+      ...item,
+      id: crypto.randomUUID(),
+    })),
+    operacoes: source.operacoes.map((operation, index) => ({
+      ...operation,
+      id: crypto.randomUUID(),
+      ordem: index + 1,
+      pontosCriticos: [...(operation.pontosCriticos ?? [])],
+      instrucoes: [...(operation.instrucoes ?? [])],
+      midias: (operation.midias ?? []).map((media) => ({
+        ...media,
+        id: crypto.randomUUID(),
+        path: undefined,
+      })),
+    })),
+    imagens: source.imagens.map((image) => ({
+      ...image,
+      path: undefined,
+    })),
+  }
+
+  const batch = writeBatch(db)
+  batch.set(targetRevisionRef, {
+    ...cloned,
+    origemCopia: {
+      produtoCodigo: sourceProductCode,
+      revisao: sourceRevisionNumber,
+    },
+    criadoEm: now,
+    criadoPor: uid,
+    alteradoEm: now,
+    alteradoPor: uid,
+  })
+  batch.set(targetSummaryRef, {
+    produtoCodigo: targetProduct.codigo,
+    produtoDescricao: targetProduct.descricao,
+    revisaoVigente: null,
+    revisaoRascunho: 1,
+    status: 'rascunho',
+    alteradoEm: now,
+    alteradoPor: uid,
+  })
+  batch.update(targetProductRef, {
+    ultimaRevisao: 1,
+    alteradoEm: now,
+    alteradoPor: uid,
+  })
+  batch.set(doc(collection(db, 'empresas', empresaId, 'auditoria')), {
+    entidade: 'ficha_tecnica',
+    entidadeId: targetProduct.codigo,
+    acao: 'copiada_de_outro_produto',
+    resumo: `${targetProduct.codigo} · origem ${sourceProductCode} REV ${String(sourceRevisionNumber).padStart(2, '0')}`,
+    uid,
+    em: now,
+  })
+  await batch.commit()
+
+  return { id: revisionId(1), ...cloned } as TechnicalRevision
+}
+
+export function copyTechnicalContent(
+  target: TechnicalRevision,
+  source: TechnicalRevision,
+  mode: 'completa' | 'medidas' | 'materiais' | 'operacoes',
+): TechnicalRevision {
+  if (mode === 'medidas') {
+    return {
+      ...target,
+      tamanhos: [...source.tamanhos],
+      medidas: source.medidas.map((row) => ({
+        ...row,
+        id: crypto.randomUUID(),
+        valores: row.valores.map((value) => ({ ...value })),
+      })),
+      blocos: { ...target.blocos, medidas: source.medidas.length > 0 },
+    }
+  }
+
+  if (mode === 'materiais') {
+    return {
+      ...target,
+      bom: source.bom.map((line) => ({
+        ...line,
+        id: crypto.randomUUID(),
+        consumoPorTamanho: line.consumoPorTamanho
+          ? { ...line.consumoPorTamanho }
+          : {},
+      })),
+      blocos: { ...target.blocos, bom: source.bom.length > 0 },
+    }
+  }
+
+  if (mode === 'operacoes') {
+    return {
+      ...target,
+      operacoes: source.operacoes.map((operation, index) => ({
+        ...operation,
+        id: crypto.randomUUID(),
+        ordem: index + 1,
+        pontosCriticos: [...(operation.pontosCriticos ?? [])],
+        instrucoes: [...(operation.instrucoes ?? [])],
+        midias: (operation.midias ?? []).map((media) => ({
+          ...media,
+          id: crypto.randomUUID(),
+          path: undefined,
+        })),
+      })),
+    }
+  }
+
+  return {
+    ...target,
+    construcao: source.construcao,
+    cliente: source.cliente,
+    colecao: source.colecao,
+    familia: source.familia,
+    modelo: source.modelo,
+    responsavelTecnico: source.responsavelTecnico,
+    dadosTecido: { ...source.dadosTecido },
+    processoCorte: { ...source.processoCorte },
+    agulhasLinhas: source.agulhasLinhas.map((item) => ({
+      ...item,
+      id: crypto.randomUUID(),
+    })),
+    controleQualidade: {
+      pontosCriticos: [...(source.controleQualidade?.pontosCriticos ?? [])],
+      defeitosNaoAceitos: [...(source.controleQualidade?.defeitosNaoAceitos ?? [])],
+    },
+    anexos: source.anexos.map((item) => ({
+      ...item,
+      id: crypto.randomUUID(),
+      path: undefined,
+    })),
+    dnaProduto: {
+      ...source.dnaProduto,
+      principaisErros: [...(source.dnaProduto.principaisErros ?? [])],
+    },
+    blocos: { ...source.blocos },
+    bom: source.bom.map((line) => ({
+      ...line,
+      id: crypto.randomUUID(),
+      consumoPorTamanho: line.consumoPorTamanho
+        ? { ...line.consumoPorTamanho }
+        : {},
+    })),
+    tamanhos: [...source.tamanhos],
+    medidas: source.medidas.map((row) => ({
+      ...row,
+      id: crypto.randomUUID(),
+      valores: row.valores.map((value) => ({ ...value })),
+    })),
+    checklist: source.checklist.map((item) => ({
+      ...item,
+      id: crypto.randomUUID(),
+    })),
+    operacoes: source.operacoes.map((operation, index) => ({
+      ...operation,
+      id: crypto.randomUUID(),
+      ordem: index + 1,
+      pontosCriticos: [...(operation.pontosCriticos ?? [])],
+      instrucoes: [...(operation.instrucoes ?? [])],
+      midias: (operation.midias ?? []).map((media) => ({
+        ...media,
+        id: crypto.randomUUID(),
+        path: undefined,
+      })),
+    })),
+    imagens: source.imagens.map((image) => ({
+      ...image,
+      path: undefined,
+    })),
+  }
+}
+
+export type TechnicalRevisionDifference = {
+  categoria: 'geral' | 'tecido' | 'materiais' | 'medidas' | 'operacoes'
+  campo: string
+  anterior: string
+  atual: string
+}
+
+export function compareTechnicalRevisions(
+  previous: TechnicalRevision,
+  current: TechnicalRevision,
+): TechnicalRevisionDifference[] {
+  const differences: TechnicalRevisionDifference[] = []
+  const push = (
+    categoria: TechnicalRevisionDifference['categoria'],
+    campo: string,
+    anterior: unknown,
+    atual: unknown,
+  ) => {
+    const before = String(anterior ?? '').trim()
+    const after = String(atual ?? '').trim()
+    if (before !== after) differences.push({ categoria, campo, anterior: before || '—', atual: after || '—' })
+  }
+
+  push('geral', 'Construção', previous.construcao, current.construcao)
+  push('geral', 'Cliente', previous.cliente, current.cliente)
+  push('geral', 'Coleção', previous.colecao, current.colecao)
+  push('geral', 'Família', previous.familia, current.familia)
+  push('geral', 'Modelo', previous.modelo, current.modelo)
+
+  const fabricFields: Array<[keyof TechnicalRevision['dadosTecido'], string]> = [
+    ['tecidoPrincipal', 'Tecido principal'],
+    ['composicao', 'Composição'],
+    ['gramatura', 'Gramatura'],
+    ['largura', 'Largura'],
+    ['rendimento', 'Rendimento'],
+    ['fornecedor', 'Fornecedor'],
+    ['cor', 'Cor'],
+    ['encolhimentoMaximo', 'Encolhimento máximo'],
+    ['solidezCor', 'Solidez da cor'],
+  ]
+  for (const [key, label] of fabricFields) {
+    push('tecido', label, previous.dadosTecido[key], current.dadosTecido[key])
+  }
+
+  const previousBom = new Map(previous.bom.map((line) => [line.codigoSnapshot, line]))
+  const currentBom = new Map(current.bom.map((line) => [line.codigoSnapshot, line]))
+  const bomCodes = new Set([...previousBom.keys(), ...currentBom.keys()])
+  for (const code of bomCodes) {
+    const before = previousBom.get(code)
+    const after = currentBom.get(code)
+    if (!before) {
+      differences.push({ categoria: 'materiais', campo: code, anterior: 'Não existia', atual: `${after?.descricaoSnapshot} · ${after?.consumo} ${after?.unidade}` })
+      continue
+    }
+    if (!after) {
+      differences.push({ categoria: 'materiais', campo: code, anterior: `${before.descricaoSnapshot} · ${before.consumo} ${before.unidade}`, atual: 'Removido' })
+      continue
+    }
+    const beforeValue = JSON.stringify({
+      consumo: before.consumo,
+      consumoPorTamanho: before.consumoPorTamanho ?? {},
+      unidade: before.unidade,
+      perda: before.perdaPercentual,
+      fornecedor: before.fornecedorSnapshot ?? '',
+      cor: before.corFixa ?? before.corRegra,
+    })
+    const afterValue = JSON.stringify({
+      consumo: after.consumo,
+      consumoPorTamanho: after.consumoPorTamanho ?? {},
+      unidade: after.unidade,
+      perda: after.perdaPercentual,
+      fornecedor: after.fornecedorSnapshot ?? '',
+      cor: after.corFixa ?? after.corRegra,
+    })
+    if (beforeValue !== afterValue) {
+      differences.push({
+        categoria: 'materiais',
+        campo: `${code} · ${after.descricaoSnapshot}`,
+        anterior: `${before.consumo} ${before.unidade} · perda ${before.perdaPercentual}%`,
+        atual: `${after.consumo} ${after.unidade} · perda ${after.perdaPercentual}%`,
+      })
+    }
+  }
+
+  const beforeSizes = previous.tamanhos.join(' / ')
+  const afterSizes = current.tamanhos.join(' / ')
+  push('medidas', 'Grade', beforeSizes, afterSizes)
+
+  const previousMeasures = new Map(previous.medidas.map((row) => [row.ponto, row]))
+  const currentMeasures = new Map(current.medidas.map((row) => [row.ponto, row]))
+  const measureNames = new Set([...previousMeasures.keys(), ...currentMeasures.keys()])
+  for (const name of measureNames) {
+    const before = previousMeasures.get(name)
+    const after = currentMeasures.get(name)
+    const beforeValue = before
+      ? JSON.stringify({ tolerancia: before.tolerancia, valores: before.valores })
+      : ''
+    const afterValue = after
+      ? JSON.stringify({ tolerancia: after.tolerancia, valores: after.valores })
+      : ''
+    if (beforeValue !== afterValue) {
+      differences.push({
+        categoria: 'medidas',
+        campo: name,
+        anterior: before ? `Tol. ±${before.tolerancia} · ${before.valores.map((item) => `${item.tamanho}:${item.valor ?? '—'}`).join(' · ')}` : 'Não existia',
+        atual: after ? `Tol. ±${after.tolerancia} · ${after.valores.map((item) => `${item.tamanho}:${item.valor ?? '—'}`).join(' · ')}` : 'Removido',
+      })
+    }
+  }
+
+  const beforeOperations = previous.operacoes.map((item) => `${item.nome}|${item.maquina}|${item.regulagem}|${item.tempoPadraoMin ?? ''}`).join(';;')
+  const afterOperations = current.operacoes.map((item) => `${item.nome}|${item.maquina}|${item.regulagem}|${item.tempoPadraoMin ?? ''}`).join(';;')
+  if (beforeOperations !== afterOperations) {
+    differences.push({
+      categoria: 'operacoes',
+      campo: 'Sequência operacional',
+      anterior: `${previous.operacoes.length} operação(ões)`,
+      atual: `${current.operacoes.length} operação(ões)`,
+    })
+  }
+
+  return differences
+}
+
 export function createBomLine(material: {
   id: string
   codigo: string
