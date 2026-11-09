@@ -299,7 +299,8 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
         </section>
         <section className="panel">
           <div className="panel-head"><div><span className="section-kicker">Fluxo</span><h3>{stage?.nome ?? statusLabel(selected.status)}</h3></div><Factory size={20} /></div>
-          {selected.status === 'rascunho' && <>
+          {selected.excluido && <div className="info-banner"><Trash2 size={18} /><div><strong>OP excluída</strong><span>Restaure esta ordem para voltar a operá-la.</span></div></div>}
+          {selected.status === 'rascunho' && !selected.excluido && <>
             <p className="helper-text">Ao liberar, o sistema exige FT padrão de todos os produtos e congela revisão e kit. Antes disso, o rascunho pode ser alterado ou cancelado.</p>
             <div className="draft-order-actions">
               <button className="secondary-button" disabled={busy} onClick={() => openEditOrder(selected)}><Edit3 size={16} /> Editar itens</button>
@@ -307,8 +308,8 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
               <button className="danger-button" disabled={busy} onClick={() => cancelDraft(selected)}><Ban size={16} /> Cancelar OP</button>
             </div>
           </>}
-          {selected.status === 'em_fluxo' && stage && <><p className="helper-text">Responsáveis: {stage.perfis.join(', ')}.</p><button className="primary-button" disabled={busy} onClick={() => advance(selected)}>Concluir etapa <ArrowRight size={16} /></button></>}
-          {selected.status === 'concluida' && <div className="form-success">Fluxo concluído. O histórico da OP permanece preservado.</div>}
+          {selected.status === 'em_fluxo' && !selected.excluido && stage && <><p className="helper-text">Responsáveis: {stage.perfis.join(', ')}.</p><button className="primary-button" disabled={busy} onClick={() => advance(selected)}>Concluir etapa <ArrowRight size={16} /></button></>}
+          {selected.status === 'concluida' && !selected.excluido && <div className="form-success">Fluxo concluído. O histórico da OP permanece preservado.</div>}
         </section>
       </div>
 
