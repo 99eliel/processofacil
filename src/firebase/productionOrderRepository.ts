@@ -123,6 +123,7 @@ export async function releaseProductionOrder(
       const productRef = doc(db, 'empresas', empresaId, 'produtos', item.produtoCodigo)
       const productSnap = await transaction.get(productRef)
       if (!productSnap.exists()) throw new Error(`Produto ${item.produtoCodigo} não encontrado.`)
+      if (productSnap.data().excluido) throw new Error(`O produto ${item.produtoCodigo} está excluído. Restaure-o antes de liberar a OP.`)
       const vigente = Number(productSnap.data().revisaoVigente ?? 0)
       if (!vigente) throw new Error(`O produto ${item.produtoCodigo} não possui Ficha Técnica padrão.`)
 
