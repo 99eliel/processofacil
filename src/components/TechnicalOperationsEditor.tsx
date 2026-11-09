@@ -12,6 +12,8 @@ import {
   Video,
 } from 'lucide-react'
 import { deleteOperationMedia, uploadOperationMedia } from '../firebase/storageRepository'
+import { useTenantCollection } from '../hooks/useTenantCollection'
+import type { CapacitySettingsRecord } from '../domain/capacityEngine'
 import type { TechnicalOperation, TechnicalRevision } from '../domain/types'
 
 type Props = {
@@ -31,6 +33,8 @@ function emptyOperation(order: number): TechnicalOperation {
     nome: '',
     descricao: '',
     maquina: '',
+    equipeId: '',
+    equipeNome: '',
     regulagem: '',
     ferramenta: '',
     tempoPadraoMin: null,
@@ -49,6 +53,8 @@ export default function TechnicalOperationsEditor({
   notify,
   onError,
 }: Props) {
+  const { items: capacityConfigs } = useTenantCollection<CapacitySettingsRecord>(empresaId, 'configuracoesCapacidade', 'tipo')
+  const teams = capacityConfigs.find(item => item.id === 'maoObra')?.recursos.filter(item => item.ativo) ?? []
   const [expanded, setExpanded] = useState<string | null>(editor.operacoes[0]?.id ?? null)
   const [uploading, setUploading] = useState('')
 
@@ -201,6 +207,15 @@ export default function TechnicalOperationsEditor({
                 <label><span>Código / nº</span><input value={operation.codigo} disabled={!editable} onChange={(event) => update(operation.id, { codigo: event.target.value })} placeholder="Ex.: 30" /></label>
                 <label><span>Nome da operação *</span><input value={operation.nome} disabled={!editable} onChange={(event) => update(operation.id, { nome: event.target.value })} placeholder="Ex.: Pregar manga" /></label>
                 <label><span>Máquina</span><input value={operation.maquina} disabled={!editable} onChange={(event) => update(operation.id, { maquina: event.target.value })} placeholder="Ex.: Overlock 5 fios" /></label>
+                <label><span>Equipe responsável</span><select value={operation.equipeId ?? ''} disabled={!editable} onChange={(event) => {
+                  const team = teams.find(item => item.id === event.target.value)
+                  update(operation.id, { equipeId: team?.id ?? '', equipeNome: team?.nome ?? '' })
+                }}>
+                  <option value="">Sem equipe atribuída</option>
+                  {teams.map(team => <option value={team.id} key={team.id}>{team.nome}</option>)}
+                  {operation.equipeId && !teams.some(team => team.id === operation.equipeId) &&
+                    <option value={operation.equipeId}>{operation.equipeNome || 'Equipe indisponível'} (inativa/removida)</option>}
+                </select></label>
                 <label><span>Ferramenta / acessório</span><input value={operation.ferramenta} disabled={!editable} onChange={(event) => update(operation.id, { ferramenta: event.target.value })} placeholder="Ex.: Aparelho de viés" /></label>
                 <label><span>Tempo padrão (min)</span><input type="number" min="0" step="0.01" value={operation.tempoPadraoMin ?? ''} disabled={!editable} onChange={(event) => update(operation.id, { tempoPadraoMin: event.target.value === '' ? null : Number(event.target.value) })} /></label>
                 <label><span>Dificuldade</span><select value={operation.dificuldade} disabled={!editable} onChange={(event) => update(operation.id, { dificuldade: event.target.value as TechnicalOperation['dificuldade'] })}><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option></select></label>
