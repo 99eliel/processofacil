@@ -95,7 +95,7 @@ export default function CapacityPage({ kind, notify }: Props) {
         <h2>{title}</h2>
         <p>{machines
           ? 'Compare a carga por tipo de máquina com a capacidade semanal cadastrada.'
-          : 'Compare a carga de trabalho das operações com a disponibilidade semanal da equipe.'}</p>
+          : 'Compare a carga planejada e o tempo decorrido de cada equipe com a capacidade semanal cadastrada.'}</p>
       </div>
       {!editing && <button className="primary-button" onClick={beginEdit}><Save size={16} /> Configurar capacidade</button>}
     </section>
@@ -112,6 +112,7 @@ export default function CapacityPage({ kind, notify }: Props) {
 
     {!configured && !editing && <div className="capacity-note"><AlertTriangle size={17} /> Configure {machines ? 'as máquinas' : 'o tamanho e a jornada da equipe'} para comparar capacidade e demanda.</div>}
     {totals.semTempo > 0 && <div className="capacity-note"><AlertTriangle size={17} /> {totals.semTempo} operação(ões) sem tempo padrão válido no Passaporte. Elas não entram na demanda calculada.</div>}
+      {!machines && rows.some(row => row.nome === 'Sem equipe atribuída') && <div className="capacity-note"><AlertTriangle size={17} /> Existem operações sem equipe responsável. No Passaporte Digital, abra uma revisão em rascunho, escolha a equipe em cada operação, publique-a e libere uma nova OP para usar a atribuição.</div>}
     <section className="panel capacity-chart">
       <div className="panel-head"><div><span className="section-kicker">Visão consolidada</span><h3>Demanda e disponibilidade</h3></div></div>
       <div className="capacity-meter"><span style={{ width: `${Math.min(100, rate)}%`, background: rate > 100 ? '#c55243' : '#137c88' }} /></div>
@@ -166,7 +167,7 @@ export default function CapacityPage({ kind, notify }: Props) {
             <td>{numberHours(row.concluidasHoras)} h</td><td>{numberHours(row.decorridasHoras)} h</td>
             <td>{row.capacidadeHoras > 0 && (machines || row.tarefas > 0) ? `${numberHours(percentage(row.previstasHoras, row.capacidadeHoras))}%` : '—'}</td></tr>)}
         </tbody></table></div>}
-      {!machines && <p className="helper-text">As equipes são cadastradas separadamente e suas capacidades são somadas. Como as operações ainda não possuem equipe responsável, a demanda aparece em “Demanda sem equipe atribuída” e não é distribuída artificialmente entre as equipes.</p>}
+      {!machines && <p className="helper-text">As operações são vinculadas às equipes no Passaporte Digital, em cada revisão de produto. Quando uma OP é liberada, a atribuição da equipe fica registrada na operação. Operações antigas sem vínculo aparecem em “Sem equipe atribuída”; novas atribuições valem para novas OPs.</p>}
       <p className="helper-text">* A demanda é calculada pelo tempo padrão por peça × quantidade total da OP. O decorrido real é o intervalo de execução registrado pelo operador, não uma medição de horas produtivas por unidade. Operações concluídas saem da demanda restante. Não são atribuídas datas às operações automaticamente.</p>
     </section>
   </div>
