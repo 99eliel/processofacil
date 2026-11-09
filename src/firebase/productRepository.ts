@@ -68,6 +68,7 @@ export async function createProduct(
     revisaoVigente: null,
     status: 'ativo',
     ativo: true,
+    excluido: false,
     criadoEm: now,
     criadoPor: uid,
     alteradoEm: now,
@@ -146,6 +147,40 @@ export async function setProductActive(
     entidade: 'produto',
     entidadeId: codigo,
     acao: ativo ? 'reativado' : 'inativado',
+    resumo: codigo,
+    uid,
+    em: now,
+  })
+
+  await batch.commit()
+}
+
+
+export async function setProductDeleted(
+  empresaId: string,
+  uid: string,
+  codigo: string,
+  excluido: boolean,
+) {
+  const productRef = doc(db, 'empresas', empresaId, 'produtos', codigo)
+  const existing = await getDoc(productRef)
+  if (!existing.exists()) throw new Error('Produto não encontrado.')
+
+  const batch = writeBatch(db)
+  const now = serverTimestamp()
+  batch.update(productRef, {
+    excluido,
+    excluidoEm: excluido ? now : null,
+    excluidoPor: excluido ? uid : '',
+    alteradoEm: now,
+    alteradoPor: uid,
+  })
+
+  const auditRef = doc(collection(db, 'empresas', empresaId, 'auditoria'))
+  batch.set(auditRef, {
+    entidade: 'produto',
+    entidadeId: codigo,
+    acao: excluido ? 'excluido' : 'restaurado',
     resumo: codigo,
     uid,
     em: now,
