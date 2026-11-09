@@ -30,7 +30,7 @@ function totalVariants(variants: ProductionVariant[]) {
 export async function createProductionOrder(
   empresaId: string,
   uid: string,
-  input: { prazo?: string; itens: NewOrderItem[] },
+  input: { prazo?: string; observacao?: string; itens: NewOrderItem[] },
 ) {
   const orderRef = doc(collection(db, 'empresas', empresaId, 'ordensProducao'))
   const counterRef = doc(db, 'empresas', empresaId, 'contadores', 'ordensProducao')
@@ -66,6 +66,8 @@ export async function createProductionOrder(
     transaction.set(orderRef, {
       numero,
       prazo: input.prazo ?? '',
+      observacao: input.observacao?.trim() ?? '',
+      excluido: false,
       status: 'rascunho',
       workflowStageId: null,
       itens,
@@ -301,7 +303,7 @@ export async function updateProductionOrderDraft(
   empresaId: string,
   uid: string,
   orderId: string,
-  input: { prazo?: string; itens: NewOrderItem[] },
+  input: { prazo?: string; observacao?: string; itens: NewOrderItem[] },
 ) {
   const orderRef = doc(db, 'empresas', empresaId, 'ordensProducao', orderId)
   const auditRef = doc(collection(db, 'empresas', empresaId, 'auditoria'))
@@ -341,6 +343,7 @@ export async function updateProductionOrderDraft(
 
     transaction.update(orderRef, {
       prazo: input.prazo ?? '',
+      observacao: input.observacao?.trim() ?? '',
       itens,
       operacoes: [],
       historico: history,
@@ -397,6 +400,96 @@ export async function cancelProductionOrderDraft(
       entidade: 'ordem_producao',
       entidadeId: orderId,
       acao: 'cancelada',
+      resumo: current.numero,
+      uid,
+      em: serverTimestamp(),
+    })
+  })
+}
+
+
+export async function updateProductionOrderMetadata(
+  empresaId: string,
+  uid: string,
+  orderId: string,
+  input: { prazo?: string; observacao?: string },
+) {
+  const orderRef = doc(db, 'empresas', empresaId, 'ordensProducao', orderId)
+  const auditRef = doc(collection(db, 'empresas', empresaId, 'auditoria'))
+
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(orderRef)
+    if (!snap.exists()) throw new Error('Ordem de Produção não encontrada.')
+
+    const current = { id: snap.id, ...snap.data() } as ProductionOrderRecord
+    if (current.excluido) throw new Error('Restaure a OP antes de editá-la.')
+
+    const history = [
+      ...(current.historico ?? []),
+      {
+        id: crypto.randomUUID(),
+        acao: 'Dados gerais da OP alterados',
+        uid,
+        em: Timestamp.now(),
+      },
+    ]
+
+    transaction.update(orderRef, {
+      prazo: input.prazo ?? '',
+      observacao: input.observacao?.trim() ?? '',
+      historico: history,
+      alteradoEm: serverTimestamp(),
+      alteradoPor: uid,
+    })
+
+    transaction.set(auditRef, {
+      entidade: 'ordem_producao',
+      entidadeId: orderId,
+      acao: 'dados_gerais_alterados',
+      resumo: current.numero,
+      uid,
+      em: serverTimestamp(),
+    })
+  })
+}
+
+export async function setProductionOrderDeleted(
+  empresaId: string,
+  uid: string,
+  orderId: string,
+  excluido: boolean,
+) {
+  const orderRef = doc(db, 'empresas', empresaId, 'ordensProducao', orderId)
+  const auditRef = doc(collection(db, 'empresas', empresaId, 'auditoria'))
+
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(orderRef)
+    if (!snap.exists()) throw new Error('Ordem de Produção não encontrada.')
+
+    const current = { id: snap.id, ...snap.data() } as ProductionOrderRecord
+    const history = [
+      ...(current.historico ?? []),
+      {
+        id: crypto.randomUUID(),
+        acao: excluido ? 'OP excluída da visualização' : 'OP restaurada',
+        uid,
+        em: Timestamp.now(),
+      },
+    ]
+
+    transaction.update(orderRef, {
+      excluido,
+      excluidoEm: excluido ? serverTimestamp() : null,
+      excluidoPor: excluido ? uid : '',
+      historico: history,
+      alteradoEm: serverTimestamp(),
+      alteradoPor: uid,
+    })
+
+    transaction.set(auditRef, {
+      entidade: 'ordem_producao',
+      entidadeId: orderId,
+      acao: excluido ? 'excluida' : 'restaurada',
       resumo: current.numero,
       uid,
       em: serverTimestamp(),
