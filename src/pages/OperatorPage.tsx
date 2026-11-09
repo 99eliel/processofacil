@@ -21,7 +21,7 @@ import {
   startOperationTask,
   unblockOperationTask,
 } from '../firebase/operatorRepository'
-import type { ProductionOperationTask, ProductionOrderRecord } from '../domain/types'
+import type { Product, ProductionOperationTask, ProductionOrderRecord } from '../domain/types'
 
 export default function OperatorPage({ notify }: { notify: (message: string) => void }) {
   const { activeCompany, user } = useSystem()
@@ -31,6 +31,11 @@ export default function OperatorPage({ notify }: { notify: (message: string) => 
     'ordensProducao',
     'numero',
   )
+  const { items: products, loading: productsLoading, error: productsError } = useTenantCollection<Product>(
+    empresaId,
+    'produtos',
+    'descricao',
+  )
   const [selectedOrderId, setSelectedOrderId] = useState('')
   const [selectedTaskId, setSelectedTaskId] = useState('')
   const [busy, setBusy] = useState(false)
@@ -38,14 +43,22 @@ export default function OperatorPage({ notify }: { notify: (message: string) => 
   const [problemModal, setProblemModal] = useState(false)
   const [problemText, setProblemText] = useState('')
 
+  // Só disponibilizar tarefas de produtos ainda existentes e não excluídos.
+  // Uma OP com várias peças continua aparecendo se pelo menos uma estiver disponível.
+  const visibleProductCodes = useMemo(
+    () => new Set(products.filter((product) => !product.excluido).map((product) => product.codigo)),
+    [products],
+  )
+
   const availableOrders = useMemo(
     () => orders
       .filter((order) =>
-        ['liberada', 'em_fluxo', 'reprovada'].includes(order.status)
-        && (order.operacoes ?? []).length > 0,
+        !order.excluido
+        && ['liberada', 'em_fluxo', 'reprovada'].includes(order.status)
+        && (order.operacoes ?? []).some((task) => visibleProductCodes.has(task.produtoCodigo)),
       )
       .sort((a, b) => b.numero.localeCompare(a.numero)),
-    [orders],
+    [orders, visibleProductCodes],
   )
 
   const selectedOrder = availableOrders.find((order) => order.id === selectedOrderId)
@@ -54,13 +67,13 @@ export default function OperatorPage({ notify }: { notify: (message: string) => 
 
   const tasks = useMemo(() => {
     if (!selectedOrder) return []
-    return [...(selectedOrder.operacoes ?? [])].sort((a, b) => {
+    return (selectedOrder.operacoes ?? []).filter((operation) => visibleProductCodes.has(operation.produtoCodigo)).sort((a, b) => {
       const itemA = selectedOrder.itens.findIndex((item) => item.id === a.itemId)
       const itemB = selectedOrder.itens.findIndex((item) => item.id === b.itemId)
       if (itemA !== itemB) return itemA - itemB
       return a.operacao.ordem - b.operacao.ordem
     })
-  }, [selectedOrder])
+  }, [selectedOrder, visibleProductCodes])
 
   useEffect(() => {
     if (!selectedOrder) {
@@ -68,14 +81,17 @@ export default function OperatorPage({ notify }: { notify: (message: string) => 
       setSelectedTaskId('')
       return
     }
-    if (!selectedOrderId) setSelectedOrderId(selectedOrder.id)
+    if (selectedOrderId !== selectedOrder.id) {
+      setSelectedOrderId(selectedOrder.id)
+      setSelectedTaskId('')
+    }
 
     const current = tasks.find((task) => task.id === selectedTaskId)
     if (current) return
 
     const firstOpen = tasks.find((task) => task.status !== 'concluida')
     setSelectedTaskId(firstOpen?.id ?? tasks[0]?.id ?? '')
-  }, [selectedOrder?.id, tasks.length])
+  }, [selectedOrder?.id, selectedOrderId, selectedTaskId, tasks])
 
   const currentIndex = Math.max(0, tasks.findIndex((task) => task.id === selectedTaskId))
   const task = tasks[currentIndex] ?? null
@@ -134,7 +150,7 @@ export default function OperatorPage({ notify }: { notify: (message: string) => 
     }
   }
 
-  if (loading) {
+  if (loading || productsLoading) {
     return <div className="loading-panel"><Loader2 className="spin" size={24} /> Carregando chão de fábrica...</div>
   }
 
@@ -156,14 +172,14 @@ export default function OperatorPage({ notify }: { notify: (message: string) => 
         >
           {availableOrders.map((order) => (
             <option key={order.id} value={order.id}>
-              {order.numero} · {order.itens.reduce((sum, item) => sum + item.quantidadeTotal, 0)} peças
+              {order.numero} · {order.itens.filter((item) => visibleProductCodes.has(item.produtoCodigo)).reduce((sum, item) => sum + item.quantidadeTotal, 0)} peças
             </option>
           ))}
         </select>
       </div>
     </section>
 
-    {error && <div className="form-error page-message">{error}</div>}
+    {(error || productsError) && <div className="form-error page-message">{error || productsError}</div>}
     {localError && <div className="form-error page-message">{localError}</div>}
 
     {!selectedOrder || !task ? (
