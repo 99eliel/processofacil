@@ -96,6 +96,9 @@ export type Product = {
   classificacoes: Record<string, string>
   revisaoVigente?: number
   status: 'ativo' | 'inativo'
+  excluido?: boolean
+  excluidoEm?: unknown
+  excluidoPor?: string
 }
 
 export type TechnicalSheet = {
@@ -363,6 +366,10 @@ export type ProductionOrderRecord = {
   id: string
   numero: string
   prazo?: string
+  observacao?: string
+  excluido?: boolean
+  excluidoEm?: unknown
+  excluidoPor?: string
   status: 'rascunho' | 'liberada' | 'em_fluxo' | 'concluida' | 'cancelada' | 'reprovada'
   workflowStageId?: string | null
   reprovadaNaEtapaId?: string | null
