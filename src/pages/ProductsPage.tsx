@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { ArrowLeft, Boxes, CheckCircle2, Clock3, Edit3, Eye, Factory, FileText, GitBranch, Image as ImageIcon, Loader2, PackageCheck, Plus, RotateCcw, Ruler, Search, ToggleLeft, ToggleRight, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Boxes, Calculator, CheckCircle2, Clock3, Copy, Download, Edit3, Eye, Factory, FileText, GitBranch, Image as ImageIcon, Loader2, PackageCheck, Plus, RotateCcw, Ruler, Search, ToggleLeft, ToggleRight, Trash2, X } from 'lucide-react'
 import { useSystem } from '../system/SystemProvider'
 import { createProduct, generateNextProductCode, setProductActive, setProductDeleted, updateProduct } from '../firebase/productRepository'
 import { useTenantCollection } from '../hooks/useTenantCollection'
-import { getTechnicalRevision } from '../firebase/technicalSheetRepository'
+import { cloneTechnicalRevisionToProduct, getTechnicalRevision } from '../firebase/technicalSheetRepository'
 import type { Product, ProductionOrderRecord, TechnicalRevision, TechnicalSheetSummary } from '../domain/types'
 import type { CodeStrategy } from '../domain/codeEngine'
 
@@ -36,6 +36,9 @@ export default function ProductsPage({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [selectedRevision, setSelectedRevision] = useState<TechnicalRevision | null>(null)
   const [revisionLoading, setRevisionLoading] = useState(false)
+  const [duplicateSource, setDuplicateSource] = useState<Product | null>(null)
+  const [copyTechnicalData, setCopyTechnicalData] = useState(true)
+  const [materialQuantities, setMaterialQuantities] = useState<Record<string, number>>({})
 
   const strategy = settings.estrategiaCodigo as CodeStrategy
 
@@ -85,6 +88,15 @@ export default function ProductsPage({
     }
   }, [empresaId, selectedProduct?.codigo, selectedRevisionNumber])
 
+  useEffect(() => {
+    if (!selectedRevision) {
+      setMaterialQuantities({})
+      return
+    }
+    const keys = selectedRevision.tamanhos.length > 0 ? selectedRevision.tamanhos : ['TOTAL']
+    setMaterialQuantities(Object.fromEntries(keys.map((key) => [key, 0])))
+  }, [selectedRevision?.produtoCodigo, selectedRevision?.numero])
+
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase()
     return products.filter((product) => {
@@ -101,6 +113,8 @@ export default function ProductsPage({
 
   const openCreate = () => {
     setEditing(null)
+    setDuplicateSource(null)
+    setCopyTechnicalData(false)
     setDescription('')
     setManualCode('')
     setExternalCode('')
@@ -110,7 +124,27 @@ export default function ProductsPage({
     setModal(true)
   }
 
+  const openDuplicate = (product: Product) => {
+    setEditing(null)
+    setDuplicateSource(product)
+    setCopyTechnicalData(true)
+    setDescription(`${product.descricao} - Cópia`)
+    setManualCode('')
+    setExternalCode('')
+    setSegmentValues({})
+    setClassificationRows(
+      Object.entries(product.classificacoes ?? {}).map(([chave, valor]) => ({
+        id: crypto.randomUUID(),
+        chave,
+        valor,
+      })),
+    )
+    setFormError('')
+    setModal(true)
+  }
+
   const openEdit = (product: Product) => {
+    setDuplicateSource(null)
     setEditing(product)
     setDescription(product.descricao)
     setClassificationRows(
@@ -171,7 +205,33 @@ export default function ProductsPage({
           classificacoes: classifications,
         })
 
-        notify(`Produto ${codigo} criado.`)
+        if (duplicateSource && copyTechnicalData) {
+          const sourceSummary = summaries.find((item) => item.produtoCodigo === duplicateSource.codigo)
+          const sourceRevisionNumber = sourceSummary?.revisaoRascunho
+            ?? duplicateSource.revisaoVigente
+            ?? sourceSummary?.revisaoVigente
+            ?? null
+
+          if (sourceRevisionNumber) {
+            await cloneTechnicalRevisionToProduct(
+              empresaId,
+              user.uid,
+              duplicateSource.codigo,
+              sourceRevisionNumber,
+              {
+                id: codigo,
+                codigo,
+                descricao: description.trim(),
+                classificacoes,
+                status: 'ativo',
+              },
+            )
+          }
+        }
+
+        notify(duplicateSource
+          ? `Produto ${codigo} duplicado${copyTechnicalData ? ' com dados técnicos' : ''}.`
+          : `Produto ${codigo} criado.`)
       }
 
       setModal(false)
@@ -181,6 +241,8 @@ export default function ProductsPage({
       setExternalCode('')
       setSegmentValues({})
       setClassificationRows([])
+      setDuplicateSource(null)
+      setCopyTechnicalData(false)
     } catch (reason) {
       console.error(reason)
       setFormError(reason instanceof Error ? reason.message : 'Não foi possível salvar o produto.')
@@ -222,6 +284,38 @@ export default function ProductsPage({
     } finally {
       setBusy(false)
     }
+  }
+
+  const downloadMaterialNeedCsv = () => {
+    if (!selectedRevision || !selectedProduct) return
+    const sizes = selectedRevision.tamanhos.length > 0 ? selectedRevision.tamanhos : ['TOTAL']
+    const totalPieces = sizes.reduce((sum, size) => sum + Number(materialQuantities[size] ?? 0), 0)
+    const rows = selectedRevision.bom.map((line) => {
+      const variable = line.consumoPorTamanho && Object.keys(line.consumoPorTamanho).length > 0
+      const base = variable
+        ? sizes.reduce((sum, size) => sum + Number(line.consumoPorTamanho?.[size] ?? line.consumo) * Number(materialQuantities[size] ?? 0), 0)
+        : Number(line.consumo) * totalPieces
+      const total = base * (1 + Number(line.perdaPercentual || 0) / 100)
+      return [
+        line.codigoSnapshot,
+        line.descricaoSnapshot,
+        line.fornecedorSnapshot || '',
+        line.unidade,
+        total.toFixed(4).replace('.', ','),
+        String(line.perdaPercentual ?? 0).replace('.', ','),
+      ]
+    })
+    const csv = [
+      ['Codigo','Material','Fornecedor','Unidade','Quantidade necessaria','Perda %'],
+      ...rows,
+    ].map((row) => row.map((value) => `"${String(value).replaceAll('"','""')}"`).join(';')).join('\n')
+    const blob = new Blob(['\ufeff'+csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `necessidade-materiais-${selectedProduct.codigo}.csv`
+    anchor.click()
+    URL.revokeObjectURL(url)
   }
 
   if (selectedProduct) {
@@ -272,6 +366,7 @@ export default function ProductsPage({
           </div>
           <div className="product-360-actions">
             <button className="secondary-button" onClick={() => openEdit(selectedProduct)}><Edit3 size={16} /> Editar produto</button>
+            <button className="secondary-button" onClick={() => openDuplicate(selectedProduct)}><Copy size={16} /> Duplicar produto</button>
             {openPassport && <button className="primary-button" onClick={() => openPassport(selectedProduct.codigo)}><FileText size={16} /> Abrir Ficha Técnica</button>}
           </div>
         </div>
@@ -329,6 +424,71 @@ export default function ProductsPage({
             : <div className="table-wrap"><table><thead><tr><th>Código</th><th>Material</th><th>Fornecedor</th><th>Consumo</th><th>Cor</th></tr></thead><tbody>
               {selectedRevision.bom.map((line) => <tr key={line.id}><td><strong>{line.codigoSnapshot}</strong></td><td>{line.descricaoSnapshot}</td><td>{line.fornecedorSnapshot || '—'}</td><td>{line.consumoPorTamanho && Object.keys(line.consumoPorTamanho).length > 0 ? 'Varia por tamanho' : `${line.consumo} ${line.unidade}`}</td><td>{line.corRegra === 'produto' ? 'Segue a peça' : line.corRegra === 'fixa' ? line.corFixa || 'Fixa' : '—'}</td></tr>)}
             </tbody></table></div>}
+        </section>
+
+        <section className="panel product-360-section product-material-simulator">
+          <div className="panel-head">
+            <div>
+              <span className="section-kicker">Planejamento rápido</span>
+              <h3>Calcular materiais necessários</h3>
+              <p>Informe a quantidade prevista por tamanho. O cálculo usa o consumo da Ficha Técnica e aplica a perda cadastrada em cada material.</p>
+            </div>
+            <Calculator size={20} />
+          </div>
+
+          <div className="material-simulation-sizes">
+            {(selectedRevision.tamanhos.length > 0 ? selectedRevision.tamanhos : ['TOTAL']).map((size) => (
+              <label key={size}>
+                <span>{size === 'TOTAL' ? 'Quantidade de peças' : size}</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={materialQuantities[size] ?? 0}
+                  onChange={(event) => setMaterialQuantities({
+                    ...materialQuantities,
+                    [size]: Math.max(0, Number(event.target.value || 0)),
+                  })}
+                />
+              </label>
+            ))}
+          </div>
+
+          {(() => {
+            const sizes = selectedRevision.tamanhos.length > 0 ? selectedRevision.tamanhos : ['TOTAL']
+            const totalPieces = sizes.reduce((sum, size) => sum + Number(materialQuantities[size] ?? 0), 0)
+            const calculated = selectedRevision.bom.map((line) => {
+              const variable = Boolean(line.consumoPorTamanho && Object.keys(line.consumoPorTamanho).length > 0)
+              const base = variable
+                ? sizes.reduce((sum, size) =>
+                    sum + Number(line.consumoPorTamanho?.[size] ?? line.consumo) * Number(materialQuantities[size] ?? 0),
+                  0)
+                : Number(line.consumo) * totalPieces
+              return {
+                line,
+                total: base * (1 + Number(line.perdaPercentual || 0) / 100),
+              }
+            })
+
+            return <>
+              <div className="material-simulation-summary">
+                <div><span>Peças simuladas</span><strong>{totalPieces}</strong></div>
+                <div><span>Materiais calculados</span><strong>{calculated.length}</strong></div>
+                <button className="secondary-button compact" disabled={calculated.length === 0} onClick={downloadMaterialNeedCsv}>
+                  <Download size={15} /> Baixar CSV
+                </button>
+              </div>
+              {calculated.length > 0 && <div className="table-wrap"><table>
+                <thead><tr><th>Material</th><th>Consumo base</th><th>Perda</th><th>Necessidade calculada</th></tr></thead>
+                <tbody>{calculated.map(({ line, total }) => <tr key={line.id}>
+                  <td><strong>{line.codigoSnapshot}</strong><small className="table-sub">{line.descricaoSnapshot}</small></td>
+                  <td>{line.consumoPorTamanho && Object.keys(line.consumoPorTamanho).length > 0 ? 'Por tamanho' : `${line.consumo} ${line.unidade}/peça`}</td>
+                  <td>{line.perdaPercentual || 0}%</td>
+                  <td><strong>{total.toLocaleString('pt-BR', { maximumFractionDigits: 4 })} {line.unidade}</strong></td>
+                </tr>)}</tbody>
+              </table></div>}
+            </>
+          })()}
         </section>
 
         <div className="product-360-grid">
@@ -401,6 +561,7 @@ export default function ProductsPage({
 }</td><td><div className="row-actions">
   {!product.excluido && <button title="Ver produto" onClick={() => setSelectedProduct(product)}><Eye size={15} /></button>}
   {!product.excluido && <button title="Editar" onClick={() => openEdit(product)}><Edit3 size={15} /></button>}
+  {!product.excluido && <button title="Duplicar" onClick={() => openDuplicate(product)}><Copy size={15} /></button>}
   {!product.excluido && <button title={product.status === 'ativo' ? 'Inativar' : 'Reativar'} onClick={() => toggleState(product)}>{product.status === 'ativo' ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}</button>}
   <button className={product.excluido ? 'restore-action' : 'danger-action'} title={product.excluido ? 'Restaurar' : 'Excluir'} onClick={() => void toggleDeleted(product)}>
     {product.excluido ? <RotateCcw size={15} /> : <Trash2 size={15} />}
@@ -409,9 +570,10 @@ export default function ProductsPage({
       </section>}
 
     {modal && <div className="modal-backdrop"><form className="form-modal" onSubmit={submit}>
-      <div className="modal-head"><div><span className="section-kicker">{editing ? 'Alteração controlada' : 'Novo cadastro'}</span><h2>{editing ? 'Editar produto' : 'Novo produto'}</h2></div><button type="button" className="icon-button" onClick={() => setModal(false)}><X size={18} /></button></div>
+      <div className="modal-head"><div><span className="section-kicker">{editing ? 'Alteração controlada' : duplicateSource ? 'Reaproveitar produto' : 'Novo cadastro'}</span><h2>{editing ? 'Editar produto' : duplicateSource ? 'Duplicar produto' : 'Novo produto'}</h2></div><button type="button" className="icon-button" onClick={() => setModal(false)}><X size={18} /></button></div>
       <div className="form-grid">
         {editing && <div className="info-banner span-2"><GitBranch size={18} /><div><strong>{editing.codigo}</strong><span>O código é imutável nesta edição. Mudanças estruturais devem usar uma migração controlada.</span></div></div>}
+        {duplicateSource && <div className="info-banner span-2 duplicate-product-banner"><Copy size={18} /><div><strong>Origem: {duplicateSource.codigo} · {duplicateSource.descricao}</strong><span>O novo produto recebe outro código e pode reaproveitar toda a engenharia da Ficha Técnica.</span></div></div>}
         <label className="span-2"><span>Descrição *</span><input value={description} onChange={(e) => setDescription(e.target.value)} required placeholder="Nome/descrição do produto" /></label>
 
         <div className="span-2 product-classification-editor">
@@ -427,13 +589,18 @@ export default function ProductsPage({
             </div>)}</div>}
         </div>
 
+        {duplicateSource && <label className="span-2 duplicate-ft-toggle">
+          <input type="checkbox" checked={copyTechnicalData} onChange={(e) => setCopyTechnicalData(e.target.checked)} />
+          <span><strong>Copiar também a Ficha Técnica</strong><small>Materiais, medidas, operações, tecido, imagens de referência e anexos serão usados como base da REV 01 em rascunho.</small></span>
+        </label>}
+
         {!editing && strategy.tipo === 'manual' && <label className="span-2"><span>Código *</span><input value={manualCode} onChange={(e) => setManualCode(e.target.value)} required placeholder="Código definido pela empresa" /></label>}
         {!editing && strategy.tipo === 'externo' && <label className="span-2"><span>Código externo *</span><input value={externalCode} onChange={(e) => setExternalCode(e.target.value)} required placeholder="Código vindo do ERP/sistema externo" /></label>}
         {!editing && strategy.tipo === 'sequencial' && <div className="info-banner span-2"><GitBranch size={18} /><div><strong>Código automático</strong><span>O próximo sequencial será reservado de forma transacional ao salvar.</span></div></div>}
         {!editing && strategy.tipo === 'segmentado' && (strategy.segmentos ?? []).map((segment) => <label key={segment.id}><span>{segment.nome} ({segment.tamanho})</span><input value={segmentValues[segment.id] ?? ''} onChange={(e) => setSegmentValues({ ...segmentValues, [segment.id]: e.target.value })} required={segment.obrigatorio} maxLength={segment.tamanho} minLength={segment.tamanho} placeholder={`${segment.tamanho} caracteres`} /></label>)}
       </div>
       {formError && <div className="form-error">{formError}</div>}
-      <div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setModal(false)}>Cancelar</button><button className="primary-button" disabled={busy}>{busy ? <Loader2 className="spin" size={17} /> : <CheckCircle2 size={17} />} {editing ? 'Salvar alterações' : 'Criar produto'}</button></div>
+      <div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setModal(false)}>Cancelar</button><button className="primary-button" disabled={busy}>{busy ? <Loader2 className="spin" size={17} /> : <CheckCircle2 size={17} />} {editing ? 'Salvar alterações' : duplicateSource ? 'Criar cópia' : 'Criar produto'}</button></div>
     </form></div>}
   </>
 }
