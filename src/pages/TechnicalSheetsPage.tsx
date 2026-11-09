@@ -21,6 +21,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useSystem } from '../system/SystemProvider'
+import { createMeasurementTemplate } from '../firebase/measurementTemplateRepository'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import {
   compareTechnicalRevisions,
@@ -41,7 +42,7 @@ import {
 } from '../firebase/storageRepository'
 import TechnicalOperationsEditor from '../components/TechnicalOperationsEditor'
 import TechnicalSheetPrintDocument from '../components/TechnicalSheetPrintDocument'
-import type { BomLine, Material, MaterialSupplier, Product, TechnicalRevision, TechnicalSheetSummary } from '../domain/types'
+import type { BomLine, Material, MaterialSupplier, Product, ProductMeasurementTemplate, TechnicalRevision, TechnicalSheetSummary } from '../domain/types'
 
 
 const attachmentDefinitions: Array<{
@@ -81,6 +82,7 @@ export default function TechnicalSheetsPage({
   const { items: products } = useTenantCollection<Product>(empresaId, 'produtos', 'descricao')
   const { items: materials } = useTenantCollection<Material>(empresaId, 'materiais', 'descricao')
   const { items: summaries, loading, error } = useTenantCollection<TechnicalSheetSummary>(empresaId, 'fichas', 'produtoDescricao')
+  const { items: measurementTemplates } = useTenantCollection<ProductMeasurementTemplate>(empresaId, 'modelosMedidas', 'nome')
   const [selectedProductCode, setSelectedProductCode] = useState('')
   const [editor, setEditor] = useState<TechnicalRevision | null>(null)
   const [history, setHistory] = useState<TechnicalRevision[]>([])
@@ -100,6 +102,7 @@ export default function TechnicalSheetsPage({
   const [compareLeft, setCompareLeft] = useState<number | ''>('')
   const [compareRight, setCompareRight] = useState<number | ''>('')
   const [compareResults, setCompareResults] = useState<ReturnType<typeof compareTechnicalRevisions>>([])
+  const [measurementTemplateId, setMeasurementTemplateId] = useState('')
 
   const selectedProduct = products.find((item) => item.codigo === selectedProductCode)
   const editable = editor?.status === 'rascunho'
@@ -323,6 +326,57 @@ export default function TechnicalSheetsPage({
         [size]: value,
       },
     })
+  }
+
+  const applyMeasurementTemplate = () => {
+    if (!editor || !editable || !measurementTemplateId) return
+    const template = measurementTemplates.find((item) => item.id === measurementTemplateId)
+    if (!template) return
+
+    if ((editor.tamanhos.length > 0 || editor.medidas.length > 0)
+      && !window.confirm('Aplicar este modelo substituirá a grade e os pontos de medida atuais deste rascunho. Continuar?')) {
+      return
+    }
+
+    setEditor({
+      ...editor,
+      blocos: { ...editor.blocos, medidas: true },
+      tamanhos: [...template.tamanhos],
+      medidas: template.pontos.map((point) => ({
+        id: crypto.randomUUID(),
+        ponto: point.ponto,
+        tolerancia: Number(point.tolerancia || 0),
+        valores: template.tamanhos.map((size) => ({
+          tamanho: size,
+          valor: null,
+        })),
+      })),
+    })
+    notify(`Modelo "${template.nome}" aplicado. Preencha os valores das medidas.`)
+  }
+
+  const saveCurrentMeasurementTemplate = async () => {
+    if (!editor || !editable || !empresaId || !user) return
+    if (editor.tamanhos.length === 0) {
+      setLocalError('Defina uma grade antes de salvar um modelo.')
+      return
+    }
+
+    const suggested = [editor.familia, editor.modelo].filter(Boolean).join(' · ') || editor.produtoDescricao
+    const nome = window.prompt('Nome do modelo de grade e medidas:', suggested)
+    if (!nome?.trim()) return
+
+    setBusy(true)
+    setLocalError('')
+    try {
+      await createMeasurementTemplate(empresaId, user.uid, nome, editor)
+      notify('Modelo de grade e medidas salvo para reutilização.')
+    } catch (reason) {
+      console.error(reason)
+      setLocalError(reason instanceof Error ? reason.message : 'Não foi possível salvar o modelo.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const addSize = () => {
@@ -1015,6 +1069,22 @@ export default function TechnicalSheetsPage({
           <div><span className="section-kicker">Especificação dimensional</span><h3>Tabela de medidas</h3></div>
           <span className="count-badge">{editor.medidas.length}</span>
         </div>
+
+        {editable && <div className="measurement-template-toolbar print-hidden">
+          <div>
+            <span className="section-kicker">Modelos reutilizáveis</span>
+            <strong>Grade + pontos de medida</strong>
+            <small>Use uma estrutura já padronizada ou salve a grade atual para outras peças.</small>
+          </div>
+          <select value={measurementTemplateId} onChange={(e) => setMeasurementTemplateId(e.target.value)}>
+            <option value="">Selecionar modelo...</option>
+            {measurementTemplates.filter((item) => item.ativo !== false).map((item) => <option key={item.id} value={item.id}>
+              {item.nome} · {item.tamanhos.join('/')} · {item.pontos.length} ponto(s)
+            </option>)}
+          </select>
+          <button type="button" className="secondary-button compact" disabled={!measurementTemplateId} onClick={applyMeasurementTemplate}>Aplicar modelo</button>
+          <button type="button" className="secondary-button compact" disabled={busy || editor.tamanhos.length === 0} onClick={() => void saveCurrentMeasurementTemplate()}>Salvar grade atual</button>
+        </div>}
 
         <div className="size-editor">
           <div className="size-chips">
