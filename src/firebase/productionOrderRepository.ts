@@ -151,6 +151,8 @@ export async function releaseProductionOrder(
           produtoDescricao: item.produtoDescricao,
           revisao: vigente,
           cor: item.cor,
+          equipeId: operation.equipeId || '',
+          equipeNome: operation.equipeNome || '',
           operacao: {
             ...operation,
             instrucoes: [...(operation.instrucoes ?? [])],
