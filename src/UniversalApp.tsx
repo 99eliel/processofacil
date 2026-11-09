@@ -387,6 +387,8 @@ function pageTitle(page: Page) {
     ordens: 'Ordens de Produção',
     simulador: 'Demonstração',
     operador: 'Modo Operador',
+    cargaMaquina: 'Carga Máquina',
+    cargaMaoObra: 'Carga Mão de Obra',
     qualidade: 'Qualidade',
     admin: 'Configurações',
   }
