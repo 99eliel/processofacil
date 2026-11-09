@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -326,12 +326,9 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
     </>
   }
 
-  const ordered = useMemo(
-    () => [...orders]
-      .filter((order) => showDeleted ? Boolean(order.excluido) : !order.excluido)
-      .reverse(),
-    [orders, showDeleted],
-  )
+  const ordered = [...orders]
+    .filter((order) => showDeleted ? Boolean(order.excluido) : !order.excluido)
+    .reverse()
 
   return <>
     <section className="page-intro">
