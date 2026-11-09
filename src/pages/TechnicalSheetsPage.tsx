@@ -82,7 +82,7 @@ export default function TechnicalSheetsPage({
   const auth = useSystem()
   const empresaId = auth.activeCompany?.id
   const user = auth.user
-  const { items: products } = useTenantCollection<Product>(empresaId, 'produtos', 'descricao')
+  const { items: products, loading: productsLoading } = useTenantCollection<Product>(empresaId, 'produtos', 'descricao')
   const { items: materials } = useTenantCollection<Material>(empresaId, 'materiais', 'descricao')
   const { items: summaries, loading, error } = useTenantCollection<TechnicalSheetSummary>(empresaId, 'fichas', 'produtoDescricao')
   const { items: measurementTemplates } = useTenantCollection<ProductMeasurementTemplate>(empresaId, 'modelosMedidas', 'nome')
@@ -115,10 +115,14 @@ export default function TechnicalSheetsPage({
   const [quickProductModel, setQuickProductModel] = useState('')
   const [quickProductColor, setQuickProductColor] = useState('')
 
-  const selectedProduct = products.find((item) => item.codigo === selectedProductCode)
+  const selectedProduct = products.find((item) => item.codigo === selectedProductCode && !item.excluido)
   const editable = editor?.status === 'rascunho'
   const canPublish = (auth.activeMembership?.perfis ?? []).some((role) => ['admin', 'ppcp', 'planejamento'].includes(role))
-  const summaryByCode = useMemo(() => new Map(summaries.map((item) => [item.produtoCodigo, item])), [summaries])
+  const visibleSummaries = useMemo(() => {
+    const visibleCodes = new Set(products.filter((product) => !product.excluido).map((product) => product.codigo))
+    return summaries.filter((summary) => visibleCodes.has(summary.produtoCodigo))
+  }, [products, summaries])
+  const summaryByCode = useMemo(() => new Map(visibleSummaries.map((item) => [item.produtoCodigo, item])), [visibleSummaries])
   const productCodeStrategy = auth.settings.estrategiaCodigo as CodeStrategy
 
   const refreshHistory = async (codigo: string) => {
@@ -166,7 +170,7 @@ export default function TechnicalSheetsPage({
 
   useEffect(() => {
     if (!initialProductCode || !empresaId || !user || editor) return
-    const product = products.find((item) => item.codigo === initialProductCode)
+    const product = products.find((item) => item.codigo === initialProductCode && !item.excluido)
     if (!product) return
 
     onFocusConsumed?.()
@@ -1338,8 +1342,8 @@ export default function TechnicalSheetsPage({
 
     {localError && <div className="form-error page-message">{localError}</div>}
     {error && <div className="form-error page-message">{error}</div>}
-    {loading ? <div className="loading-panel"><Loader2 className="spin" size={25} /> Carregando fichas...</div> :
-      <div className="cards-list">{summaries.length === 0 ? <section className="panel"><div className="empty-state"><FileText size={30} /><strong>Nenhuma Ficha Técnica criada</strong><span>Cadastre um produto e abra a primeira revisão.</span></div></section> : summaries.map((summary) => <button className="sheet-card sheet-card-button" key={summary.id} onClick={() => openSummary(summary)}><div className="sheet-head"><span className="sheet-icon"><FileText size={21} /></span><div><span className="op-number">{summary.produtoCodigo}</span><h3>{summary.produtoDescricao}</h3><small>{summary.revisaoRascunho ? `REV ${String(summary.revisaoRascunho).padStart(2, '0')} em trabalho` : summary.revisaoVigente ? `REV ${String(summary.revisaoVigente).padStart(2, '0')} vigente` : 'Sem revisão vigente'}</small></div><Status status={summary.status === 'padrao' ? 'padrao' : summary.status === 'em_validacao' ? 'em_validacao' : 'rascunho'} /></div></button>)}</div>}
+    {loading || productsLoading ? <div className="loading-panel"><Loader2 className="spin" size={25} /> Carregando fichas...</div> :
+      <div className="cards-list">{visibleSummaries.length === 0 ? <section className="panel"><div className="empty-state"><FileText size={30} /><strong>Nenhuma Ficha Técnica criada</strong><span>Cadastre um produto e abra a primeira revisão.</span></div></section> : visibleSummaries.map((summary) => <button className="sheet-card sheet-card-button" key={summary.id} onClick={() => openSummary(summary)}><div className="sheet-head"><span className="sheet-icon"><FileText size={21} /></span><div><span className="op-number">{summary.produtoCodigo}</span><h3>{summary.produtoDescricao}</h3><small>{summary.revisaoRascunho ? `REV ${String(summary.revisaoRascunho).padStart(2, '0')} em trabalho` : summary.revisaoVigente ? `REV ${String(summary.revisaoVigente).padStart(2, '0')} vigente` : 'Sem revisão vigente'}</small></div><Status status={summary.status === 'padrao' ? 'padrao' : summary.status === 'em_validacao' ? 'em_validacao' : 'rascunho'} /></div></button>)}</div>}
 
     {productModal && <div className="modal-backdrop" role="presentation" onMouseDown={() => !busy && setProductModal(false)}>
       <section className="modal-card quick-product-modal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
