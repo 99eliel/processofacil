@@ -19,9 +19,12 @@ import {
   Send,
   ShieldCheck,
   Trash2,
+  X,
 } from 'lucide-react'
 import { useSystem } from '../system/SystemProvider'
 import { createMeasurementTemplate } from '../firebase/measurementTemplateRepository'
+import { createProduct, generateNextProductCode } from '../firebase/productRepository'
+import type { CodeStrategy } from '../domain/codeEngine'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import {
   compareTechnicalRevisions,
@@ -103,11 +106,20 @@ export default function TechnicalSheetsPage({
   const [compareRight, setCompareRight] = useState<number | ''>('')
   const [compareResults, setCompareResults] = useState<ReturnType<typeof compareTechnicalRevisions>>([])
   const [measurementTemplateId, setMeasurementTemplateId] = useState('')
+  const [productModal, setProductModal] = useState(false)
+  const [quickProductDescription, setQuickProductDescription] = useState('')
+  const [quickManualCode, setQuickManualCode] = useState('')
+  const [quickExternalCode, setQuickExternalCode] = useState('')
+  const [quickSegmentValues, setQuickSegmentValues] = useState<Record<string, string>>({})
+  const [quickProductFamily, setQuickProductFamily] = useState('')
+  const [quickProductModel, setQuickProductModel] = useState('')
+  const [quickProductColor, setQuickProductColor] = useState('')
 
   const selectedProduct = products.find((item) => item.codigo === selectedProductCode)
   const editable = editor?.status === 'rascunho'
   const canPublish = (auth.activeMembership?.perfis ?? []).some((role) => ['admin', 'ppcp', 'planejamento'].includes(role))
   const summaryByCode = useMemo(() => new Map(summaries.map((item) => [item.produtoCodigo, item])), [summaries])
+  const productCodeStrategy = auth.settings.estrategiaCodigo as CodeStrategy
 
   const refreshHistory = async (codigo: string) => {
     if (!empresaId) return
@@ -165,6 +177,79 @@ export default function TechnicalSheetsPage({
       void openOrCreate(product)
     }
   }, [initialProductCode, empresaId, user?.uid, products.length, summaries.length, editor])
+
+  const resetQuickProduct = () => {
+    setQuickProductDescription('')
+    setQuickManualCode('')
+    setQuickExternalCode('')
+    setQuickSegmentValues({})
+    setQuickProductFamily('')
+    setQuickProductModel('')
+    setQuickProductColor('')
+  }
+
+  const openQuickProduct = () => {
+    resetQuickProduct()
+    setLocalError('')
+    setProductModal(true)
+  }
+
+  const createProductAndOpenSheet = async () => {
+    if (!empresaId || !user) return
+    const description = quickProductDescription.trim()
+    if (!description) {
+      setLocalError('Informe a descrição do novo produto.')
+      return
+    }
+
+    setBusy(true)
+    setLocalError('')
+    try {
+      const codigo = await generateNextProductCode(
+        empresaId,
+        productCodeStrategy,
+        {
+          manual: quickManualCode,
+          external: quickExternalCode,
+          segmentValues: quickSegmentValues,
+        },
+      )
+
+      const classificacoes = Object.fromEntries(
+        [
+          ['familia', quickProductFamily.trim()],
+          ['modelo', quickProductModel.trim()],
+          ['cor', quickProductColor.trim()],
+        ].filter(([, value]) => Boolean(value)),
+      )
+
+      await createProduct(empresaId, user.uid, {
+        codigo,
+        descricao: description,
+        classificacoes,
+      })
+
+      const product: Product = {
+        id: codigo,
+        codigo,
+        descricao: description,
+        classificacoes,
+        status: 'ativo',
+      }
+
+      const revision = await openOrCreateTechnicalDraft(empresaId, user.uid, product)
+      setSelectedProductCode(codigo)
+      setEditor(revision)
+      setProductModal(false)
+      resetQuickProduct()
+      notify(`Produto ${codigo} criado. A Ficha Técnica REV 01 já está aberta para preenchimento.`)
+    } catch (reason) {
+      console.error(reason)
+      setLocalError(reason instanceof Error ? reason.message : 'Não foi possível criar o produto.')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const openOrCreate = async (product: Product) => {
     if (!empresaId || !user) return
@@ -1229,14 +1314,75 @@ export default function TechnicalSheetsPage({
     </section>
 
     <section className="panel ft-create-panel">
-      <div><span className="section-kicker">Novo passaporte ou nova revisão</span><h3>Selecione um produto</h3><p className="helper-text">Se já existir uma revisão em rascunho, ela será reaberta. Se houver uma revisão padrão, será criada uma nova cópia para edição.</p></div>
-      <div className="inline-form"><select value={selectedProductCode} onChange={(e) => setSelectedProductCode(e.target.value)}><option value="">Selecione...</option>{products.filter((product) => product.status === 'ativo').map((product) => <option key={product.id} value={product.codigo}>{product.codigo} — {product.descricao}</option>)}</select><button className="primary-button" disabled={!selectedProduct || busy} onClick={() => selectedProduct && openOrCreate(selectedProduct)}>{busy ? <Loader2 className="spin" size={16} /> : <Plus size={16} />} Abrir ficha</button></div>
+      <div>
+        <span className="section-kicker">Novo passaporte ou nova revisão</span>
+        <h3>Selecione um produto ou cadastre um novo</h3>
+        <p className="helper-text">Se já existir uma revisão em rascunho, ela será reaberta. Se o produto ainda não existir, cadastre-o aqui e a REV 01 será aberta automaticamente.</p>
+      </div>
+      <div className="ft-create-product-actions">
+        <div className="inline-form">
+          <select value={selectedProductCode} onChange={(e) => setSelectedProductCode(e.target.value)}>
+            <option value="">Selecione...</option>
+            {products.filter((product) => product.status === 'ativo' && !product.excluido).map((product) => <option key={product.id} value={product.codigo}>{product.codigo} — {product.descricao}</option>)}
+          </select>
+          <button className="primary-button" disabled={!selectedProduct || busy} onClick={() => selectedProduct && openOrCreate(selectedProduct)}>
+            {busy ? <Loader2 className="spin" size={16} /> : <Plus size={16} />} Abrir ficha
+          </button>
+        </div>
+        <span className="ft-create-product-divider">ou</span>
+        <button className="secondary-button ft-new-product-button" type="button" onClick={openQuickProduct}>
+          <PackagePlus size={17} /> Cadastrar novo produto
+        </button>
+      </div>
     </section>
 
     {localError && <div className="form-error page-message">{localError}</div>}
     {error && <div className="form-error page-message">{error}</div>}
     {loading ? <div className="loading-panel"><Loader2 className="spin" size={25} /> Carregando fichas...</div> :
       <div className="cards-list">{summaries.length === 0 ? <section className="panel"><div className="empty-state"><FileText size={30} /><strong>Nenhuma Ficha Técnica criada</strong><span>Cadastre um produto e abra a primeira revisão.</span></div></section> : summaries.map((summary) => <button className="sheet-card sheet-card-button" key={summary.id} onClick={() => openSummary(summary)}><div className="sheet-head"><span className="sheet-icon"><FileText size={21} /></span><div><span className="op-number">{summary.produtoCodigo}</span><h3>{summary.produtoDescricao}</h3><small>{summary.revisaoRascunho ? `REV ${String(summary.revisaoRascunho).padStart(2, '0')} em trabalho` : summary.revisaoVigente ? `REV ${String(summary.revisaoVigente).padStart(2, '0')} vigente` : 'Sem revisão vigente'}</small></div><Status status={summary.status === 'padrao' ? 'padrao' : summary.status === 'em_validacao' ? 'em_validacao' : 'rascunho'} /></div></button>)}</div>}
+
+    {productModal && <div className="modal-backdrop" role="presentation" onMouseDown={() => !busy && setProductModal(false)}>
+      <section className="modal-card quick-product-modal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="modal-head">
+          <div>
+            <span className="section-kicker">Produto + Ficha Técnica</span>
+            <h2>Cadastrar novo produto</h2>
+            <p>Crie o produto sem sair do Passaporte Digital. Ao salvar, a REV 01 será aberta automaticamente.</p>
+          </div>
+          <button className="modal-close" type="button" disabled={busy} onClick={() => setProductModal(false)}><X size={18} /></button>
+        </div>
+
+        <div className="quick-product-flow">
+          <div className="quick-product-step"><span>1</span><div><strong>Produto</strong><small>Código e identificação</small></div></div>
+          <div className="quick-product-step"><span>2</span><div><strong>Ficha Técnica</strong><small>REV 01 em rascunho</small></div></div>
+        </div>
+
+        <div className="form-grid quick-product-form">
+          <label className="span-2"><span>Descrição do produto *</span><input autoFocus value={quickProductDescription} onChange={(e) => setQuickProductDescription(e.target.value)} placeholder="Ex.: Polo masculina azul marinho" /></label>
+
+          {productCodeStrategy.tipo === 'manual' && <label className="span-2"><span>Código do produto *</span><input value={quickManualCode} onChange={(e) => setQuickManualCode(e.target.value)} placeholder="Ex.: POLO-001" /></label>}
+
+          {productCodeStrategy.tipo === 'externo' && <label className="span-2"><span>Código externo *</span><input value={quickExternalCode} onChange={(e) => setQuickExternalCode(e.target.value)} placeholder="Código utilizado pela empresa" /></label>}
+
+          {productCodeStrategy.tipo === 'sequencial' && <div className="info-banner span-2"><Info size={18} /><div><strong>Código automático</strong><span>O próximo código será gerado ao salvar, seguindo a estratégia sequencial configurada.</span></div></div>}
+
+          {productCodeStrategy.tipo === 'segmentado' && [...productCodeStrategy.segmentos].sort((a,b) => a.ordem-b.ordem).map((segment) => <label key={segment.id}><span>{segment.nome}{segment.obrigatorio ? ' *' : ''}</span><input maxLength={segment.tamanho} value={quickSegmentValues[segment.id] ?? ''} onChange={(e) => setQuickSegmentValues({ ...quickSegmentValues, [segment.id]: e.target.value })} placeholder={`${segment.tamanho} caractere(s)`} /></label>)}
+
+          <label><span>Família / linha</span><input value={quickProductFamily} onChange={(e) => setQuickProductFamily(e.target.value)} placeholder="Ex.: Uniformes" /></label>
+          <label><span>Modelo</span><input value={quickProductModel} onChange={(e) => setQuickProductModel(e.target.value)} placeholder="Ex.: Polo masculina" /></label>
+          <label className="span-2"><span>Cor inicial</span><input value={quickProductColor} onChange={(e) => setQuickProductColor(e.target.value)} placeholder="Ex.: Azul marinho" /></label>
+        </div>
+
+        {localError && <div className="form-error">{localError}</div>}
+
+        <div className="modal-actions">
+          <button type="button" className="secondary-button" disabled={busy} onClick={() => setProductModal(false)}>Cancelar</button>
+          <button type="button" className="primary-button" disabled={busy || !quickProductDescription.trim()} onClick={() => void createProductAndOpenSheet()}>
+            {busy ? <Loader2 className="spin" size={16} /> : <Plus size={16} />} Criar produto e abrir Ficha Técnica
+          </button>
+        </div>
+      </section>
+    </div>}
   </>
 }
 
