@@ -1,17 +1,26 @@
-import { useMemo, useState, type FormEvent } from 'react'
-import { CheckCircle2, Edit3, GitBranch, Loader2, PackageCheck, Plus, RotateCcw, Search, ToggleLeft, ToggleRight, Trash2, X } from 'lucide-react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { ArrowLeft, Boxes, CheckCircle2, Clock3, Edit3, Eye, Factory, FileText, GitBranch, Image as ImageIcon, Loader2, PackageCheck, Plus, RotateCcw, Ruler, Search, ToggleLeft, ToggleRight, Trash2, X } from 'lucide-react'
 import { useSystem } from '../system/SystemProvider'
 import { createProduct, generateNextProductCode, setProductActive, setProductDeleted, updateProduct } from '../firebase/productRepository'
 import { useTenantCollection } from '../hooks/useTenantCollection'
-import type { Product } from '../domain/types'
+import { getTechnicalRevision } from '../firebase/technicalSheetRepository'
+import type { Product, ProductionOrderRecord, TechnicalRevision, TechnicalSheetSummary } from '../domain/types'
 import type { CodeStrategy } from '../domain/codeEngine'
 
 type ClassificationRow = { id: string; chave: string; valor: string }
 
-export default function ProductsPage({ notify }: { notify: (message: string) => void }) {
+export default function ProductsPage({
+  notify,
+  openPassport,
+}: {
+  notify: (message: string) => void
+  openPassport?: (produtoCodigo: string) => void
+}) {
   const { activeCompany, settings, user } = useSystem()
   const empresaId = activeCompany?.id
   const { items: products, loading, error } = useTenantCollection<Product>(empresaId, 'produtos', 'descricao')
+  const { items: summaries } = useTenantCollection<TechnicalSheetSummary>(empresaId, 'fichas', 'produtoDescricao')
+  const { items: orders } = useTenantCollection<ProductionOrderRecord>(empresaId, 'ordensProducao', 'numero')
   const [search, setSearch] = useState('')
   const [showInactive, setShowInactive] = useState(false)
   const [showDeleted, setShowDeleted] = useState(false)
@@ -24,8 +33,58 @@ export default function ProductsPage({ notify }: { notify: (message: string) => 
   const [classificationRows, setClassificationRows] = useState<ClassificationRow[]>([])
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState('')
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [selectedRevision, setSelectedRevision] = useState<TechnicalRevision | null>(null)
+  const [revisionLoading, setRevisionLoading] = useState(false)
 
   const strategy = settings.estrategiaCodigo as CodeStrategy
+
+  const selectedSummary = selectedProduct
+    ? summaries.find((item) => item.produtoCodigo === selectedProduct.codigo)
+    : undefined
+
+  const selectedRevisionNumber = selectedProduct
+    ? (selectedProduct.revisaoVigente
+      ?? selectedSummary?.revisaoVigente
+      ?? selectedSummary?.revisaoRascunho
+      ?? null)
+    : null
+
+  const relatedOrders = useMemo(() => {
+    if (!selectedProduct) return []
+    return orders
+      .filter((order) =>
+        !order.excluido
+        && order.itens.some((item) => item.produtoCodigo === selectedProduct.codigo),
+      )
+      .sort((a, b) => b.numero.localeCompare(a.numero))
+  }, [orders, selectedProduct])
+
+  useEffect(() => {
+    if (!empresaId || !selectedProduct || !selectedRevisionNumber) {
+      setSelectedRevision(null)
+      return
+    }
+
+    let cancelled = false
+    setRevisionLoading(true)
+    getTechnicalRevision(empresaId, selectedProduct.codigo, selectedRevisionNumber)
+      .then((revision) => {
+        if (!cancelled) setSelectedRevision(revision)
+      })
+      .catch((reason) => {
+        console.error(reason)
+        if (!cancelled) setSelectedRevision(null)
+      })
+      .finally(() => {
+        if (!cancelled) setRevisionLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [empresaId, selectedProduct?.codigo, selectedRevisionNumber])
+
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase()
     return products.filter((product) => {
@@ -165,6 +224,146 @@ export default function ProductsPage({ notify }: { notify: (message: string) => 
     }
   }
 
+  if (selectedProduct) {
+    const heroImage = selectedRevision?.imagens
+      ?.slice()
+      .sort((a, b) => {
+        const rank = (type?: string) => type === 'frente' ? 0 : type === 'peca_perfeita' ? 1 : 2
+        return rank(a.tipo) - rank(b.tipo) || a.ordem - b.ordem
+      })[0]
+    const openRelatedOrders = relatedOrders.filter((order) => !['concluida', 'cancelada'].includes(order.status))
+    const totalProducedPlanned = relatedOrders.reduce(
+      (sum, order) => sum + order.itens
+        .filter((item) => item.produtoCodigo === selectedProduct.codigo)
+        .reduce((itemSum, item) => itemSum + item.quantidadeTotal, 0),
+      0,
+    )
+
+    return <>
+      <button className="back-link product-360-back" onClick={() => {
+        setSelectedProduct(null)
+        setSelectedRevision(null)
+      }}>
+        <ArrowLeft size={16} /> Voltar para produtos
+      </button>
+
+      <section className="product-360-hero">
+        <div className="product-360-image">
+          {heroImage?.url
+            ? <img src={heroImage.url} alt={heroImage.legenda || selectedProduct.descricao} />
+            : <PackageCheck size={54} />}
+        </div>
+        <div className="product-360-main">
+          <span className="section-kicker">Produto · visão completa</span>
+          <div className="product-360-title-row">
+            <div>
+              <span className="product-360-code">{selectedProduct.codigo}</span>
+              <h2>{selectedProduct.descricao}</h2>
+            </div>
+            <span className={`status ${selectedProduct.status === 'ativo' ? 'status-green' : 'status-slate'}`}>
+              {selectedProduct.status === 'ativo' ? 'Ativo' : 'Inativo'}
+            </span>
+          </div>
+          <div className="product-360-tags">
+            {Object.entries(selectedProduct.classificacoes ?? {}).map(([key, value]) => (
+              <span key={key}><small>{key}</small>{value}</span>
+            ))}
+            {Object.keys(selectedProduct.classificacoes ?? {}).length === 0 && <span><small>Classificação</small>Não informada</span>}
+          </div>
+          <div className="product-360-actions">
+            <button className="secondary-button" onClick={() => openEdit(selectedProduct)}><Edit3 size={16} /> Editar produto</button>
+            {openPassport && <button className="primary-button" onClick={() => openPassport(selectedProduct.codigo)}><FileText size={16} /> Abrir Ficha Técnica</button>}
+          </div>
+        </div>
+      </section>
+
+      <section className="product-360-stats">
+        <div><FileText size={20} /><span>Ficha Técnica</span><strong>{selectedSummary?.status === 'padrao' ? `REV ${String(selectedSummary.revisaoVigente ?? 0).padStart(2, '0')} padrão` : selectedSummary?.status === 'em_validacao' ? 'Em validação' : selectedSummary?.revisaoRascunho ? `REV ${String(selectedSummary.revisaoRascunho).padStart(2, '0')} em edição` : 'Ainda não publicada'}</strong></div>
+        <div><Boxes size={20} /><span>Materiais na FT</span><strong>{selectedRevision?.bom.length ?? 0}</strong></div>
+        <div><Factory size={20} /><span>Operações</span><strong>{selectedRevision?.operacoes.length ?? 0}</strong></div>
+        <div><Clock3 size={20} /><span>OPs relacionadas</span><strong>{relatedOrders.length} · {openRelatedOrders.length} abertas</strong></div>
+        <div><PackageCheck size={20} /><span>Quantidade em OPs</span><strong>{totalProducedPlanned}</strong></div>
+      </section>
+
+      {revisionLoading && <div className="loading-panel"><Loader2 className="spin" size={22} /> Carregando dados técnicos do produto...</div>}
+
+      {!revisionLoading && !selectedRevision && (
+        <section className="panel product-360-empty-ft">
+          <FileText size={30} />
+          <div><strong>Este produto ainda não possui uma Ficha Técnica disponível</strong><span>O cadastro do produto existe, mas os dados técnicos ainda não foram publicados.</span></div>
+          {openPassport && <button className="primary-button compact" onClick={() => openPassport(selectedProduct.codigo)}>Criar / abrir Ficha Técnica</button>}
+        </section>
+      )}
+
+      {selectedRevision && <>
+        <div className="product-360-grid">
+          <section className="panel product-360-section">
+            <div className="panel-head"><div><span className="section-kicker">Referência técnica</span><h3>Produto e tecido</h3></div><ImageIcon size={20} /></div>
+            <div className="product-tech-summary">
+              <InfoLine label="Construção" value={selectedRevision.construcao} />
+              <InfoLine label="Cliente" value={selectedRevision.cliente} />
+              <InfoLine label="Coleção" value={selectedRevision.colecao} />
+              <InfoLine label="Família" value={selectedRevision.familia} />
+              <InfoLine label="Modelo" value={selectedRevision.modelo} />
+              <InfoLine label="Tecido principal" value={selectedRevision.dadosTecido.tecidoPrincipal} />
+              <InfoLine label="Composição" value={selectedRevision.dadosTecido.composicao} />
+              <InfoLine label="Gramatura" value={selectedRevision.dadosTecido.gramatura} />
+              <InfoLine label="Rendimento" value={selectedRevision.dadosTecido.rendimento} />
+              <InfoLine label="Cor" value={selectedRevision.dadosTecido.cor} />
+            </div>
+          </section>
+
+          <section className="panel product-360-section">
+            <div className="panel-head"><div><span className="section-kicker">Imagens e documentos</span><h3>Referências do produto</h3></div><ImageIcon size={20} /></div>
+            {selectedRevision.imagens.length === 0
+              ? <div className="product-mini-empty">Nenhuma imagem cadastrada nesta revisão.</div>
+              : <div className="product-image-strip">{selectedRevision.imagens.slice().sort((a,b) => a.ordem-b.ordem).slice(0,6).map((item, index) => <figure key={item.path || item.url || index}><img src={item.url} alt={item.legenda || 'Referência do produto'} /><figcaption>{item.legenda || imageTypeProductLabel(item.tipo)}</figcaption></figure>)}</div>}
+            <div className="product-document-count"><FileText size={17} /><strong>{selectedRevision.anexos.filter((item) => item.url).length}</strong><span>arquivo(s) anexado(s) à revisão</span></div>
+          </section>
+        </div>
+
+        <section className="panel product-360-section">
+          <div className="panel-head"><div><span className="section-kicker">Necessidade técnica</span><h3>Materiais previstos na Ficha Técnica</h3><p>Estes são os materiais necessários para fabricar o produto. O sistema apenas informa a necessidade; não controla separação física.</p></div><Boxes size={20} /></div>
+          {selectedRevision.bom.length === 0
+            ? <div className="product-mini-empty">Nenhum material cadastrado na revisão.</div>
+            : <div className="table-wrap"><table><thead><tr><th>Código</th><th>Material</th><th>Fornecedor</th><th>Consumo</th><th>Cor</th></tr></thead><tbody>
+              {selectedRevision.bom.map((line) => <tr key={line.id}><td><strong>{line.codigoSnapshot}</strong></td><td>{line.descricaoSnapshot}</td><td>{line.fornecedorSnapshot || '—'}</td><td>{line.consumoPorTamanho && Object.keys(line.consumoPorTamanho).length > 0 ? 'Varia por tamanho' : `${line.consumo} ${line.unidade}`}</td><td>{line.corRegra === 'produto' ? 'Segue a peça' : line.corRegra === 'fixa' ? line.corFixa || 'Fixa' : '—'}</td></tr>)}
+            </tbody></table></div>}
+        </section>
+
+        <div className="product-360-grid">
+          <section className="panel product-360-section">
+            <div className="panel-head"><div><span className="section-kicker">Engenharia</span><h3>Operações</h3></div><Factory size={20} /></div>
+            {selectedRevision.operacoes.length === 0
+              ? <div className="product-mini-empty">Nenhuma operação cadastrada.</div>
+              : <div className="product-operation-list">{selectedRevision.operacoes.slice().sort((a,b)=>a.ordem-b.ordem).map((op) => <div key={op.id}><span>{String(op.ordem).padStart(2,'0')}</span><div><strong>{op.nome}</strong><small>{[op.maquina, op.regulagem].filter(Boolean).join(' · ') || 'Sem preparação informada'}</small></div><em>{op.tempoPadraoMin != null ? `${op.tempoPadraoMin} min` : '—'}</em></div>)}</div>}
+          </section>
+
+          <section className="panel product-360-section">
+            <div className="panel-head"><div><span className="section-kicker">Grade</span><h3>Medidas</h3></div><Ruler size={20} /></div>
+            <div className="product-measure-overview">
+              <div><strong>{selectedRevision.tamanhos.length}</strong><span>tamanhos</span></div>
+              <div><strong>{selectedRevision.medidas.length}</strong><span>pontos de medida</span></div>
+            </div>
+            {selectedRevision.tamanhos.length > 0 && <div className="product-size-row">{selectedRevision.tamanhos.map((size) => <span key={size}>{size}</span>)}</div>}
+            {selectedRevision.medidas.length > 0 && <div className="product-measure-list">{selectedRevision.medidas.slice(0,6).map((row) => <div key={row.id}><strong>{row.ponto}</strong><span>± {row.tolerancia} cm</span></div>)}</div>}
+          </section>
+        </div>
+      </>}
+
+      <section className="panel product-360-section">
+        <div className="panel-head"><div><span className="section-kicker">Histórico produtivo</span><h3>Ordens de Produção deste produto</h3></div><Clock3 size={20} /></div>
+        {relatedOrders.length === 0
+          ? <div className="product-mini-empty">Este produto ainda não foi usado em nenhuma Ordem de Produção.</div>
+          : <div className="product-order-list">{relatedOrders.map((order) => {
+              const items = order.itens.filter((item) => item.produtoCodigo === selectedProduct.codigo)
+              const quantity = items.reduce((sum, item) => sum + item.quantidadeTotal, 0)
+              return <div key={order.id}><div><strong>{order.numero}</strong><span>{quantity} unidade(s){order.prazo ? ` · Prazo ${order.prazo}` : ''}</span></div><span className={`status ${orderStatusTone(order.status)}`}>{orderStatusProductLabel(order.status)}</span></div>
+            })}</div>}
+      </section>
+    </>
+  }
+
   return <>
     <section className="page-intro">
       <div>
@@ -200,6 +399,7 @@ export default function ProductsPage({ notify }: { notify: (message: string) => 
   ? <span className="status status-red">Excluído</span>
   : <span className={`status ${product.status === 'ativo' ? 'status-green' : 'status-slate'}`}>{product.status === 'ativo' ? 'Ativo' : 'Inativo'}</span>
 }</td><td><div className="row-actions">
+  {!product.excluido && <button title="Ver produto" onClick={() => setSelectedProduct(product)}><Eye size={15} /></button>}
   {!product.excluido && <button title="Editar" onClick={() => openEdit(product)}><Edit3 size={15} /></button>}
   {!product.excluido && <button title={product.status === 'ativo' ? 'Inativar' : 'Reativar'} onClick={() => toggleState(product)}>{product.status === 'ativo' ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}</button>}
   <button className={product.excluido ? 'restore-action' : 'danger-action'} title={product.excluido ? 'Restaurar' : 'Excluir'} onClick={() => void toggleDeleted(product)}>
@@ -236,6 +436,35 @@ export default function ProductsPage({ notify }: { notify: (message: string) => 
       <div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setModal(false)}>Cancelar</button><button className="primary-button" disabled={busy}>{busy ? <Loader2 className="spin" size={17} /> : <CheckCircle2 size={17} />} {editing ? 'Salvar alterações' : 'Criar produto'}</button></div>
     </form></div>}
   </>
+}
+
+function InfoLine({ label, value }: { label: string; value?: string }) {
+  return <div><span>{label}</span><strong>{value?.trim() || '—'}</strong></div>
+}
+
+function imageTypeProductLabel(type?: string) {
+  if (type === 'frente') return 'Frente'
+  if (type === 'costas') return 'Costas'
+  if (type === 'detalhe_1') return 'Detalhe 1'
+  if (type === 'detalhe_2') return 'Detalhe 2'
+  if (type === 'peca_perfeita') return 'Peça'
+  return 'Referência'
+}
+
+function orderStatusProductLabel(status: ProductionOrderRecord['status']) {
+  if (status === 'rascunho') return 'Rascunho'
+  if (status === 'liberada') return 'Liberada'
+  if (status === 'em_fluxo') return 'Em produção'
+  if (status === 'concluida') return 'Concluída'
+  if (status === 'cancelada') return 'Cancelada'
+  return 'Reprovada'
+}
+
+function orderStatusTone(status: ProductionOrderRecord['status']) {
+  if (status === 'concluida') return 'status-green'
+  if (status === 'cancelada' || status === 'reprovada') return 'status-red'
+  if (status === 'rascunho') return 'status-slate'
+  return 'status-blue'
 }
 
 function strategyLabel(type: string) {
