@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeft,
+  ArrowLeftRight,
   CheckCircle2,
+  Copy,
   ClipboardCheck,
   FileText,
   History,
@@ -21,6 +23,8 @@ import {
 import { useSystem } from '../system/SystemProvider'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import {
+  compareTechnicalRevisions,
+  copyTechnicalContent,
   createBomLine,
   getTechnicalRevision,
   listTechnicalRevisions,
@@ -89,6 +93,13 @@ export default function TechnicalSheetsPage({
   const [imageTypeToUpload, setImageTypeToUpload] = useState<'frente' | 'costas' | 'detalhe_1' | 'detalhe_2' | 'peca_perfeita' | 'outro'>('frente')
   const [localError, setLocalError] = useState('')
   const [printPreview, setPrintPreview] = useState(false)
+  const [copySourceCode, setCopySourceCode] = useState('')
+  const [copySourceHistory, setCopySourceHistory] = useState<TechnicalRevision[]>([])
+  const [copySourceRevision, setCopySourceRevision] = useState<number | ''>('')
+  const [copyMode, setCopyMode] = useState<'completa' | 'medidas' | 'materiais' | 'operacoes'>('completa')
+  const [compareLeft, setCompareLeft] = useState<number | ''>('')
+  const [compareRight, setCompareRight] = useState<number | ''>('')
+  const [compareResults, setCompareResults] = useState<ReturnType<typeof compareTechnicalRevisions>>([])
 
   const selectedProduct = products.find((item) => item.codigo === selectedProductCode)
   const editable = editor?.status === 'rascunho'
@@ -103,6 +114,40 @@ export default function TechnicalSheetsPage({
   useEffect(() => {
     if (editor) refreshHistory(editor.produtoCodigo).catch(console.error)
   }, [editor?.produtoCodigo, editor?.numero])
+
+  useEffect(() => {
+    if (!empresaId || !copySourceCode) {
+      setCopySourceHistory([])
+      setCopySourceRevision('')
+      return
+    }
+    listTechnicalRevisions(empresaId, copySourceCode)
+      .then((items) => {
+        setCopySourceHistory(items)
+        const preferred = items.find((item) => item.status === 'padrao') ?? items[0]
+        setCopySourceRevision(preferred?.numero ?? '')
+      })
+      .catch((reason) => {
+        console.error(reason)
+        setCopySourceHistory([])
+        setCopySourceRevision('')
+      })
+  }, [empresaId, copySourceCode])
+
+  useEffect(() => {
+    if (history.length < 2) {
+      setCompareLeft('')
+      setCompareRight('')
+      setCompareResults([])
+      return
+    }
+    if (compareLeft === '' || !history.some((item) => item.numero === compareLeft)) {
+      setCompareLeft(history[1]?.numero ?? '')
+    }
+    if (compareRight === '' || !history.some((item) => item.numero === compareRight)) {
+      setCompareRight(history[0]?.numero ?? '')
+    }
+  }, [history.map((item) => item.numero).join(',')])
 
   useEffect(() => {
     if (!initialProductCode || !empresaId || !user || editor) return
@@ -498,6 +543,39 @@ export default function TechnicalSheetsPage({
     }
   }
 
+  const copyFromAnotherProduct = async () => {
+    if (!empresaId || !user || !editor || !editable || !copySourceCode || copySourceRevision === '') return
+    setBusy(true)
+    setLocalError('')
+    try {
+      const source = await getTechnicalRevision(empresaId, copySourceCode, Number(copySourceRevision))
+      if (!source) throw new Error('A revisão de origem não foi encontrada.')
+      const nextEditor = copyTechnicalContent(editor, source, copyMode)
+      await saveTechnicalDraft(empresaId, user.uid, nextEditor)
+      setEditor(nextEditor)
+      notify(copyMode === 'completa'
+        ? 'Ficha Técnica copiada. Revise os dados antes de publicar.'
+        : copyMode === 'medidas'
+          ? 'Grade e medidas copiadas.'
+          : copyMode === 'materiais'
+            ? 'Materiais e consumos copiados.'
+            : 'Operações copiadas.')
+    } catch (reason) {
+      console.error(reason)
+      setLocalError(reason instanceof Error ? reason.message : 'Não foi possível copiar os dados técnicos.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const compareSelectedRevisions = () => {
+    if (compareLeft === '' || compareRight === '') return
+    const left = history.find((item) => item.numero === compareLeft)
+    const right = history.find((item) => item.numero === compareRight)
+    if (!left || !right) return
+    setCompareResults(compareTechnicalRevisions(left, right))
+  }
+
   const uploadAttachment = async (
     tipo: TechnicalRevision['anexos'][number]['tipo'],
     nome: string,
@@ -578,9 +656,55 @@ export default function TechnicalSheetsPage({
           </div>
         </section>
 
-        <section className="panel">
-          <div className="panel-head"><div><span className="section-kicker">Revisões</span><h3>Histórico</h3></div><History size={20} /></div>
+        <section className="panel ft-history-tools-panel">
+          <div className="panel-head"><div><span className="section-kicker">Revisões</span><h3>Histórico e reaproveitamento</h3></div><History size={20} /></div>
           <div className="revision-list">{history.map((item) => <button key={item.id} className={item.numero === editor.numero ? 'active' : ''} onClick={async () => { if (!empresaId) return; const rev = await getTechnicalRevision(empresaId, item.produtoCodigo, item.numero); if (rev) setEditor(rev) }}><span>REV {String(item.numero).padStart(2, '0')}</span><strong>{statusLabel(item.status)}</strong><small>{item.motivoRevisao || (item.numero === 1 ? 'Revisão inicial' : 'Sem motivo informado')}</small></button>)}</div>
+
+          {history.length >= 2 && <div className="ft-revision-tool">
+            <div className="ft-revision-tool-title"><ArrowLeftRight size={16} /><div><strong>Comparar revisões</strong><span>Veja o que mudou em materiais, medidas, tecido e operações.</span></div></div>
+            <div className="ft-revision-tool-controls">
+              <select value={compareLeft} onChange={(e) => setCompareLeft(e.target.value ? Number(e.target.value) : '')}>
+                <option value="">Revisão anterior</option>
+                {history.map((item) => <option key={item.numero} value={item.numero}>REV {String(item.numero).padStart(2,'0')} · {statusLabel(item.status)}</option>)}
+              </select>
+              <span>×</span>
+              <select value={compareRight} onChange={(e) => setCompareRight(e.target.value ? Number(e.target.value) : '')}>
+                <option value="">Revisão atual</option>
+                {history.map((item) => <option key={item.numero} value={item.numero}>REV {String(item.numero).padStart(2,'0')} · {statusLabel(item.status)}</option>)}
+              </select>
+              <button type="button" className="secondary-button compact" onClick={compareSelectedRevisions} disabled={compareLeft === '' || compareRight === '' || compareLeft === compareRight}>Comparar</button>
+            </div>
+            {compareResults.length > 0 && <div className="revision-diff-list">
+              {compareResults.map((diff, index) => <div key={`${diff.categoria}-${diff.campo}-${index}`}>
+                <span className="revision-diff-category">{diff.categoria}</span>
+                <strong>{diff.campo}</strong>
+                <div><span>{diff.anterior}</span><ArrowLeftRight size={13} /><span>{diff.atual}</span></div>
+              </div>)}
+            </div>}
+            {compareResults.length === 0 && compareLeft !== '' && compareRight !== '' && compareLeft !== compareRight && <small className="revision-no-diff">Clique em comparar para analisar as duas revisões.</small>}
+          </div>}
+
+          {editable && <div className="ft-revision-tool copy-tool">
+            <div className="ft-revision-tool-title"><Copy size={16} /><div><strong>Copiar de outro produto</strong><span>Reaproveite uma peça parecida sem preencher tudo novamente.</span></div></div>
+            <div className="ft-copy-grid">
+              <label><span>Produto de origem</span><select value={copySourceCode} onChange={(e) => setCopySourceCode(e.target.value)}>
+                <option value="">Selecione...</option>
+                {products.filter((product) => product.codigo !== editor.produtoCodigo && !product.excluido).map((product) => <option key={product.codigo} value={product.codigo}>{product.codigo} — {product.descricao}</option>)}
+              </select></label>
+              <label><span>Revisão</span><select value={copySourceRevision} onChange={(e) => setCopySourceRevision(e.target.value ? Number(e.target.value) : '')} disabled={!copySourceCode}>
+                <option value="">Selecione...</option>
+                {copySourceHistory.map((item) => <option key={item.numero} value={item.numero}>REV {String(item.numero).padStart(2,'0')} · {statusLabel(item.status)}</option>)}
+              </select></label>
+              <label><span>O que copiar</span><select value={copyMode} onChange={(e) => setCopyMode(e.target.value as typeof copyMode)}>
+                <option value="completa">Ficha completa</option>
+                <option value="medidas">Somente grade e medidas</option>
+                <option value="materiais">Somente materiais e consumos</option>
+                <option value="operacoes">Somente operações</option>
+              </select></label>
+              <button type="button" className="primary-button compact" disabled={busy || !copySourceCode || copySourceRevision === ''} onClick={() => void copyFromAnotherProduct()}><Copy size={15} /> Copiar para este rascunho</button>
+            </div>
+            <small className="copy-warning">A cópia altera somente o rascunho atual. O código e a identidade do produto de destino são preservados.</small>
+          </div>}
         </section>
       </div>
 
