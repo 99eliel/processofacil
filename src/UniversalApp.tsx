@@ -157,30 +157,6 @@ export default function App() {
   </div>
 }
 
-function NavGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="nav-group">
-    <span className="nav-group-label">{label}</span>
-    {children}
-  </div>
-}
-
-function NavButton({
-  active,
-  icon: Icon,
-  label,
-  onClick,
-}: {
-  active: boolean
-  icon: LucideIcon
-  label: string
-  onClick: () => void
-}) {
-  return <button className={`nav-item ${active ? 'active' : ''}`} onClick={onClick}>
-    <Icon size={18} />
-    <span>{label}</span>
-  </button>
-}
-
 function Home({
   open,
   materialCount,
