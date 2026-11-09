@@ -4,6 +4,8 @@ import {
   Boxes,
   ClipboardCheck,
   Factory,
+  Cpu,
+  Users,
   FileText,
   MonitorPlay,
   PackageCheck,
@@ -28,6 +30,7 @@ import QualityPage from './pages/QualityPage'
 import OperatorPage from './pages/OperatorPage'
 import SimulationPage from './pages/SimulationPage'
 import GuidedPieceFlowPage from './pages/GuidedPieceFlowPage'
+import CapacityPage from './pages/CapacityPage'
 import type {
   Material,
   Product,
@@ -45,6 +48,8 @@ type Page =
   | 'ordens'
   | 'simulador'
   | 'operador'
+  | 'cargaMaquina'
+  | 'cargaMaoObra'
   | 'qualidade'
   | 'admin'
 
@@ -159,6 +164,8 @@ export default function App() {
         />
       )}
       {page === 'operador' && <OperatorPage notify={notify} />}
+      {page === 'cargaMaquina' && <CapacityPage kind="maquinas" notify={notify} />}
+      {page === 'cargaMaoObra' && <CapacityPage kind="maoObra" notify={notify} />}
       {page === 'qualidade' && <QualityPage notify={notify} />}
       {page === 'admin' && <AdminPage notify={notify} />}
     </main>
@@ -205,6 +212,20 @@ function Home({
       title: 'Modo Operador',
       text: 'Execução direta no chão de fábrica com instrução e mídia.',
       badge: 'Execução',
+    },
+    {
+      id: 'cargaMaquina' as Page,
+      icon: Cpu,
+      title: 'Carga Máquina',
+      text: 'Capacidade das máquinas, demanda das OPs e execução real.',
+      badge: 'Capacidade',
+    },
+    {
+      id: 'cargaMaoObra' as Page,
+      icon: Users,
+      title: 'Carga Mão de Obra',
+      text: 'Capacidade da equipe, carga planejada e horas decorridas.',
+      badge: 'Equipe',
     },
     {
       id: 'qualidade' as Page,
