@@ -3558,3 +3558,47 @@ body {
   }
   .ft-revision-tool-controls > span { display:none; }
 }
+
+
+/* Modelos reutilizáveis de grade e medidas */
+.measurement-template-toolbar {
+  margin-bottom:14px;
+  padding:12px;
+  border:1px solid #dfe7ed;
+  border-radius:13px;
+  display:grid;
+  grid-template-columns:minmax(220px,1.3fr) minmax(220px,1fr) auto auto;
+  gap:8px;
+  align-items:end;
+  background:#f8fbfd;
+}
+.measurement-template-toolbar > div > strong,
+.measurement-template-toolbar > div > small {
+  display:block;
+}
+.measurement-template-toolbar > div > strong {
+  margin-top:3px;
+  color:#35536a;
+  font-size:10.5px;
+}
+.measurement-template-toolbar > div > small {
+  margin-top:3px;
+  color:#8495a3;
+  font-size:8.5px;
+  line-height:1.4;
+}
+.measurement-template-toolbar select {
+  min-height:38px;
+  border:1px solid #d9e4ea;
+  border-radius:9px;
+  padding:7px 9px;
+  color:#3c576d;
+  background:white;
+  font:inherit;
+  font-size:9.5px;
+}
+@media (max-width:980px) {
+  .measurement-template-toolbar {
+    grid-template-columns:1fr;
+  }
+}
