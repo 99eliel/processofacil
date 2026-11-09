@@ -76,12 +76,19 @@ export function calculateCapacity(
   now = Date.now(),
 ): { rows: CapacityRow[]; totals: CapacityTotals } {
   const rows = new Map<string, CapacityRow>()
-  const label = (task: ProductionOperationTask) => kind === 'maquinas'
-    ? task.operacao.maquina?.trim() || 'Máquina não definida'
-    : 'Demanda sem equipe atribuída'
+  const teamById = new Map(resources.map(r => [r.id, r]))
+  const label = (task: ProductionOperationTask) => {
+    if (kind === 'maquinas') return task.operacao.maquina?.trim() || 'Máquina não definida'
+    const teamId = task.equipeId || task.operacao.equipeId
+    if (!teamId) return 'Sem equipe atribuída'
+    return teamById.get(teamId)?.nome || task.equipeNome || task.operacao.equipeNome || 'Equipe não cadastrada'
+  }
+  const resourceKey = (resource: CapacityResource) => kind === 'maoObra'
+    ? `team:${resource.id}`
+    : resource.nome.toLocaleLowerCase('pt-BR')
   for (const r of resources) {
     if (!r.nome.trim() || !r.ativo) continue
-    rows.set(r.nome.toLocaleLowerCase('pt-BR'), {
+    rows.set(resourceKey(r), {
       nome: r.nome, previstasHoras: 0, concluidasHoras: 0, decorridasHoras: 0,
       emExecucao: 0, semTempo: 0, capacidadeHoras: weeklyHours(r), configurado: true,
       quantidade: r.quantidade, tarefas: 0,
@@ -89,7 +96,8 @@ export function calculateCapacity(
   }
   for (const { task, quantity } of orderTasks(orders, products)) {
     const name = label(task)
-    const key = name.toLocaleLowerCase('pt-BR')
+    const teamId = task.equipeId || task.operacao.equipeId
+    const key = kind === 'maoObra' ? teamId ? `team:${teamId}` : 'unassigned' : name.toLocaleLowerCase('pt-BR')
     const row = rows.get(key) ?? {
       nome: name, previstasHoras: 0, concluidasHoras: 0, decorridasHoras: 0,
       emExecucao: 0, semTempo: 0, capacidadeHoras: 0, configurado: false,
