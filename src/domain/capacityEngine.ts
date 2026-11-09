@@ -78,7 +78,7 @@ export function calculateCapacity(
   const rows = new Map<string, CapacityRow>()
   const label = (task: ProductionOperationTask) => kind === 'maquinas'
     ? task.operacao.maquina?.trim() || 'Máquina não definida'
-    : 'Equipe geral'
+    : 'Demanda sem equipe atribuída'
   for (const r of resources) {
     if (!r.nome.trim() || !r.ativo) continue
     rows.set(r.nome.toLocaleLowerCase('pt-BR'), {
