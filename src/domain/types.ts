@@ -170,6 +170,19 @@ export type MeasurementRow = {
   valores: MeasurementValue[]
 }
 
+export type ProductMeasurementTemplate = {
+  id: string
+  nome: string
+  tamanhos: string[]
+  pontos: Array<{
+    ponto: string
+    tolerancia: number
+  }>
+  ativo: boolean
+  criadoEm?: unknown
+  alteradoEm?: unknown
+}
+
 export type TechnicalChecklistItem = {
   id: string
   descricao: string
