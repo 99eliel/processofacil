@@ -52,6 +52,7 @@ export default function App() {
   const system = useSystem()
   const [page, setPage] = useState<Page>('home')
   const [toast, setToast] = useState('')
+  const [focusProductCode, setFocusProductCode] = useState('')
   const empresaId = system.activeCompany?.id
 
   const { items: materials } = useTenantCollection<Material>(empresaId, 'materiais', 'descricao')
@@ -136,8 +137,18 @@ export default function App() {
         />
       )}
       {page === 'materiais' && <MaterialsPage notify={notify} />}
-      {page === 'produtos' && <ProductsPage notify={notify} />}
-      {page === 'fichas' && <TechnicalSheetsPage notify={notify} />}
+      {page === 'produtos' && <ProductsPage
+        notify={notify}
+        openPassport={(produtoCodigo) => {
+          setFocusProductCode(produtoCodigo)
+          open('fichas')
+        }}
+      />}
+      {page === 'fichas' && <TechnicalSheetsPage
+        notify={notify}
+        initialProductCode={focusProductCode}
+        onFocusConsumed={() => setFocusProductCode('')}
+      />}
       {page === 'workflow' && <WorkflowPage notify={notify} />}
       {page === 'ordens' && <ProductionOrdersPage notify={notify} />}
       {page === 'simulador' && (
