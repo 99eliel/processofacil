@@ -205,6 +205,8 @@ export type TechnicalOperation = {
   nome: string
   descricao: string
   maquina: string
+  equipeId?: string
+  equipeNome?: string
   regulagem: string
   ferramenta: string
   tempoPadraoMin: number | null
@@ -372,6 +374,8 @@ export type ProductionOperationTask = {
   iniciadoEm?: unknown
   concluidoEm?: unknown
   operadorUid?: string
+  equipeId?: string
+  equipeNome?: string
   observacao?: string
 }
 
