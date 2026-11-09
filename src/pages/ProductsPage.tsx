@@ -222,7 +222,7 @@ export default function ProductsPage({
                 id: codigo,
                 codigo,
                 descricao: description.trim(),
-                classificacoes,
+                classificacoes: classifications,
                 status: 'ativo',
               },
             )
