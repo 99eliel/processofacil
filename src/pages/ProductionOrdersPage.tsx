@@ -9,6 +9,7 @@ import {
   Loader2,
   PackageCheck,
   Plus,
+  RotateCcw,
   Send,
   Trash2,
   X,
@@ -22,7 +23,9 @@ import {
   cancelProductionOrderDraft,
   createProductionOrder,
   releaseProductionOrder,
+  setProductionOrderDeleted,
   updateProductionOrderDraft,
+  updateProductionOrderMetadata,
   type NewOrderItem,
 } from '../firebase/productionOrderRepository'
 import type { ProductionOrderRecord, ProductionVariant, Product } from '../domain/types'
@@ -43,8 +46,11 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
   const [workflow, setWorkflow] = useState<WorkflowDefinition>(emptyWorkflow)
   const [modal, setModal] = useState(false)
   const [editingOrderId, setEditingOrderId] = useState('')
+  const [metadataOnly, setMetadataOnly] = useState(false)
   const [selected, setSelected] = useState<ProductionOrderRecord | null>(null)
   const [prazo, setPrazo] = useState('')
+  const [observacao, setObservacao] = useState('')
+  const [showDeleted, setShowDeleted] = useState(false)
   const [draftItems, setDraftItems] = useState<DraftItem[]>([])
   const [busy, setBusy] = useState(false)
   const [localError, setLocalError] = useState('')
@@ -77,7 +83,9 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
 
   const openNewOrder = () => {
     setEditingOrderId('')
+    setMetadataOnly(false)
     setPrazo('')
+    setObservacao('')
     setDraftItems([newDraftItem()])
     setLocalError('')
     setModal(true)
@@ -85,7 +93,9 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
 
   const openEditOrder = (order: ProductionOrderRecord) => {
     setEditingOrderId(order.id)
+    setMetadataOnly(order.status !== 'rascunho')
     setPrazo(order.prazo ?? '')
+    setObservacao(order.observacao ?? '')
     setDraftItems(order.itens.map((item) => ({
       id: item.id || crypto.randomUUID(),
       produtoCodigo: item.produtoCodigo,
@@ -137,26 +147,38 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
     setLocalError('')
     try {
       if (editingOrderId) {
-        await updateProductionOrderDraft(
-          empresaId,
-          user.uid,
-          editingOrderId,
-          { prazo, itens: items },
-        )
-        notify('Rascunho da OP atualizado.')
+        if (metadataOnly) {
+          await updateProductionOrderMetadata(
+            empresaId,
+            user.uid,
+            editingOrderId,
+            { prazo, observacao },
+          )
+          notify('Dados gerais da OP atualizados.')
+        } else {
+          await updateProductionOrderDraft(
+            empresaId,
+            user.uid,
+            editingOrderId,
+            { prazo, observacao, itens: items },
+          )
+          notify('Rascunho da OP atualizado.')
+        }
       } else {
         const result = await createProductionOrder(
           empresaId,
           user.uid,
-          { prazo, itens: items },
+          { prazo, observacao, itens: items },
         )
         notify(`${result.numero} criada.`)
       }
 
       setModal(false)
       setEditingOrderId('')
+      setMetadataOnly(false)
       setDraftItems([])
       setPrazo('')
+      setObservacao('')
     } catch (reason) {
       console.error(reason)
       setLocalError(reason instanceof Error ? reason.message : 'Não foi possível salvar a OP.')
@@ -184,6 +206,31 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
       setLocalError(
         reason instanceof Error ? reason.message : 'Não foi possível cancelar a OP.',
       )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const toggleDeleted = async (order: ProductionOrderRecord) => {
+    if (!empresaId || !user) return
+    const restoring = Boolean(order.excluido)
+
+    if (!restoring) {
+      const confirmed = window.confirm(
+        `Excluir ${order.numero}?\n\nA OP sairá das telas normais, mas seu histórico, itens, kit e rastreabilidade serão preservados e ela poderá ser restaurada.`,
+      )
+      if (!confirmed) return
+    }
+
+    setBusy(true)
+    setLocalError('')
+    try {
+      await setProductionOrderDeleted(empresaId, user.uid, order.id, !restoring)
+      notify(restoring ? 'OP restaurada.' : 'OP excluída da visualização.')
+      if (selected?.id === order.id) setSelected(null)
+    } catch (reason) {
+      console.error(reason)
+      setLocalError(reason instanceof Error ? reason.message : 'Não foi possível alterar a OP.')
     } finally {
       setBusy(false)
     }
@@ -234,8 +281,14 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
     return <>
       <button className="back-link" onClick={() => setSelected(null)}><ArrowLeft size={16} /> Voltar para OPs</button>
       <section className="detail-hero">
-        <div><span className="op-number">{selected.numero}</span><h2>{selected.itens.length} produto(s)</h2><p>{selected.prazo ? `Prazo: ${selected.prazo}` : 'Sem prazo informado'} · {selected.kit.length} linha(s) de kit</p></div>
-        <OrderStatus status={selected.status} />
+        <div><span className="op-number">{selected.numero}</span><h2>{selected.itens.length} produto(s)</h2><p>{selected.prazo ? `Prazo: ${selected.prazo}` : 'Sem prazo informado'} · {selected.kit.length} linha(s) de kit</p>{selected.observacao && <small className="op-observation">{selected.observacao}</small>}</div>
+        <div className="detail-hero-actions">
+          <OrderStatus status={selected.status} />
+          {!selected.excluido && <button className="secondary-button compact" disabled={busy} onClick={() => openEditOrder(selected)}><Edit3 size={15} /> Editar</button>}
+          <button className={selected.excluido ? 'secondary-button compact' : 'danger-button compact'} disabled={busy} onClick={() => void toggleDeleted(selected)}>
+            {selected.excluido ? <RotateCcw size={15} /> : <Trash2 size={15} />} {selected.excluido ? 'Restaurar' : 'Excluir'}
+          </button>
+        </div>
       </section>
       {localError && <div className="form-error page-message">{localError}</div>}
 
@@ -249,7 +302,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
           {selected.status === 'rascunho' && <>
             <p className="helper-text">Ao liberar, o sistema exige FT padrão de todos os produtos e congela revisão e kit. Antes disso, o rascunho pode ser alterado ou cancelado.</p>
             <div className="draft-order-actions">
-              <button className="secondary-button" disabled={busy} onClick={() => openEditOrder(selected)}><Edit3 size={16} /> Editar rascunho</button>
+              <button className="secondary-button" disabled={busy} onClick={() => openEditOrder(selected)}><Edit3 size={16} /> Editar itens</button>
               <button className="primary-button" disabled={!canRelease || busy} onClick={() => release(selected)}><Send size={16} /> Liberar OP</button>
               <button className="danger-button" disabled={busy} onClick={() => cancelDraft(selected)}><Ban size={16} /> Cancelar OP</button>
             </div>
@@ -272,36 +325,58 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
     </>
   }
 
-  const ordered = useMemo(() => [...orders].reverse(), [orders])
+  const ordered = useMemo(
+    () => [...orders]
+      .filter((order) => showDeleted ? Boolean(order.excluido) : !order.excluido)
+      .reverse(),
+    [orders, showDeleted],
+  )
 
   return <>
     <section className="page-intro">
       <div><span className="section-kicker">Planejamento</span><h2>Ordens de Produção</h2><p>OPs reais com vários produtos, variantes e kit congelado a partir das revisões padrão.</p></div>
-      <button className="primary-button" onClick={openNewOrder}><Plus size={18} /> Nova OP</button>
+      <div className="page-intro-actions">
+        <button className={`filter-button ${showDeleted ? 'filter-active danger-filter' : ''}`} onClick={() => setShowDeleted((value) => !value)}>
+          {showDeleted ? <RotateCcw size={17} /> : <Trash2 size={17} />} {showDeleted ? 'Voltar às OPs' : 'Excluídas'}
+        </button>
+        <button className="primary-button" onClick={openNewOrder}><Plus size={18} /> Nova OP</button>
+      </div>
     </section>
     {localError && <div className="form-error page-message">{localError}</div>}
     {error && <div className="form-error page-message">{error}</div>}
     {loading ? <div className="loading-panel"><Loader2 className="spin" size={24} /> Carregando OPs...</div> :
       <div className="op-list">{ordered.length === 0 ? <section className="panel"><div className="empty-state"><Factory size={30} /><strong>Nenhuma OP criada</strong><span>Crie uma ordem para iniciar o planejamento.</span></div></section> : ordered.map((order) => {
         const stage = workflow.etapas.find((item) => item.id === order.workflowStageId)
-        return <button className="op-card" key={order.id} onClick={() => setSelected(order)}><div className="op-top"><div><span className="op-number">{order.numero}</span><h3>{order.itens.length} produto(s) · {order.itens.reduce((sum, item) => sum + item.quantidadeTotal, 0)} unidade(s)</h3><small>{stage ? `Etapa: ${stage.nome}` : statusLabel(order.status)}{order.prazo ? ` · Prazo ${order.prazo}` : ''}</small></div><OrderStatus status={order.status} /></div></button>
+        return <article className={`op-card manageable-op-card ${order.excluido ? 'deleted-record' : ''}`} key={order.id}>
+          <button className="op-card-main" onClick={() => setSelected(order)}>
+            <div className="op-top"><div><span className="op-number">{order.numero}</span><h3>{order.itens.length} produto(s) · {order.itens.reduce((sum, item) => sum + item.quantidadeTotal, 0)} unidade(s)</h3><small>{stage ? `Etapa: ${stage.nome}` : statusLabel(order.status)}{order.prazo ? ` · Prazo ${order.prazo}` : ''}{order.observacao ? ` · ${order.observacao}` : ''}</small></div><OrderStatus status={order.status} /></div>
+          </button>
+          <div className="op-card-actions">
+            {!order.excluido && <button title="Editar" onClick={() => openEditOrder(order)}><Edit3 size={15} /> Editar</button>}
+            <button className={order.excluido ? 'restore-action' : 'danger-action'} onClick={() => void toggleDeleted(order)}>
+              {order.excluido ? <RotateCcw size={15} /> : <Trash2 size={15} />} {order.excluido ? 'Restaurar' : 'Excluir'}
+            </button>
+          </div>
+        </article>
       })}</div>}
 
     {modal && <div className="modal-backdrop"><section className="form-modal op-modal">
       <div className="modal-head"><div><span className="section-kicker">Planejamento</span><h2>{editingOrderId ? 'Editar Ordem de Produção' : 'Nova Ordem de Produção'}</h2></div><button className="icon-button" onClick={() => setModal(false)}><X size={18} /></button></div>
       <div className="op-form-body">
         <label className="editor-label"><span>Prazo (opcional)</span><input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} /></label>
-        {draftItems.map((item, index) => <div className="op-item-editor" key={item.id}>
+        <label className="editor-label"><span>Observação</span><textarea rows={3} value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Observações gerais da Ordem de Produção" /></label>
+        {metadataOnly && <div className="info-banner"><Factory size={18} /><div><strong>OP já liberada</strong><span>Para preservar rastreabilidade, produtos, quantidades, revisão, kit e operações congeladas não são alterados. Você ainda pode editar prazo e observação.</span></div></div>}
+        {!metadataOnly && draftItems.map((item, index) => <div className="op-item-editor" key={item.id}>
           <div className="op-item-head"><strong>Item {index + 1}</strong><button className="icon-button danger-icon" onClick={() => setDraftItems(draftItems.filter((entry) => entry.id !== item.id))}><Trash2 size={14} /></button></div>
           <label className="editor-label"><span>Produto *</span><select value={item.produtoCodigo} onChange={(e) => updateItem(item.id, { produtoCodigo: e.target.value })}><option value="">Selecione...</option>{products.filter((product) => product.status === 'ativo').map((product) => <option key={product.id} value={product.codigo}>{product.codigo} — {product.descricao}</option>)}</select></label>
           <label className="editor-label"><span>Cor / acabamento do produto</span><input value={item.cor} onChange={(e) => updateItem(item.id, { cor: e.target.value })} placeholder="Ex.: Azul marinho, natural, galvanizado..." /></label>
           <div className="variant-list">{item.variantes.map((variant) => <div className="variant-row" key={variant.id}><input value={variant.nome} onChange={(e) => updateVariant(item.id, variant.id, { nome: e.target.value })} placeholder="Variante / tamanho / versão" /><input type="number" min={1} value={variant.quantidade} onChange={(e) => updateVariant(item.id, variant.id, { quantidade: Number(e.target.value) })} /><button className="icon-button" onClick={() => updateItem(item.id, { variantes: item.variantes.filter((entry) => entry.id !== variant.id) })}><Trash2 size={14} /></button></div>)}</div>
           <button className="text-button" onClick={() => addVariant(item.id)}><Plus size={14} /> Adicionar variante</button>
         </div>)}
-        <button className="secondary-button compact" onClick={addItem}><Plus size={15} /> Adicionar produto</button>
+        {!metadataOnly && <button className="secondary-button compact" onClick={addItem}><Plus size={15} /> Adicionar produto</button>}
         {localError && <div className="form-error">{localError}</div>}
       </div>
-      <div className="modal-actions"><button className="secondary-button" onClick={() => setModal(false)}>Cancelar</button><button className="primary-button" onClick={saveOrder} disabled={busy}>{busy ? <Loader2 className="spin" size={16} /> : <CheckCircle2 size={16} />} {editingOrderId ? 'Salvar alterações' : 'Criar OP'}</button></div>
+      <div className="modal-actions"><button className="secondary-button" onClick={() => setModal(false)}>Cancelar</button><button className="primary-button" onClick={saveOrder} disabled={busy}>{busy ? <Loader2 className="spin" size={16} /> : <CheckCircle2 size={16} />} {editingOrderId ? (metadataOnly ? 'Salvar dados gerais' : 'Salvar alterações') : 'Criar OP'}</button></div>
     </section></div>}
   </>
 }
