@@ -79,7 +79,8 @@ export default function App() {
     return true
   }
 
-  const openOrders = orders.filter((item) => !['concluida', 'cancelada'].includes(item.status)).length
+  const openOrders = orders.filter((item) => !item.excluido && !['concluida', 'cancelada'].includes(item.status)).length
+  const visibleProducts = products.filter((item) => !item.excluido)
   const publishedSheets = sheets.filter((item) => item.status === 'padrao').length
 
   return <div className="app-shell presentation-shell block-navigation-shell">
@@ -121,7 +122,7 @@ export default function App() {
         <Home
           open={open}
           materialCount={materials.filter((item) => item.ativo).length}
-          productCount={products.length}
+          productCount={visibleProducts.length}
           sheetCount={publishedSheets}
           orderCount={openOrders}
           moduleEnabled={moduleEnabled}
