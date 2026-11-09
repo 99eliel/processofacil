@@ -2,13 +2,9 @@ import { useState } from 'react'
 import {
   ArrowRight,
   Boxes,
-  Building2,
-  ChevronRight,
   ClipboardCheck,
   Factory,
   FileText,
-  LayoutDashboard,
-  Menu,
   MonitorPlay,
   PackageCheck,
   PlayCircle,
@@ -17,7 +13,7 @@ import {
   ShieldCheck,
   Sparkles,
   Workflow,
-  X,
+  Home as HomeIcon,
   type LucideIcon,
 } from 'lucide-react'
 import { useSystem } from './system/SystemProvider'
@@ -52,34 +48,9 @@ type Page =
   | 'qualidade'
   | 'admin'
 
-type NavItem = {
-  id: Page
-  label: string
-  icon: LucideIcon
-}
-
-const operationNav: NavItem[] = [
-  { id: 'fichas', label: 'Passaporte Digital', icon: FileText },
-  { id: 'ordens', label: 'Ordens de Produção', icon: Factory },
-  { id: 'operador', label: 'Modo Operador', icon: MonitorPlay },
-  { id: 'qualidade', label: 'Qualidade', icon: ShieldCheck },
-]
-
-const registerNav: NavItem[] = [
-  { id: 'produtos', label: 'Produtos', icon: PackageCheck },
-  { id: 'materiais', label: 'Materiais', icon: Boxes },
-]
-
-const systemNav: NavItem[] = [
-  { id: 'workflow', label: 'Workflow', icon: Workflow },
-  { id: 'simulador', label: 'Simulador', icon: ClipboardCheck },
-  { id: 'admin', label: 'Configurações', icon: Settings },
-]
-
 export default function App() {
   const system = useSystem()
   const [page, setPage] = useState<Page>('home')
-  const [mobileMenu, setMobileMenu] = useState(false)
   const [toast, setToast] = useState('')
   const empresaId = system.activeCompany?.id
 
@@ -90,7 +61,6 @@ export default function App() {
 
   const open = (target: Page) => {
     setPage(target)
-    setMobileMenu(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -112,100 +82,27 @@ export default function App() {
   const openOrders = orders.filter((item) => !['concluida', 'cancelada'].includes(item.status)).length
   const publishedSheets = sheets.filter((item) => item.status === 'padrao').length
 
-  return <div className="app-shell presentation-shell">
-    <aside className={`sidebar presentation-sidebar ${mobileMenu ? 'mobile-open' : ''}`}>
-      <div className="brand presentation-brand">
-        <div className="brand-mark"><Sparkles size={22} /></div>
-        <div>
-          <strong>Processo Fácil</strong>
-          <span>Gestão visual da produção</span>
-        </div>
-        <button className="close-menu" onClick={() => setMobileMenu(false)}><X size={20} /></button>
-      </div>
-
-      <button className="presentation-company" onClick={() => open('home')}>
-        <span className="tenant-logo"><Building2 size={17} /></span>
-        <div>
-          <small>Ambiente atual</small>
-          <strong>{system.activeCompany?.nomeFantasia}</strong>
-        </div>
-        <ChevronRight size={15} />
-      </button>
-
-      <button className={`guided-sidebar-cta ${page === 'fluxo' ? 'active' : ''}`} onClick={() => open('fluxo')}>
-        <Plus size={18} />
-        <span><strong>Criar nova peça</strong><small>Fluxo rápido até a produção</small></span>
-      </button>
-
-      <nav className="desktop-nav presentation-nav">
-        <NavButton
-          active={page === 'home'}
-          icon={LayoutDashboard}
-          label="Início"
-          onClick={() => open('home')}
-        />
-
-        <NavGroup label="Operação">
-          {operationNav.filter((item) => moduleEnabled(item.id)).map((item) => (
-            <NavButton
-              key={item.id}
-              active={page === item.id}
-              icon={item.icon}
-              label={item.label}
-              onClick={() => open(item.id)}
-            />
-          ))}
-        </NavGroup>
-
-        <NavGroup label="Cadastros">
-          {registerNav.filter((item) => moduleEnabled(item.id)).map((item) => (
-            <NavButton
-              key={item.id}
-              active={page === item.id}
-              icon={item.icon}
-              label={item.label}
-              onClick={() => open(item.id)}
-            />
-          ))}
-        </NavGroup>
-
-        <NavGroup label="Sistema">
-          {systemNav.filter((item) => moduleEnabled(item.id)).map((item) => (
-            <NavButton
-              key={item.id}
-              active={page === item.id}
-              icon={item.icon}
-              label={item.label}
-              onClick={() => open(item.id)}
-            />
-          ))}
-        </NavGroup>
-      </nav>
-
-      <div className="sidebar-footer presentation-footer">
-        <span className="presentation-badge"><Sparkles size={13} /> Apresentação v1.0</span>
-        <small>v1.0 · Processo Fácil</small>
-      </div>
-    </aside>
-
-    {mobileMenu && (
-      <button
-        className="menu-backdrop"
-        aria-label="Fechar menu"
-        onClick={() => setMobileMenu(false)}
-      />
-    )}
-
-    <main className="content presentation-content">
-      <header className="topbar presentation-topbar">
-        <div className="topbar-left">
-          <button className="mobile-menu-button" onClick={() => setMobileMenu(true)}>
-            <Menu size={21} />
-          </button>
+  return <div className="app-shell presentation-shell block-navigation-shell">
+    <main className="content presentation-content block-navigation-content">
+      <header className="topbar presentation-topbar block-navigation-topbar">
+        <div className="block-topbar-brand">
+          <div className="brand-mark"><Sparkles size={21} /></div>
           <div>
-            <p className="eyebrow">{system.activeCompany?.nomeFantasia}</p>
-            <h1>{pageTitle(page)}</h1>
+            <strong>Processo Fácil</strong>
+            <span>{system.activeCompany?.nomeFantasia || 'Ambiente principal'}</span>
           </div>
+        </div>
+
+        <div className="block-topbar-center">
+          {page !== 'home' && (
+            <button className="block-back-home" onClick={() => open('home')}>
+              <HomeIcon size={17} /> Voltar ao menu
+            </button>
+          )}
+          {page !== 'home' && <div>
+            <p className="eyebrow">Módulo atual</p>
+            <h1>{pageTitle(page)}</h1>
+          </div>}
         </div>
 
         <div className="topbar-actions presentation-top-actions">
@@ -227,6 +124,7 @@ export default function App() {
           productCount={products.length}
           sheetCount={publishedSheets}
           orderCount={openOrders}
+          moduleEnabled={moduleEnabled}
         />
       )}
       {page === 'fluxo' && (
@@ -253,23 +151,7 @@ export default function App() {
       {page === 'admin' && <AdminPage notify={notify} />}
     </main>
 
-    <nav className="bottom-nav presentation-bottom-nav">
-      <button className={page === 'home' ? 'active' : ''} onClick={() => open('home')}>
-        <LayoutDashboard size={20} /><span>Início</span>
-      </button>
-      <button className={page === 'fichas' ? 'active' : ''} onClick={() => open('fichas')}>
-        <FileText size={20} /><span>Passaporte</span>
-      </button>
-      <button className={page === 'ordens' ? 'active' : ''} onClick={() => open('ordens')}>
-        <Factory size={20} /><span>OPs</span>
-      </button>
-      <button className={page === 'operador' ? 'active' : ''} onClick={() => open('operador')}>
-        <MonitorPlay size={20} /><span>Operador</span>
-      </button>
-      <button className={page === 'qualidade' ? 'active' : ''} onClick={() => open('qualidade')}>
-        <ShieldCheck size={20} /><span>Qualidade</span>
-      </button>
-    </nav>
+
 
     {toast && <div className="toast"><ClipboardCheck size={18} /> {toast}</div>}
   </div>
@@ -305,187 +187,184 @@ function Home({
   productCount,
   sheetCount,
   orderCount,
+  moduleEnabled,
 }: {
   open: (page: Page) => void
   materialCount: number
   productCount: number
   sheetCount: number
   orderCount: number
+  moduleEnabled: (page: Page) => boolean
 }) {
-  return <>
-    <section className="presentation-hero">
-      <div className="presentation-hero-copy">
-        <span className="presentation-overline">
-          <Sparkles size={14} /> Produção conectada do desenvolvimento ao chão de fábrica
-        </span>
-        <h2>Transforme a Ficha Técnica em um <em>processo vivo de produção.</em></h2>
-        <p>
-          O Processo Fácil conecta Passaporte Digital, POPs visuais, Ordens de Produção,
-          execução no posto de trabalho e Qualidade em um fluxo único e rastreável.
-        </p>
+  const operationBlocks = [
+    {
+      id: 'fichas' as Page,
+      icon: FileText,
+      title: 'Passaporte Digital',
+      text: 'Ficha Técnica, revisões, imagens, materiais e documentação do produto.',
+      badge: sheetCount > 0 ? `${sheetCount} publicados` : 'Fichas técnicas',
+    },
+    {
+      id: 'ordens' as Page,
+      icon: Factory,
+      title: 'Ordens de Produção',
+      text: 'Crie, acompanhe e libere o que será produzido.',
+      badge: orderCount > 0 ? `${orderCount} em aberto` : 'Planejamento',
+    },
+    {
+      id: 'operador' as Page,
+      icon: MonitorPlay,
+      title: 'Modo Operador',
+      text: 'Execução direta no chão de fábrica com instrução e mídia.',
+      badge: 'Execução',
+    },
+    {
+      id: 'qualidade' as Page,
+      icon: ShieldCheck,
+      title: 'Qualidade',
+      text: 'Acompanhe inspeções, registros e rastreabilidade do processo.',
+      badge: 'Controle',
+    },
+  ].filter((item) => moduleEnabled(item.id))
 
-        <div className="presentation-hero-actions">
-          <button className="presentation-primary-cta" onClick={() => open('fluxo')}>
-            <Plus size={18} /> Criar nova peça
-          </button>
-          <button className="presentation-secondary-cta" onClick={() => open('simulador')}>
-            <PlayCircle size={18} /> Usar demonstração pronta
-          </button>
-        </div>
-      </div>
+  const registerBlocks = [
+    {
+      id: 'produtos' as Page,
+      icon: PackageCheck,
+      title: 'Produtos',
+      text: 'Cadastre e consulte os produtos da empresa.',
+      badge: `${productCount} cadastrados`,
+    },
+    {
+      id: 'materiais' as Page,
+      icon: Boxes,
+      title: 'Materiais',
+      text: 'Gerencie tecidos, aviamentos, insumos e fornecedores.',
+      badge: `${materialCount} ativos`,
+    },
+  ].filter((item) => moduleEnabled(item.id))
 
-      <div className="presentation-hero-visual">
-        <span className="presentation-visual-label">Fluxo conectado</span>
-        <VisualStep icon={FileText} label="Passaporte" text="Produto + revisão + POP" />
-        <VisualArrow />
-        <VisualStep icon={Factory} label="Produção" text="OP + kit congelado" />
-        <VisualArrow />
-        <VisualStep icon={MonitorPlay} label="Execução" text="Fotos, vídeo e instrução" />
-        <VisualArrow />
-        <VisualStep icon={ShieldCheck} label="Qualidade" text="Inspeção + rastreabilidade" />
-      </div>
-    </section>
+  const systemBlocks = [
+    {
+      id: 'workflow' as Page,
+      icon: Workflow,
+      title: 'Workflow',
+      text: 'Configure etapas, aprovações e responsabilidades do processo.',
+      badge: 'Fluxo',
+    },
+    {
+      id: 'simulador' as Page,
+      icon: ClipboardCheck,
+      title: 'Simulador',
+      text: 'Use cenários prontos para demonstrar o trajeto completo.',
+      badge: 'Demonstração',
+    },
+    {
+      id: 'admin' as Page,
+      icon: Settings,
+      title: 'Configurações',
+      text: 'Empresa, módulos, códigos e parâmetros gerais do sistema.',
+      badge: 'Sistema',
+    },
+  ].filter((item) => moduleEnabled(item.id))
 
-    <section className="presentation-section-head">
+  return <div className="block-home">
+    <section className="block-home-intro">
       <div>
-        <span className="section-kicker">Como funciona</span>
-        <h3>Um fluxo simples de explicar e fácil de demonstrar</h3>
+        <span className="section-kicker">Menu principal</span>
+        <h2>O que você quer fazer?</h2>
+        <p>Escolha um bloco abaixo. Cada área leva direto para a função desejada, sem precisar procurar em menus laterais.</p>
       </div>
-      <span className="presentation-section-note">Da engenharia à execução</span>
-    </section>
-
-    <section className="presentation-journey">
-      <JourneyCard
-        number="01"
-        icon={PackageCheck}
-        title="Criar peça"
-        text="Cadastre nome, referência, cor e tamanhos. O sistema abre o Passaporte automaticamente."
-        action="Começar agora"
-        onClick={() => open('fluxo')}
-      />
-      <JourneyCard
-        number="02"
-        icon={Factory}
-        title="Planejamento"
-        text="A OP congela a revisão correta, calcula materiais e organiza o que será produzido."
-        action="Ver ordens"
-        onClick={() => open('ordens')}
-      />
-      <JourneyCard
-        number="03"
-        icon={MonitorPlay}
-        title="Chão de fábrica"
-        text="O operador recebe exatamente a operação atual com fotos, vídeo e pontos críticos."
-        action="Abrir operador"
-        onClick={() => open('operador')}
-      />
-      <JourneyCard
-        number="04"
-        icon={ShieldCheck}
-        title="Qualidade"
-        text="Inspeções e retrabalhos ficam vinculados ao processo, preservando todo o histórico."
-        action="Ver qualidade"
-        onClick={() => open('qualidade')}
-      />
-    </section>
-
-    <section className="presentation-demo-strip">
-      <div className="presentation-demo-icon"><PlayCircle size={25} /></div>
-      <div className="presentation-demo-copy">
-        <span>Demonstração pronta para amanhã</span>
-        <strong>Simule uma polo completa em poucos cliques</strong>
-        <small>
-          O cenário cria materiais, produto, Passaporte REV 01, POPs, OP e operações
-          prontas para executar.
-        </small>
-      </div>
-      <button onClick={() => open('simulador')}>
-        Abrir simulador <ArrowRight size={17} />
+      <button className="block-create-piece" onClick={() => open('fluxo')}>
+        <span className="block-create-icon"><Plus size={26} /></span>
+        <span>
+          <small>Ação principal</small>
+          <strong>Criar nova peça</strong>
+          <em>Cadastro completo até a produção</em>
+        </span>
+        <ArrowRight size={22} />
       </button>
     </section>
 
-    <section className="presentation-section-head compact">
+    <ModuleGroup
+      title="Produção"
+      subtitle="Do desenvolvimento da peça até a execução"
+      blocks={operationBlocks}
+      open={open}
+    />
+
+    <ModuleGroup
+      title="Cadastros"
+      subtitle="Base de produtos e materiais"
+      blocks={registerBlocks}
+      open={open}
+      compact
+    />
+
+    <ModuleGroup
+      title="Gestão do sistema"
+      subtitle="Configuração, fluxo e demonstração"
+      blocks={systemBlocks}
+      open={open}
+      compact
+    />
+
+    <section className="block-home-footer">
       <div>
-        <span className="section-kicker">Ambiente atual</span>
-        <h3>Dados do sistema</h3>
+        <span>Ambiente atual</span>
+        <strong>{productCount} produtos · {materialCount} materiais · {sheetCount} fichas publicadas · {orderCount} OPs em aberto</strong>
       </div>
+      <button onClick={() => open('simulador')}>
+        <PlayCircle size={17} /> Abrir demonstração
+      </button>
     </section>
-
-    <section className="presentation-metrics">
-      <MetricCard icon={PackageCheck} value={productCount} label="Produtos" />
-      <MetricCard icon={Boxes} value={materialCount} label="Materiais" />
-      <MetricCard icon={FileText} value={sheetCount} label="Passaportes publicados" />
-      <MetricCard icon={Factory} value={orderCount} label="OPs em aberto" />
-    </section>
-  </>
-}
-
-function VisualStep({
-  icon: Icon,
-  label,
-  text,
-}: {
-  icon: LucideIcon
-  label: string
-  text: string
-}) {
-  return <div className="presentation-visual-step">
-    <span><Icon size={18} /></span>
-    <div>
-      <strong>{label}</strong>
-      <small>{text}</small>
-    </div>
   </div>
 }
 
-function VisualArrow() {
-  return <div className="presentation-visual-arrow"><ArrowRight size={16} /></div>
-}
-
-function JourneyCard({
-  number,
-  icon: Icon,
-  title,
-  text,
-  action,
-  onClick,
-}: {
-  number: string
+type ModuleBlockData = {
+  id: Page
   icon: LucideIcon
   title: string
   text: string
-  action: string
-  onClick: () => void
-}) {
-  return <button className="presentation-journey-card" onClick={onClick}>
-    <div className="presentation-journey-top">
-      <span className="presentation-journey-number">{number}</span>
-      <span className="presentation-journey-icon"><Icon size={20} /></span>
-    </div>
-    <strong>{title}</strong>
-    <p>{text}</p>
-    <span className="presentation-journey-link">
-      {action} <ChevronRight size={15} />
-    </span>
-  </button>
+  badge: string
 }
 
-function MetricCard({
-  icon: Icon,
-  value,
-  label,
+function ModuleGroup({
+  title,
+  subtitle,
+  blocks,
+  open,
+  compact = false,
 }: {
-  icon: LucideIcon
-  value: number
-  label: string
+  title: string
+  subtitle: string
+  blocks: ModuleBlockData[]
+  open: (page: Page) => void
+  compact?: boolean
 }) {
-  return <article className="presentation-metric-card">
-    <span><Icon size={18} /></span>
-    <div>
-      <strong>{value}</strong>
-      <small>{label}</small>
+  if (blocks.length === 0) return null
+  return <section className="block-module-section">
+    <div className="block-module-heading">
+      <div>
+        <span className="section-kicker">{title}</span>
+        <h3>{subtitle}</h3>
+      </div>
     </div>
-  </article>
+    <div className={`block-module-grid ${compact ? 'compact' : ''}`}>
+      {blocks.map((block) => {
+        const Icon = block.icon
+        return <button key={block.id} className="block-module-card" onClick={() => open(block.id)}>
+          <div className="block-module-card-top">
+            <span className="block-module-icon"><Icon size={25} /></span>
+            <span className="block-module-badge">{block.badge}</span>
+          </div>
+          <strong>{block.title}</strong>
+          <p>{block.text}</p>
+          <span className="block-module-link">Abrir módulo <ArrowRight size={16} /></span>
+        </button>
+      })}
+    </div>
+  </section>
 }
 
 function pageTitle(page: Page) {
