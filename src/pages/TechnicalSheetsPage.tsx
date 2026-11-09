@@ -62,7 +62,15 @@ function imageTypeLabel(tipo: TechnicalRevision['imagens'][number]['tipo']) {
   return 'Outra referência'
 }
 
-export default function TechnicalSheetsPage({ notify }: { notify: (message: string) => void }) {
+export default function TechnicalSheetsPage({
+  notify,
+  initialProductCode = '',
+  onFocusConsumed,
+}: {
+  notify: (message: string) => void
+  initialProductCode?: string
+  onFocusConsumed?: () => void
+}) {
   const auth = useSystem()
   const empresaId = auth.activeCompany?.id
   const user = auth.user
@@ -95,6 +103,20 @@ export default function TechnicalSheetsPage({ notify }: { notify: (message: stri
   useEffect(() => {
     if (editor) refreshHistory(editor.produtoCodigo).catch(console.error)
   }, [editor?.produtoCodigo, editor?.numero])
+
+  useEffect(() => {
+    if (!initialProductCode || !empresaId || !user || editor) return
+    const product = products.find((item) => item.codigo === initialProductCode)
+    if (!product) return
+
+    onFocusConsumed?.()
+    const summary = summaryByCode.get(initialProductCode)
+    if (summary) {
+      void openSummary(summary)
+    } else {
+      void openOrCreate(product)
+    }
+  }, [initialProductCode, empresaId, user?.uid, products.length, summaries.length, editor])
 
   const openOrCreate = async (product: Product) => {
     if (!empresaId || !user) return
