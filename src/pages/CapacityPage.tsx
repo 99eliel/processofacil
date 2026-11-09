@@ -12,7 +12,7 @@ type Kind = 'maquinas' | 'maoObra'
 type Props = { kind: Kind; notify: (text: string) => void }
 const freshResource = (kind: Kind): CapacityResource => ({
   id: crypto.randomUUID(),
-  nome: kind === 'maoObra' ? 'Equipe geral' : '',
+  nome: '',
   quantidade: 1,
   horasDia: 8,
   diasSemana: 5,
@@ -41,7 +41,7 @@ export default function CapacityPage({ kind, notify }: Props) {
   const { rows, totals } = calculation
   const title = machines ? 'Carga Máquina' : 'Carga Mão de Obra'
   const beginEdit = () => {
-    setDraft(savedResources.length ? savedResources.map(r => ({ ...r })) : machines ? [] : [freshResource(kind)])
+    setDraft(savedResources.map(r => ({ ...r })))
     setError('')
     setEditing(true)
   }
@@ -58,10 +58,6 @@ export default function CapacityPage({ kind, notify }: Props) {
     }
     if (new Set(draft.map(r => r.nome.trim().toLocaleLowerCase('pt-BR'))).size !== draft.length) {
       setError('Não é possível cadastrar dois recursos com o mesmo nome.')
-      return
-    }
-    if (!machines && (draft.length !== 1 || draft[0]?.nome !== 'Equipe geral')) {
-      setError('A carga de mão de obra deve utilizar uma única configuração chamada Equipe geral.')
       return
     }
     setSaving(true)
@@ -130,19 +126,32 @@ export default function CapacityPage({ kind, notify }: Props) {
     </section>
 
     {editing && <section className="panel capacity-editor">
-      <div className="panel-head"><div><span className="section-kicker">Parâmetros por empresa</span><h3>{machines ? 'Parque de máquinas' : 'Capacidade da equipe'}</h3></div></div>
-      <p className="helper-text">Informe capacidade semanal disponível. Os nomes das máquinas devem corresponder ao campo Máquina das operações no Passaporte.</p>
-      {draft.map(r => <div className="capacity-edit-row" key={r.id}>
-        <label>Recurso<input value={r.nome} disabled={!machines} placeholder="Nome da máquina" onChange={e => patch(r.id, { nome: e.target.value })} /></label>
-        <label>Quantidade<input type="number" min="0" step="1" value={r.quantidade} onChange={e => patch(r.id, { quantidade: Number(e.target.value) })} /></label>
-        <label>Horas/dia<input type="number" min="0" max="24" step="0.5" value={r.horasDia} onChange={e => patch(r.id, { horasDia: Number(e.target.value) })} /></label>
-        <label>Dias/semana<input type="number" min="0" max="7" step="1" value={r.diasSemana} onChange={e => patch(r.id, { diasSemana: Number(e.target.value) })} /></label>
-        <label>Eficiência %<input type="number" min="0" max="100" step="1" value={r.eficiencia} onChange={e => patch(r.id, { eficiencia: Number(e.target.value) })} /></label>
-        <label className="capacity-active"><input type="checkbox" checked={r.ativo} onChange={e => patch(r.id, { ativo: e.target.checked })} /> Ativo</label>
-        {machines && <button type="button" className="icon-button danger-icon" title="Remover configuração" onClick={() => setDraft(old => old.filter(item => item.id !== r.id))}><Trash2 size={17}/></button>}
-      </div>)}
+      <div className="panel-head"><div><span className="section-kicker">Parâmetros por empresa</span><h3>{machines ? 'Parque de máquinas' : 'Gerenciar equipes'}</h3></div></div>
+      <p className="helper-text">{machines ? 'Informe a capacidade semanal. O nome da máquina deve corresponder ao nome usado no Passaporte.' : 'Cadastre e renomeie suas equipes. Cada equipe tem seu próprio número de pessoas, jornada e eficiência. As equipes podem ser organizadas livremente.'}</p>
+      {draft.length === 0 && <div className="capacity-empty-editor"><Users size={25} /><strong>{machines ? 'Nenhuma máquina cadastrada' : 'Nenhuma equipe cadastrada'}</strong><span>{machines ? 'Adicione uma máquina para começar.' : 'Adicione sua primeira equipe para definir a capacidade de trabalho.'}</span></div>}
+      <div className="capacity-resource-list">
+        {draft.map((r, index) => <article className="capacity-resource-card" key={r.id}>
+          <div className="capacity-resource-head">
+            <div className="capacity-resource-icon">{machines ? <Factory size={19} /> : <Users size={19} />}</div>
+            <div className="capacity-resource-identity">
+              <small>{machines ? `Máquina ${index + 1}` : `Equipe ${index + 1}`}</small>
+              <strong>{r.nome.trim() || (machines ? 'Nova máquina' : 'Nova equipe')}</strong>
+            </div>
+            <span className="capacity-resource-hours">{numberHours(r.quantidade * r.horasDia * r.diasSemana * r.eficiencia / 100)} h/semana</span>
+            <label className="capacity-resource-toggle"><input type="checkbox" checked={r.ativo} onChange={e => patch(r.id, { ativo: e.target.checked })} /> Ativa</label>
+            <button type="button" className="icon-button danger-icon" title={machines ? 'Remover máquina' : 'Remover equipe'} aria-label={machines ? 'Remover máquina' : 'Remover equipe'} onClick={() => setDraft(old => old.filter(item => item.id !== r.id))}><Trash2 size={17}/></button>
+          </div>
+          <div className="capacity-resource-fields">
+            <label className="capacity-resource-name">{machines ? 'Nome da máquina' : 'Nome da equipe'}<input value={r.nome} placeholder={machines ? 'Ex.: Reta industrial' : 'Ex.: Equipe de costura A'} onChange={e => patch(r.id, { nome: e.target.value })} /></label>
+            <label>{machines ? 'Máquinas' : 'Pessoas'}<input type="number" min="0" step="1" value={r.quantidade} onChange={e => patch(r.id, { quantidade: Number(e.target.value) })} /></label>
+            <label>Horas por dia<input type="number" min="0" max="24" step="0.5" value={r.horasDia} onChange={e => patch(r.id, { horasDia: Number(e.target.value) })} /></label>
+            <label>Dias por semana<input type="number" min="0" max="7" step="1" value={r.diasSemana} onChange={e => patch(r.id, { diasSemana: Number(e.target.value) })} /></label>
+            <label>Eficiência (%)<input type="number" min="0" max="100" step="1" value={r.eficiencia} onChange={e => patch(r.id, { eficiencia: Number(e.target.value) })} /></label>
+          </div>
+        </article>)}
+      </div>
       <div className="modal-actions">
-        {machines && <button className="secondary-button" onClick={() => setDraft(old => [...old, freshResource(kind)])}><Plus size={15}/> Adicionar máquina</button>}
+        <button className="secondary-button" onClick={() => setDraft(old => [...old, freshResource(kind)])}><Plus size={15}/> {machines ? 'Adicionar máquina' : 'Adicionar equipe'}</button>
         <button className="secondary-button" disabled={saving} onClick={() => setEditing(false)}>Cancelar</button>
         <button className="primary-button" disabled={saving} onClick={save}>{saving ? <Loader2 className="spin" size={16}/> : <Save size={16}/>} Salvar capacidade</button>
       </div>
@@ -155,8 +164,9 @@ export default function CapacityPage({ kind, notify }: Props) {
           {rows.map(row => <tr key={row.nome}><td><strong>{row.nome}</strong>{!row.configurado && <small className="capacity-warning"> · Sem capacidade cadastrada</small>}</td>
             <td>{numberHours(row.previstasHoras)} h</td><td>{row.configurado ? `${numberHours(row.capacidadeHoras)} h` : '—'}</td>
             <td>{numberHours(row.concluidasHoras)} h</td><td>{numberHours(row.decorridasHoras)} h</td>
-            <td>{row.capacidadeHoras > 0 ? `${numberHours(percentage(row.previstasHoras, row.capacidadeHoras))}%` : '—'}</td></tr>)}
+            <td>{row.capacidadeHoras > 0 && (machines || row.tarefas > 0) ? `${numberHours(percentage(row.previstasHoras, row.capacidadeHoras))}%` : '—'}</td></tr>)}
         </tbody></table></div>}
+      {!machines && <p className="helper-text">As equipes são cadastradas separadamente e suas capacidades são somadas. Como as operações ainda não possuem equipe responsável, a demanda aparece em “Demanda sem equipe atribuída” e não é distribuída artificialmente entre as equipes.</p>}
       <p className="helper-text">* A demanda é calculada pelo tempo padrão por peça × quantidade total da OP. O decorrido real é o intervalo de execução registrado pelo operador, não uma medição de horas produtivas por unidade. Operações concluídas saem da demanda restante. Não são atribuídas datas às operações automaticamente.</p>
     </section>
   </div>
