@@ -1,5 +1,5 @@
 import {
-  collection, doc, runTransaction, serverTimestamp,
+  Timestamp, collection, doc, runTransaction, serverTimestamp,
 } from 'firebase/firestore'
 import { db } from './config'
 import type { ProductionOperationTask, ProductionOrderRecord } from '../domain/types'
@@ -199,6 +199,48 @@ export async function reverseProductionEntry(
       entidade: 'apontamento_producao', entidadeId: entry.id, acao: 'estornado',
       resumo: op.numero + ' · ' + task.operacao.nome + ' · ' + motivo.trim(),
       uid, em: serverTimestamp(),
+    })
+  })
+}
+
+
+/** Fecha uma OP apenas quando cada item passou integralmente pela sua última operação. */
+export async function completeProductionOrder(empresaId: string, uid: string, orderId: string) {
+  const opRef = doc(db, 'empresas', empresaId, 'ordensProducao', orderId)
+  const auditRef = doc(collection(db, 'empresas', empresaId, 'auditoria'))
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(opRef)
+    if (!snap.exists()) throw new Error('OP não encontrada.')
+    const op = { id: snap.id, ...snap.data() } as ProductionOrderRecord
+    if (op.excluido || !['liberada', 'em_fluxo'].includes(op.status)) {
+      throw new Error('Esta OP não está disponível para conclusão.')
+    }
+    if (op.workflowStageId) {
+      throw new Error('Finalize antes as aprovações configuradas no Workflow.')
+    }
+    if (op.itens.length === 0) throw new Error('OP sem itens.')
+    for (const item of op.itens) {
+      const tasks = orderedItemTasks(op, item.id)
+      const finalTask = tasks[tasks.length - 1]
+      if (!finalTask) throw new Error('O produto ' + item.produtoCodigo + ' não possui operações.')
+      const finalBalance = await tx.get(doc(db, 'empresas', empresaId, 'saldosOperacoes', finalTask.id))
+      const good = Number(finalBalance.data()?.boas ?? 0)
+      if (good < item.quantidadeTotal) {
+        throw new Error('Produção incompleta em ' + item.produtoCodigo + ': ' + good + '/' + item.quantidadeTotal + ' boas.')
+      }
+    }
+    tx.update(opRef, {
+      status: 'concluida',
+      historico: [...(op.historico ?? []), {
+        id: crypto.randomUUID(), acao: 'OP concluída após conferência da produção',
+        uid, em: Timestamp.now(),
+      }],
+      concluidaEm: serverTimestamp(),
+      alteradoEm: serverTimestamp(), alteradoPor: uid,
+    })
+    tx.set(auditRef, {
+      entidade: 'ordem_producao', entidadeId: op.id, acao: 'concluida_por_apontamento',
+      resumo: op.numero, uid, em: serverTimestamp(),
     })
   })
 }

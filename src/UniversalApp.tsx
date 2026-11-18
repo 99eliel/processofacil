@@ -123,7 +123,7 @@ export default function App() {
             {catalogTab === 'materiais' && <MaterialsPage notify={notify}/>}
             {catalogTab === 'novo' && <GuidedPieceFlowPage notify={notify} openOperator={openProduction} openPassport={() => openPassport()}/>}
           </>}
-          {page === 'ordens' && <ProductionOrdersPage notify={notify}/>}
+          {page === 'ordens' && <ProductionOrdersPage notify={notify} openProduction={openProduction}/>}
           {page === 'planejamento' && <PlanningPage notify={notify}/>}
           {page === 'producao' && <>
             <div className="pf-tabbar">

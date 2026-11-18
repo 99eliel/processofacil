@@ -1,3 +1,4 @@
+import { completeProductionOrder, type ProductionBalance } from '../firebase/productionLedger'
 import { useEffect, useState } from 'react'
 import {
   ArrowLeft,
@@ -37,12 +38,13 @@ type DraftItem = {
   variantes: ProductionVariant[]
 }
 
-export default function ProductionOrdersPage({ notify }: { notify: (message: string) => void }) {
+export default function ProductionOrdersPage({ notify, openProduction }: { notify: (message: string) => void; openProduction?: () => void }) {
   const auth = useSystem()
   const empresaId = auth.activeCompany?.id
   const user = auth.user
   const { items: products } = useTenantCollection<Product>(empresaId, 'produtos', 'descricao')
   const { items: orders, loading, error } = useTenantCollection<ProductionOrderRecord>(empresaId, 'ordensProducao', 'numero')
+  const { items: operationBalances } = useTenantCollection<ProductionBalance>(empresaId, 'saldosOperacoes', 'taskId')
   const [workflow, setWorkflow] = useState<WorkflowDefinition>(emptyWorkflow)
   const [modal, setModal] = useState(false)
   const [editingOrderId, setEditingOrderId] = useState('')
@@ -276,6 +278,20 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
     }
   }
 
+
+  const finishProduction = async (order: ProductionOrderRecord) => {
+    if (!empresaId || !user) return
+    setBusy(true); setLocalError('')
+    try {
+      await completeProductionOrder(empresaId, user.uid, order.id)
+      notify('OP concluída e registrada no histórico.')
+    } catch (reason) {
+      setLocalError(reason instanceof Error ? reason.message : 'Não foi possível concluir a OP.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   if (selected) {
     const stage = workflow.etapas.find((item) => item.id === selected.workflowStageId)
     return <>
@@ -284,6 +300,8 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
         <div><span className="op-number">{selected.numero}</span><h2>{selected.itens.length} produto(s)</h2><p>{selected.prazo ? `Necessidade: ${selected.prazo}` : 'Necessidade não informada'} · {selected.kit.length} linha(s) de kit</p>{selected.observacao && <small className="op-observation">{selected.observacao}</small>}</div>
         <div className="detail-hero-actions">
           <OrderStatus status={selected.status} />
+          {openProduction && !selected.excluido && ['liberada', 'em_fluxo', 'reprovada'].includes(selected.status) &&
+            <button className="secondary-button compact" onClick={openProduction}><Factory size={15}/> Abrir produção</button>}
           {!selected.excluido && <button className="secondary-button compact" disabled={busy} onClick={() => openEditOrder(selected)}><Edit3 size={15} /> Editar</button>}
           <button className={selected.excluido ? 'secondary-button compact' : 'danger-button compact'} disabled={busy} onClick={() => void toggleDeleted(selected)}>
             {selected.excluido ? <RotateCcw size={15} /> : <Trash2 size={15} />} {selected.excluido ? 'Restaurar' : 'Excluir'}
@@ -308,6 +326,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
               <button className="danger-button" disabled={busy} onClick={() => cancelDraft(selected)}><Ban size={16} /> Cancelar OP</button>
             </div>
           </>}
+          {['liberada', 'em_fluxo'].includes(selected.status) && !selected.excluido && !stage && <button className="primary-button" disabled={busy} onClick={() => void finishProduction(selected)}>Concluir OP (conferir quantidades)</button>}
           {selected.status === 'em_fluxo' && !selected.excluido && stage && <><p className="helper-text">Responsáveis: {stage.perfis.join(', ')}.</p><button className="primary-button" disabled={busy} onClick={() => advance(selected)}>Concluir etapa <ArrowRight size={16} /></button></>}
           {selected.status === 'concluida' && !selected.excluido && <div className="form-success">Fluxo concluído. O histórico da OP permanece preservado.</div>}
         </section>
@@ -321,6 +340,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
 
       <section className="panel">
         <div className="panel-head"><div><span className="section-kicker">Rastreabilidade</span><h3>Histórico</h3></div></div>
+        <p className="helper-text">A conclusão por produção exige que a última operação de cada produto tenha todas as unidades boas apontadas. Uma OP com aprovações em andamento deve finalizar seu Workflow antes.</p>
         <div className="timeline">{[...(selected.historico ?? [])].reverse().map((entry) => <div key={entry.id}><i /><strong>{entry.acao}</strong><small>Usuário: {entry.uid}</small></div>)}</div>
       </section>
     </>
