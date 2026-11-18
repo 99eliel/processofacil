@@ -4,6 +4,22 @@ O **Processo Fácil** é uma plataforma universal e configurável para padroniza
 
 A planilha da Koleni foi o caso real que originou a ideia e continua servindo apenas como **referência/template de confecção**. Nenhuma regra específica daquele processo é obrigatória para os demais clientes.
 
+
+## Remapeamento 2.0 — ambiente de teste
+
+O sistema tem cinco áreas: **Produtos e Fichas Técnicas**, **Ordens de Produção**, **Planejamento**, **Produção**, **Gestão e Relatórios**. Configurações concentram os cadastros administrativos, o Workflow e o Laboratório.
+
+- A **Ficha Técnica foi preservada** integralmente neste remapeamento.
+- Apontamentos parciais, quantidades boas/defeituosas e estornos auditados utilizam as coleções `apontamentos`, `saldosOperacoes` e `estornosApontamentos`.
+- Apontamentos validam o saldo disponível e a saída boa da operação anterior. Ajustes que invalidariam peças já consumidas pela etapa seguinte são bloqueados.
+- Programação usa `programacoes`; colaboradores usam `colaboradores`; ambos ficam no workspace ativo.
+- A seção Gestão exporta CSV e oferece impressão/PDF respeitando os filtros de apontamento. O avanço histórico da OP é separado dos filtros de período.
+- A produção por quantidades é independente dos botões antigos de conclusão inteira de operação, que deixaram de ser a navegação principal. Uma futura etapa unificará o ciclo completo de encerramento da OP.
+- Foram mantidos os nomes dos campos existentes nas OPs, como `prazo`, para compatibilidade; a interface apresenta **Necessidade**.
+
+**ATENÇÃO — SEGURANÇA DO AMBIENTE ATUAL:** o `SystemProvider.tsx` usa o workspace fixo `principal` com usuário técnico local; o `firestore.rules` aceita leitura e gravação sem verificação de identidade nesse workspace. Não use dados pessoais, dados reais de clientes ou informações confidenciais e não comercialize essa configuração. É obrigatório implementar autenticação real, vínculos de usuários por empresa e regras restritivas antes de produção. A chave de configuração cliente do Firebase não substitui controles de acesso.
+
+
 ## Status — v0.7.0
 
 A base atual está sendo tratada como produto operacional, não mais como protótipo.
@@ -65,11 +81,11 @@ A base atual está sendo tratada como produto operacional, não mais como protó
 
 A autenticação de usuários está **temporariamente fora da interface**.
 
-Para não deixar o Firestore público, o sistema usa por baixo uma **sessão técnica anônima do Firebase Authentication**. Ela é persistida no navegador e serve apenas para identificar o workspace e cumprir as regras de segurança.
+O ambiente atual usa um **usuário técnico local fixo**, sem login. As regras para o workspace `principal` estão abertas e **não garantem proteção de dados**; veja o alerta de segurança acima.
 
 Quando a autenticação de usuários voltar, a camada operacional, os dados e os módulos não precisam ser refeitos.
 
-> No Firebase Console, o provedor **Anonymous** precisa estar habilitado durante esta fase.
+Para uma versão de produção, configurar Firebase Authentication, controle de membros por empresa e regras adequadas é requisito obrigatório.
 
 ## Firebase oficial
 

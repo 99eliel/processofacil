@@ -281,7 +281,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
     return <>
       <button className="back-link" onClick={() => setSelected(null)}><ArrowLeft size={16} /> Voltar para OPs</button>
       <section className="detail-hero">
-        <div><span className="op-number">{selected.numero}</span><h2>{selected.itens.length} produto(s)</h2><p>{selected.prazo ? `Prazo: ${selected.prazo}` : 'Sem prazo informado'} · {selected.kit.length} linha(s) de kit</p>{selected.observacao && <small className="op-observation">{selected.observacao}</small>}</div>
+        <div><span className="op-number">{selected.numero}</span><h2>{selected.itens.length} produto(s)</h2><p>{selected.prazo ? `Necessidade: ${selected.prazo}` : 'Necessidade não informada'} · {selected.kit.length} linha(s) de kit</p>{selected.observacao && <small className="op-observation">{selected.observacao}</small>}</div>
         <div className="detail-hero-actions">
           <OrderStatus status={selected.status} />
           {!selected.excluido && <button className="secondary-button compact" disabled={busy} onClick={() => openEditOrder(selected)}><Edit3 size={15} /> Editar</button>}
@@ -347,7 +347,7 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
         const stage = workflow.etapas.find((item) => item.id === order.workflowStageId)
         return <article className={`op-card manageable-op-card ${order.excluido ? 'deleted-record' : ''}`} key={order.id}>
           <button className="op-card-main" onClick={() => setSelected(order)}>
-            <div className="op-top"><div><span className="op-number">{order.numero}</span><h3>{order.itens.length} produto(s) · {order.itens.reduce((sum, item) => sum + item.quantidadeTotal, 0)} unidade(s)</h3><small>{stage ? `Etapa: ${stage.nome}` : statusLabel(order.status)}{order.prazo ? ` · Prazo ${order.prazo}` : ''}{order.observacao ? ` · ${order.observacao}` : ''}</small></div><OrderStatus status={order.status} /></div>
+            <div className="op-top"><div><span className="op-number">{order.numero}</span><h3>{order.itens.length} produto(s) · {order.itens.reduce((sum, item) => sum + item.quantidadeTotal, 0)} unidade(s)</h3><small>{stage ? `Etapa: ${stage.nome}` : statusLabel(order.status)}{order.prazo ? ` · Necessidade ${order.prazo}` : ''}{order.observacao ? ` · ${order.observacao}` : ''}</small></div><OrderStatus status={order.status} /></div>
           </button>
           <div className="op-card-actions">
             {!order.excluido && <button title="Editar" onClick={() => openEditOrder(order)}><Edit3 size={15} /> Editar</button>}
@@ -361,9 +361,9 @@ export default function ProductionOrdersPage({ notify }: { notify: (message: str
     {modal && <div className="modal-backdrop"><section className="form-modal op-modal">
       <div className="modal-head"><div><span className="section-kicker">Planejamento</span><h2>{editingOrderId ? 'Editar Ordem de Produção' : 'Nova Ordem de Produção'}</h2></div><button className="icon-button" onClick={() => setModal(false)}><X size={18} /></button></div>
       <div className="op-form-body">
-        <label className="editor-label"><span>Prazo (opcional)</span><input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} /></label>
+        <label className="editor-label"><span>Necessidade (opcional)</span><input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} /></label>
         <label className="editor-label"><span>Observação</span><textarea rows={3} value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Observações gerais da Ordem de Produção" /></label>
-        {metadataOnly && <div className="info-banner"><Factory size={18} /><div><strong>OP já liberada</strong><span>Para preservar rastreabilidade, produtos, quantidades, revisão, kit e operações congeladas não são alterados. Você ainda pode editar prazo e observação.</span></div></div>}
+        {metadataOnly && <div className="info-banner"><Factory size={18} /><div><strong>OP já liberada</strong><span>Para preservar rastreabilidade, produtos, quantidades, revisão, kit e operações congeladas não são alterados. Você ainda pode editar necessidade e observação.</span></div></div>}
         {!metadataOnly && draftItems.map((item, index) => <div className="op-item-editor" key={item.id}>
           <div className="op-item-head"><strong>Item {index + 1}</strong><button className="icon-button danger-icon" onClick={() => setDraftItems(draftItems.filter((entry) => entry.id !== item.id))}><Trash2 size={14} /></button></div>
           <label className="editor-label"><span>Produto *</span><select value={item.produtoCodigo} onChange={(e) => updateItem(item.id, { produtoCodigo: e.target.value })}><option value="">Selecione...</option>{products.filter((product) => product.status === 'ativo' && !product.excluido).map((product) => <option key={product.id} value={product.codigo}>{product.codigo} — {product.descricao}</option>)}</select></label>

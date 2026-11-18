@@ -27,7 +27,8 @@ type Collaborator = {
   equipeId: string
   ativo: boolean
 }
-const emptySchedule = { opId: '', data: '', prioridade: 'normal' as const, equipeId: '', maquinaId: '', observacao: '' }
+type ScheduleDraft = Pick<Schedule, 'opId' | 'data' | 'prioridade' | 'equipeId' | 'maquinaId' | 'observacao'>
+const emptySchedule: ScheduleDraft = { opId: '', data: '', prioridade: 'normal', equipeId: '', maquinaId: '', observacao: '' }
 const emptyWorker = { nome: '', matricula: '', equipeId: '', ativo: true }
 
 export default function PlanningPage({ notify }: { notify: (message: string) => void }) {
@@ -44,7 +45,7 @@ export default function PlanningPage({ notify }: { notify: (message: string) => 
   )
   const teams = resourcesQuery.items.find((row) => row.id === 'maoObra')?.recursos ?? []
   const machines = resourcesQuery.items.find((row) => row.id === 'maquinas')?.recursos ?? []
-  const [draft, setDraft] = useState(emptySchedule)
+  const [draft, setDraft] = useState<ScheduleDraft>(emptySchedule)
   const [workerId, setWorkerId] = useState('')
   const [person, setPerson] = useState(emptyWorker)
   const [editing, setEditing] = useState(false)

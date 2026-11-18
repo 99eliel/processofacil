@@ -144,9 +144,11 @@ export default function ProductionPage({ notify }: { notify: (message: string) =
             <strong>Instruções do Passaporte</strong>
             {current.operacao.instrucoes.filter(Boolean).map((line, i) => <p key={i}>{line}</p>)}
           </section>}
-          {current.operacao.midias?.filter((media) => media.url && media.tipo === 'imagem').length > 0 &&
-            <div className="pf-image-grid">{current.operacao.midias.filter((media) => media.url && media.tipo === 'imagem')
-              .map((media) => <img key={media.id} src={media.url} alt={media.legenda || current.operacao.nome}/>)}</div>}
+          {current.operacao.midias?.filter((media) => Boolean(media.url)).length > 0 &&
+            <div className="pf-image-grid">{current.operacao.midias.filter((media) => Boolean(media.url))
+              .map((media) => media.tipo === 'imagem'
+                ? <img key={media.id} src={media.url} alt={media.legenda || current.operacao.nome}/>
+                : <video key={media.id} controls preload="metadata" src={media.url} aria-label={media.legenda || current.operacao.nome}/>)}</div>}
         </> : <div className="capacity-note">A OP não contém operações. Publique a Ficha Técnica com operações e libere uma nova OP.</div>}
       </section>
       {current && <section className="panel pf-form-card">
