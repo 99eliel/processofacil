@@ -1,7 +1,7 @@
 import type { ProductionOrderRecord, ProductionOperationTask } from './types'
 import type { CapacityResource } from './capacityEngine'
 import type { OperationBalance } from './progressEngine.ts'
-import { findBalance } from './progressEngine'
+import { findBalance } from './progressEngine.ts'
 
 export type Shift = 'integral' | 'manha' | 'tarde' | 'noite'
 export const shiftLabels: Record<Shift,string> = { integral: 'Dia inteiro', manha: 'Manhã', tarde: 'Tarde', noite: 'Noite' }
