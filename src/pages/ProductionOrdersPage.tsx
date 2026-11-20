@@ -398,7 +398,8 @@ export default function ProductionOrdersPage({ notify, openProduction, initialOr
     </>
   }
 
-  const today = new Date().toLocaleDateString('en-CA')
+  const now = new Date()
+  const today = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-')
   const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR')
   const query = norm(search.trim())
   const ordered = [...orders]

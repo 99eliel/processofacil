@@ -63,14 +63,14 @@ export default function ProductionPage({ notify, initialOrderId }: {
   )
   const current = tasks.find((t) => t.id === selectedTaskId) ??
     tasks.find((t) => {
-      const step = stepProgress(order, t, balancesQuery.items)
+      const step = stepProgress(order!, t, balancesQuery.items)
       return step.toPoint > 0 || step.defective > 0
     }) ?? tasks[0]
   const balance = current ? stepProgress(order, current, balancesQuery.items) : null
   const progress = order ? orderProgress(order, balancesQuery.items) : null
   const nextAvailable = current ? tasks.find((task) => {
     if (task.id === current.id) return false
-    const step = stepProgress(order, task, balancesQuery.items)
+    const step = stepProgress(order!, task, balancesQuery.items)
     return step.toPoint > 0 || step.defective > 0
   }) : null
   const validEntries = entriesQuery.items

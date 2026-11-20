@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
-  ArrowLeft, ArrowRight, BarChart3, Boxes, ClipboardList, Factory, FileText,
+  ArrowLeft, BarChart3, Boxes, ClipboardList, Factory, FileText,
   Home, PackageCheck, Plus, Search, Settings2, ShieldCheck, Workflow, HelpCircle, X,
 } from 'lucide-react'
 import { useSystem } from './system/SystemProvider'
