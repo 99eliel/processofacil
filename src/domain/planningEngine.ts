@@ -1,6 +1,6 @@
 import type { ProductionOrderRecord, ProductionOperationTask } from './types'
 import type { CapacityResource } from './capacityEngine'
-import type { OperationBalance } from './progressEngine'
+import type { OperationBalance } from './progressEngine.ts'
 import { findBalance } from './progressEngine'
 
 export type Shift = 'integral' | 'manha' | 'tarde' | 'noite'
@@ -138,8 +138,8 @@ export function resourceForTask(
   kind:'maquinas'|'maoObra',task:ProductionOperationTask,resources:CapacityResource[],
   allocation?:OperationSchedule,legacy?:LegacySchedule,
 ) {
-  if (kind==='maoObra') return allocation?.equipeId || legacy?.equipeId || task.equipeId || task.operacao.equipeId || ''
-  const provided = allocation?.maquinaId || legacy?.maquinaId || task.operacao.maquinaId
+  if (kind==='maoObra') return allocation ? allocation.equipeId : legacy?.equipeId || task.equipeId || task.operacao.equipeId || ''
+  const provided = allocation ? allocation.maquinaId : legacy?.maquinaId || task.operacao.maquinaId
   if (provided) return provided
   // Compatibilidade com Fichas Técnicas já publicadas que gravam somente o nome.
   return resources.find(r=>normalizeResourceName(r.nome)===normalizeResourceName(task.operacao.maquina||''))?.id||''

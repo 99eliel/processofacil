@@ -1,6 +1,6 @@
 import type { ProductionOrderRecord, Product } from './types'
 import type { OperationBalance } from './progressEngine'
-import { capacityForWeek, resourceForTask, startOfWeek, type OperationSchedule, type LegacySchedule, type Collaborator, type ResourceUnavailability, type TimedOperation } from './planningEngine'
+import { capacityForWeek, resourceForTask, startOfWeek, type OperationSchedule, type LegacySchedule, type Collaborator, type ResourceUnavailability, type TimedOperation } from './planningEngine.ts'
 
 export type CapacityResource = {
   id: string
