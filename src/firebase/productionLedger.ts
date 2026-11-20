@@ -104,6 +104,7 @@ export async function registerProduction(
     const task = (op.operacoes ?? []).find((row) => row.id === input.taskId)
     if (!task) throw new Error('Operação não encontrada na OP.')
     if (task.status === 'bloqueada') throw new Error('Operação bloqueada. Resolva a ocorrência antes de apontar.')
+    if (task.status === 'concluida') throw new Error('Operação já concluída no fluxo antigo. Não é possível misturar apontamentos.')
     const previous = precedingTask(op, task)
     const currentSnap = await tx.get(balanceRef)
     const previousSnap = previous
@@ -167,6 +168,7 @@ export async function reverseProductionEntry(
     if (reversalSnap.exists()) throw new Error('Este apontamento já foi estornado.')
     if (!balanceSnap.exists()) throw new Error('Saldo da operação não encontrado.')
     const op = { id: opSnap.id, ...opSnap.data() } as ProductionOrderRecord
+    if (op.excluido || ['concluida', 'cancelada'].includes(op.status)) throw new Error('Esta OP está encerrada ou excluída.')
     const saved = entrySnap.data() as Omit<ProductionEntry, 'id'>
     if (saved.opId !== entry.opId || saved.taskId !== entry.taskId) {
       throw new Error('Dados do apontamento divergentes.')
@@ -182,7 +184,7 @@ export async function reverseProductionEntry(
     const newBad = Number(current.defeituosas ?? 0) - Number(saved.defeituosas ?? 0)
     const newTotal = Number(current.total ?? 0) - Number(saved.boas ?? 0) - Number(saved.defeituosas ?? 0)
     if (newGood < 0 || newBad < 0 || newTotal < 0) {
-      throw new Error('O saldo atual não permite este estorno.')
+      throw new Error('O saldo atual não permite este estorno. Se houve retrabalho, estorne-o primeiro.')
     }
     if (Number(nextSnap?.data()?.total ?? 0) > newGood) {
       throw new Error('Não é possível estornar: a próxima etapa já consumiu parte dessas unidades.')
@@ -241,6 +243,127 @@ export async function completeProductionOrder(empresaId: string, uid: string, or
     tx.set(auditRef, {
       entidade: 'ordem_producao', entidadeId: op.id, acao: 'concluida_por_apontamento',
       resumo: op.numero, uid, em: serverTimestamp(),
+    })
+  })
+}
+
+
+export type ProductionRework = {
+  id: string
+  opId: string
+  opNumero: string
+  taskId: string
+  operacaoNome: string
+  operadorNome: string
+  quantidade: number
+  observacao: string
+  criadoEm?: unknown
+  criadoPor: string
+}
+export type ProductionReworkReversal = {
+  id: string
+  reworkId: string
+  opId: string
+  taskId: string
+  motivo: string
+  criadoEm?: unknown
+  criadoPor: string
+}
+
+/** Recupera peças apontadas como defeituosas: muda o saldo, sem duplicar unidades físicas. */
+export async function registerRework(
+  empresaId: string,
+  uid: string,
+  input: { opId: string; taskId: string; quantidade: number; operadorNome: string; observacao: string },
+) {
+  const quantity = Number(input.quantidade)
+  if (!validQuantity(quantity) || quantity === 0) throw new Error('Informe quantidade inteira e maior que zero.')
+  if (!input.operadorNome.trim()) throw new Error('Informe o responsável pelo retrabalho.')
+  if (!input.observacao.trim()) throw new Error('Descreva a correção realizada.')
+  const opRef = doc(db, 'empresas', empresaId, 'ordensProducao', input.opId)
+  const balanceRef = doc(db, 'empresas', empresaId, 'saldosOperacoes', input.taskId)
+  const reworkRef = doc(collection(db, 'empresas', empresaId, 'retrabalhosOperacoes'))
+  const auditRef = doc(collection(db, 'empresas', empresaId, 'auditoria'))
+  return runTransaction(db, async (tx) => {
+    const [opSnap, balanceSnap] = await Promise.all([tx.get(opRef), tx.get(balanceRef)])
+    if (!opSnap.exists()) throw new Error('OP não encontrada.')
+    const op = { id: opSnap.id, ...opSnap.data() } as ProductionOrderRecord
+    if (op.excluido || !['liberada', 'em_fluxo', 'reprovada'].includes(op.status)) {
+      throw new Error('OP indisponível para retrabalho.')
+    }
+    const task = (op.operacoes ?? []).find((row) => row.id === input.taskId)
+    if (!task || task.status === 'bloqueada' || task.status === 'concluida') {
+      throw new Error('Operação não está disponível para retrabalho.')
+    }
+    if (!balanceSnap.exists()) throw new Error('Não existe produção defeituosa registrada nesta operação.')
+    const current = balanceSnap.data() as ProductionBalance
+    if (quantity > Number(current.defeituosas ?? 0)) {
+      throw new Error('O retrabalho não pode ultrapassar as unidades defeituosas disponíveis.')
+    }
+    tx.set(reworkRef, {
+      opId: op.id, opNumero: op.numero, taskId: task.id, operacaoNome: task.operacao.nome,
+      quantidade: quantity, operadorNome: input.operadorNome.trim(),
+      observacao: input.observacao.trim(), criadoEm: serverTimestamp(), criadoPor: uid,
+    })
+    tx.update(balanceRef, {
+      boas: Number(current.boas ?? 0) + quantity,
+      defeituosas: Number(current.defeituosas ?? 0) - quantity,
+      alteradoEm: serverTimestamp(),
+    })
+    tx.set(auditRef, {
+      entidade: 'retrabalho_producao', entidadeId: reworkRef.id, acao: 'registrado',
+      resumo: op.numero + ' · ' + task.operacao.nome + ' · ' + quantity + ' recuperadas',
+      uid, em: serverTimestamp(),
+    })
+    return reworkRef.id
+  })
+}
+
+export async function reverseRework(
+  empresaId: string,
+  uid: string,
+  rework: ProductionRework,
+  reason: string,
+) {
+  if (!reason.trim()) throw new Error('Explique o motivo do estorno do retrabalho.')
+  const opRef = doc(db, 'empresas', empresaId, 'ordensProducao', rework.opId)
+  const reworkRef = doc(db, 'empresas', empresaId, 'retrabalhosOperacoes', rework.id)
+  const reverseRef = doc(db, 'empresas', empresaId, 'estornosRetrabalhos', rework.id)
+  const balanceRef = doc(db, 'empresas', empresaId, 'saldosOperacoes', rework.taskId)
+  const auditRef = doc(collection(db, 'empresas', empresaId, 'auditoria'))
+  return runTransaction(db, async (tx) => {
+    const [opSnap, reworkSnap, reverseSnap, balanceSnap] = await Promise.all([
+      tx.get(opRef), tx.get(reworkRef), tx.get(reverseRef), tx.get(balanceRef),
+    ])
+    if (!opSnap.exists() || !reworkSnap.exists() || !balanceSnap.exists()) throw new Error('Registro não encontrado.')
+    if (reverseSnap.exists()) throw new Error('Retrabalho já estornado.')
+    const op = { id: opSnap.id, ...opSnap.data() } as ProductionOrderRecord
+    if (op.excluido || ['cancelada', 'concluida'].includes(op.status)) throw new Error('OP encerrada ou excluída.')
+    const stored = reworkSnap.data() as ProductionRework
+    if (stored.opId !== rework.opId || stored.taskId !== rework.taskId) throw new Error('Retrabalho divergente.')
+    const task = (op.operacoes ?? []).find((row) => row.id === stored.taskId)
+    if (!task) throw new Error('Operação original não encontrada.')
+    const next = followingTask(op, task)
+    const nextSnap = next
+      ? await tx.get(doc(db, 'empresas', empresaId, 'saldosOperacoes', next.id))
+      : null
+    const balance = balanceSnap.data() as ProductionBalance
+    const quantity = Number(stored.quantidade ?? 0)
+    const afterGood = Number(balance.boas ?? 0) - quantity
+    if (afterGood < 0 || Number(nextSnap?.data()?.total ?? 0) > afterGood) {
+      throw new Error('Não é possível desfazer: há peças recuperadas já consumidas ou estornos anteriores.')
+    }
+    tx.set(reverseRef, {
+      reworkId: rework.id, opId: op.id, taskId: task.id,
+      motivo: reason.trim(), criadoEm: serverTimestamp(), criadoPor: uid,
+    })
+    tx.update(balanceRef, {
+      boas: afterGood, defeituosas: Number(balance.defeituosas ?? 0) + quantity,
+      alteradoEm: serverTimestamp(),
+    })
+    tx.set(auditRef, {
+      entidade: 'retrabalho_producao', entidadeId: rework.id, acao: 'estornado',
+      resumo: op.numero + ' · ' + reason.trim(), uid, em: serverTimestamp(),
     })
   })
 }

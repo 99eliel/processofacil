@@ -388,6 +388,7 @@ export type ProductionOrderRecord = {
   excluidoEm?: unknown
   excluidoPor?: string
   status: 'rascunho' | 'liberada' | 'em_fluxo' | 'concluida' | 'cancelada' | 'reprovada'
+  modoProducao?: 'quantidade'
   workflowStageId?: string | null
   reprovadaNaEtapaId?: string | null
   itens: ProductionOrderItemRecord[]

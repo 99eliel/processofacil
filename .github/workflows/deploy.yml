@@ -29,6 +29,9 @@ jobs:
       - name: Install
         run: npm install
 
+      - name: Testes automatizados
+        run: npm test
+
       - name: Build
         run: npm run build
 

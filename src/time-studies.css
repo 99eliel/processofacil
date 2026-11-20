@@ -1,0 +1,11 @@
+
+.pf-timer-face{display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;padding:25px;border-radius:12px;background:#f0f6f8}
+.pf-timer-face>small{color:#5a748a;font-size:12px;text-align:center}
+.pf-timer-face>strong{font-variant-numeric:tabular-nums;font-size:54px;letter-spacing:-2px;color:#1a4357}
+.pf-timer-face>strong span{font-size:16px;color:#71899a}
+.pf-timer-samples{display:flex;flex-wrap:wrap;gap:8px}
+.pf-timer-samples>div{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#eff4f7;border-radius:9px;padding:10px}
+.pf-timer-samples small{font-size:11px;color:#6d8095}
+.pf-timer-samples strong{font-size:12px}
+.pf-timer-samples button{border:0;cursor:pointer;color:#a34540;font-size:19px;background:transparent}
+.pf-manual-action{display:flex;align-items:flex-end;padding-bottom:1px}

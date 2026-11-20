@@ -20,6 +20,34 @@ O sistema tem cinco áreas: **Produtos e Fichas Técnicas**, **Ordens de Produç
 **ATENÇÃO — SEGURANÇA DO AMBIENTE ATUAL:** o `SystemProvider.tsx` usa o workspace fixo `principal` com usuário técnico local; o `firestore.rules` aceita leitura e gravação sem verificação de identidade nesse workspace. Não use dados pessoais, dados reais de clientes ou informações confidenciais e não comercialize essa configuração. É obrigatório implementar autenticação real, vínculos de usuários por empresa e regras restritivas antes de produção. A chave de configuração cliente do Firebase não substitui controles de acesso.
 
 
+
+## Atualização integrada — 19/11/2026
+
+### Funcionalidades para testar
+
+- **Produção real:** etapas com progresso individual, saldos em boas e defeituosas, apontamentos parciais e estornos sem apagar a origem.
+- **Retrabalho:** conversão auditável de defeituosas em boas na mesma operação, inclusive estorno seguro do retrabalho. Não duplica unidades totais.
+- **Equipe:** responsável escolhido entre os colaboradores ativos ou digitado manualmente.
+- **Planejamento:** Carga Máquina e Carga Mão de Obra consideram as unidades boas realmente registradas; OPs preservam snapshots mesmo após arquivar o cadastro de produto.
+- **Cronometragem:** na aba Planejamento, inicie e pare o cronômetro ou inclua medições manuais, registre ritmo e tolerância e salve estudos. Não atualiza automaticamente uma Ficha Técnica publicada.
+- **Balanceamento:** simulação opcional por equipe, sem alterar a OP, respeitando atribuições existentes. Sugestões para etapas sem equipe não consideram habilitações ou o calendário real.
+- **Relatórios:** produção por responsável, por operação e por OP, retrabalhos, amostragens de qualidade, CSV filtrado e impressão/PDF.
+- **Configurações → Diagnóstico:** verificações automáticas em modo somente leitura de vínculos, saldos, OPs, prazos e histórico.
+- **Encerramento:** OPs liberadas nesta versão têm o novo `modoProducao: 'quantidade'`; a conclusão no Workflow exige apontamento integral de boas na última operação. OPs antigas mantêm a regra anterior para não quebrar o histórico.
+- **CI:** tipagem, testes automatizados com Node 24 e compilação antes do deploy.
+
+### Modelo de dados estendido
+
+Coleções em `empresas/{empresaId}`:
+
+- `apontamentos`, `saldosOperacoes`, `estornosApontamentos`
+- `retrabalhosOperacoes`, `estornosRetrabalhos`
+- `programacoes`, `colaboradores`, `configuracoesCapacidade`
+- `estudosTempos`
+
+**Não é produção comercial:** o workspace `principal` ainda necessita de autenticação real e regras de permissão restritivas. Use dados fictícios. Testes automáticos validam regras puras e compilação, não substituem testes em Firebase nem uma auditoria de segurança.
+
+
 ## Status — v0.7.0
 
 A base atual está sendo tratada como produto operacional, não mais como protótipo.

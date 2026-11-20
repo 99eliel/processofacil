@@ -1,4 +1,5 @@
 import type { ProductionOrderRecord, Product, ProductionOperationTask } from './types'
+import type { OperationBalance } from './progressEngine'
 
 export type CapacityResource = {
   id: string
@@ -61,11 +62,11 @@ export function weeklyHours(resource: CapacityResource): number {
     * Math.max(0, resource.diasSemana) * Math.min(100, Math.max(0, resource.eficiencia)) / 100
 }
 export function orderTasks(orders: ProductionOrderRecord[], products: Product[]) {
-  const visible = new Set(products.filter(p => !p.excluido).map(p => p.codigo))
+  // Uma OP liberada guarda o snapshot da Ficha Técnica. O produto pode ter sido arquivado depois.
+  void products
   return orders
     .filter(o => !o.excluido && !['rascunho', 'cancelada'].includes(o.status))
     .flatMap(order => (order.operacoes ?? [])
-      .filter(task => visible.has(task.produtoCodigo))
       .map(task => ({ task, order, quantity: order.itens.find(i => i.id === task.itemId)?.quantidadeTotal ?? 0 })))
 }
 export function calculateCapacity(
@@ -74,8 +75,10 @@ export function calculateCapacity(
   resources: CapacityResource[],
   kind: 'maquinas' | 'maoObra',
   now = Date.now(),
+  balances: OperationBalance[] = [],
 ): { rows: CapacityRow[]; totals: CapacityTotals } {
   const rows = new Map<string, CapacityRow>()
+  const balanceByTaskId = new Map(balances.map((row) => [row.taskId, row]))
   const teamById = new Map(resources.map(r => [r.id, r]))
   const label = (task: ProductionOperationTask) => {
     if (kind === 'maquinas') return task.operacao.maquina?.trim() || 'Máquina não definida'
@@ -105,10 +108,16 @@ export function calculateCapacity(
     }
     const standard = Number(task.operacao.tempoPadraoMin)
     const validStandard = task.operacao.tempoPadraoMin != null && Number.isFinite(standard) && standard > 0
-    const plannedHours = validStandard ? standard * Math.max(0, quantity) / 60 : 0
-    // Pendências e tarefas em andamento representam a demanda ainda não concluída.
-    if (task.status !== 'concluida') row.previstasHoras += plannedHours
-    else row.concluidasHoras += plannedHours
+    const progress = balanceByTaskId.get(task.id)
+    // Se há apontamentos, a demanda é o tempo-padrão das unidades que ainda faltam ficar boas.
+    // Sem apontamentos, preserva o comportamento de OPs do fluxo antigo.
+    const good = progress ? Math.max(0, Math.min(quantity, Number(progress.boas || 0))) :
+      (task.status === 'concluida' ? quantity : 0)
+    const pending = Math.max(0, quantity - good)
+    if (validStandard) {
+      row.previstasHoras += standard * pending / 60
+      row.concluidasHoras += standard * good / 60
+    }
     if (!validStandard) row.semTempo += 1
     row.tarefas += 1
     if (task.status === 'em_execucao') row.emExecucao += 1
