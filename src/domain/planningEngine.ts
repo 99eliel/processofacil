@@ -94,7 +94,7 @@ export function startOfWeek(date: string) {
 export function workingWeekdays(resource: CapacityResource) {
   const days = Math.min(7,Math.max(0,Math.floor(resource.diasSemana)))
   // Configuração legada: 5 dias = segunda–sexta, 6 = segunda–sábado.
-  return resource.diasAtivos?.length ? resource.diasAtivos : Array.from({length:days},(_,i)=>i+1 <= 6?i+1:0)
+  return Array.isArray(resource.diasAtivos) ? resource.diasAtivos : Array.from({length:days},(_,i)=>i+1 <= 6?i+1:0)
 }
 export function resourceDailyHours(resource: CapacityResource,date:string,shift:Shift='integral') {
   if (!resource.ativo || !workingWeekdays(resource).includes(dayValue(date))) return 0

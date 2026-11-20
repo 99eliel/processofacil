@@ -162,14 +162,14 @@ export default function CapacityPage({ kind, notify }: Props) {
             <label>Horas por dia<input type="number" min="0" max="24" step="0.5" value={r.horasDia} onChange={e => patch(r.id, { horasDia: Number(e.target.value) })} /></label>
             <label>Dias por semana<input type="number" min="0" max="7" step="1" value={r.diasSemana} onChange={e => patch(r.id, { diasSemana: Number(e.target.value) })} /></label>
             <label>Eficiência (%)<input type="number" min="0" max="100" step="1" value={r.eficiencia} onChange={e => patch(r.id, { eficiencia: Number(e.target.value) })} /></label>
-            <label>Dias de trabalho
+            <div className="pf-weekdays-field"><strong>Dias de trabalho</strong>
               <div className="pf-weekday-picker">{[['Seg',1],['Ter',2],['Qua',3],['Qui',4],['Sex',5],['Sáb',6],['Dom',0]].map(([label,day])=>{
                 const selected=r.diasAtivos??Array.from({length:r.diasSemana},(_,i)=>i<6?i+1:0)
                 return <label key={day} className="pf-weekday"><input type="checkbox" checked={selected.includes(Number(day))}
                   onChange={e=>patch(r.id,{diasAtivos:e.target.checked?[...selected,Number(day)]:selected.filter(x=>x!==Number(day))})}/>
                   {label}</label>
               })}</div>
-            </label>
+            </div>
             <label>Turnos utilizados<select value={(r.turnos?.length?r.turnos:['integral']).join(',')} onChange={e=>patch(r.id,{turnos:e.target.value.split(',') as NonNullable<CapacityResource['turnos']>})}>
               <option value="integral">Dia inteiro (sem divisão)</option><option value="manha">Somente manhã</option>
               <option value="tarde">Somente tarde</option><option value="noite">Somente noite</option>
