@@ -17,14 +17,16 @@ import GuidedPieceFlowPage from './pages/GuidedPieceFlowPage'
 import PlanningPage from './pages/PlanningPage'
 import ProductionPage from './pages/ProductionPage'
 import ReportsPage from './pages/ReportsPage'
+import DiagnosticsPage from './pages/DiagnosticsPage'
 import type { Material, Product, ProductionOrderRecord, TechnicalSheetSummary } from './domain/types'
 import './remap.css'
 import './production-upgrades.css'
+import './diagnostics.css'
 
 type Page = 'inicio' | 'catalogo' | 'ordens' | 'planejamento' | 'producao' | 'gestao' | 'configuracoes'
 type CatalogTab = 'fichas' | 'produtos' | 'materiais' | 'novo'
 type ProductionTab = 'apontamentos' | 'qualidade'
-type ConfigTab = 'empresa' | 'workflow' | 'simulador'
+type ConfigTab = 'empresa' | 'workflow' | 'simulador' | 'diagnostico'
 
 const sections = [
   { id: 'catalogo' as Page, title: 'Produtos e Fichas Técnicas', description: 'Cadastro, passaportes, operações e materiais.', icon: FileText, group: 'Engenharia' },
@@ -140,10 +142,12 @@ export default function App() {
               <button className={configTab === 'empresa' ? 'active' : ''} onClick={() => setConfigTab('empresa')}><Settings2 size={15}/> Empresa e cadastros</button>
               <button className={configTab === 'workflow' ? 'active' : ''} onClick={() => setConfigTab('workflow')}><Workflow size={15}/> Aprovações</button>
               <button className={configTab === 'simulador' ? 'active' : ''} onClick={() => setConfigTab('simulador')}><ClipboardList size={15}/> Laboratório de testes</button>
+              <button className={configTab === 'diagnostico' ? 'active' : ''} onClick={() => setConfigTab('diagnostico')}><ShieldCheck size={15}/> Diagnóstico</button>
             </div>
             {configTab === 'empresa' && <AdminPage notify={notify}/>}
             {configTab === 'workflow' && <WorkflowPage notify={notify}/>}
             {configTab === 'simulador' && <SimulationPage notify={notify} openOperator={openProduction} openPassport={() => openPassport()}/>}
+            {configTab === 'diagnostico' && <DiagnosticsPage/>}
           </>}
         </div>}
       </main>
