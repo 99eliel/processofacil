@@ -111,3 +111,13 @@
  .pf-order-summary-top{flex-direction:column;align-items:flex-start}
 }
 @media(max-width:460px){.pf-help-content{padding:17px}.pf-order-summary-top h3{font-size:18px}}
+
+
+.pf-planning-caption{font-size:10px;font-weight:850;letter-spacing:1.5px;color:#23838d;margin-bottom:-13px;padding-left:5px}
+.pf-planning-nav>button{min-width:100px}
+.pf-tools-nav{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:12px;background:#f1f7f8;border-radius:12px;border:1px solid #dfeaec;margin-top:-14px}
+.pf-tools-nav>span{font-size:11px;color:#57818c;font-weight:800;margin-right:7px}
+.pf-tools-nav>button{border-radius:9px;border:1px solid #d0e1e6;background:#fff;padding:9px 13px;font-weight:700;color:#3b6273;cursor:pointer;font-size:12px}
+.pf-tools-nav>button.active{background:#dcefeb;color:#147d78;border-color:#9fd5ce}
+.pf-tools-nav>small{flex:1;min-width:220px;font-size:11px;color:#738b98}
+.pf-schedule-editor{border-color:#b4d9d5!important;background:#fbfffe!important;box-shadow:0 8px 27px rgba(12,94,95,.07)!important}
