@@ -1,5 +1,6 @@
-import type { ProductionOrderRecord, Product, ProductionOperationTask } from './types'
+import type { ProductionOrderRecord, Product } from './types'
 import type { OperationBalance } from './progressEngine'
+import { capacityForWeek, resourceForTask, startOfWeek, type OperationSchedule, type LegacySchedule, type Collaborator, type ResourceUnavailability, type TimedOperation } from './planningEngine'
 
 export type CapacityResource = {
   id: string
@@ -9,6 +10,8 @@ export type CapacityResource = {
   diasSemana: number
   eficiencia: number
   ativo: boolean
+  diasAtivos?: number[]
+  turnos?: ('manha' | 'tarde' | 'noite' | 'integral')[]
 }
 export type CapacitySettingsRecord = {
   id: string
@@ -27,6 +30,14 @@ export type CapacityRow = {
   configurado: boolean
   quantidade: number
   tarefas: number
+}
+export type CapacityContext = {
+  allocations?: OperationSchedule[]
+  legacy?: LegacySchedule[]
+  collaborators?: Collaborator[]
+  unavailable?: ResourceUnavailability[]
+  timeEntries?: TimedOperation[]
+  weekStart?: string
 }
 export type CapacityTotals = {
   planejadas: number
@@ -76,31 +87,39 @@ export function calculateCapacity(
   kind: 'maquinas' | 'maoObra',
   now = Date.now(),
   balances: OperationBalance[] = [],
+  context: CapacityContext = {},
 ): { rows: CapacityRow[]; totals: CapacityTotals } {
   const rows = new Map<string, CapacityRow>()
-  const balanceByTaskId = new Map(balances.map((row) => [row.taskId, row]))
-  const teamById = new Map(resources.map(r => [r.id, r]))
-  const label = (task: ProductionOperationTask) => {
-    if (kind === 'maquinas') return task.operacao.maquina?.trim() || 'Máquina não definida'
-    const teamId = task.equipeId || task.operacao.equipeId
-    if (!teamId) return 'Sem equipe atribuída'
-    return teamById.get(teamId)?.nome || task.equipeNome || task.operacao.equipeNome || 'Equipe não cadastrada'
+  const balanceByTaskId = new Map(balances.map(row => [row.taskId,row]))
+  const teamById = new Map(resources.map(r=>[r.id,r]))
+  const allocationByTaskId = new Map((context.allocations??[]).filter(p=>!p.excluido).map(p=>[p.taskId,p]))
+  const legacyByOrderId = new Map((context.legacy??[]).filter(p=>!p.excluido).map(p=>[p.opId,p]))
+  const hasContext = Boolean(context.weekStart || context.collaborators || context.unavailable)
+  const week = context.weekStart || startOfWeek(new Date(now).toISOString().slice(0,10))
+  const resourceCapacity = (r:CapacityResource) => hasContext
+    ? capacityForWeek(r,kind,week,context.collaborators??[],context.unavailable??[])
+    : weeklyHours(r)
+  const timeByTask = new Map<string,number>()
+  for(const entry of context.timeEntries??[]){
+    if(Number.isFinite(entry.duracaoMs) && entry.duracaoMs>=0)
+      timeByTask.set(entry.taskId,(timeByTask.get(entry.taskId)??0)+entry.duracaoMs/3600000)
   }
-  const resourceKey = (resource: CapacityResource) => kind === 'maoObra'
-    ? `team:${resource.id}`
-    : resource.nome.toLocaleLowerCase('pt-BR')
+  const resourceKey=(resource:CapacityResource)=>kind==='maoObra'?'team:'+resource.id:'machine:'+resource.id
   for (const r of resources) {
     if (!r.nome.trim() || !r.ativo) continue
     rows.set(resourceKey(r), {
       nome: r.nome, previstasHoras: 0, concluidasHoras: 0, decorridasHoras: 0,
-      emExecucao: 0, semTempo: 0, capacidadeHoras: weeklyHours(r), configurado: true,
+      emExecucao: 0, semTempo: 0, capacidadeHoras: resourceCapacity(r), configurado: true,
       quantidade: r.quantidade, tarefas: 0,
     })
   }
-  for (const { task, quantity } of orderTasks(orders, products)) {
-    const name = label(task)
-    const teamId = task.equipeId || task.operacao.equipeId
-    const key = kind === 'maoObra' ? teamId ? `team:${teamId}` : 'unassigned' : name.toLocaleLowerCase('pt-BR')
+  for (const { task, order, quantity } of orderTasks(orders, products)) {
+    const assignedId=resourceForTask(kind,task,resources,allocationByTaskId.get(task.id),legacyByOrderId.get(order.id))
+    const resource=teamById.get(assignedId)
+    const name=resource?.nome || (kind==='maoObra'
+      ? task.equipeNome || task.operacao.equipeNome || 'Sem equipe atribuída'
+      : task.operacao.maquina || 'Máquina não definida')
+    const key=resource?resourceKey(resource):(kind==='maoObra'?'team:unassigned:':'machine:unassigned:')+name.toLocaleLowerCase('pt-BR')
     const row = rows.get(key) ?? {
       nome: name, previstasHoras: 0, concluidasHoras: 0, decorridasHoras: 0,
       emExecucao: 0, semTempo: 0, capacidadeHoras: 0, configurado: false,
@@ -123,8 +142,11 @@ export function calculateCapacity(
     if (task.status === 'em_execucao') row.emExecucao += 1
     const start = toMilliseconds(task.iniciadoEm)
     const end = toMilliseconds(task.concluidoEm)
+    const measured = timeByTask.get(task.id)
     // Tempo decorrido entre eventos. Não confundir com horas-homem apontadas.
-    if (start != null && end != null && end >= start && task.status === 'concluida') {
+    if (measured !== undefined) {
+      row.decorridasHoras += measured
+    } else if (start != null && end != null && end >= start && task.status === 'concluida') {
       row.decorridasHoras += (end - start) / 3600000
     } else if (start != null && task.status === 'em_execucao' && now >= start) {
       row.decorridasHoras += (now - start) / 3600000

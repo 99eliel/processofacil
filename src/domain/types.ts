@@ -205,6 +205,7 @@ export type TechnicalOperation = {
   nome: string
   descricao: string
   maquina: string
+  maquinaId?: string
   equipeId?: string
   equipeNome?: string
   regulagem: string
