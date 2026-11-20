@@ -76,7 +76,7 @@ export function orderTasks(orders: ProductionOrderRecord[], products: Product[])
   // Uma OP liberada guarda o snapshot da Ficha Técnica. O produto pode ter sido arquivado depois.
   void products
   return orders
-    .filter(o => !o.excluido && !['rascunho', 'cancelada'].includes(o.status))
+    .filter(o => !o.excluido && !['rascunho', 'cancelada', 'concluida'].includes(o.status))
     .flatMap(order => (order.operacoes ?? [])
       .map(task => ({ task, order, quantity: order.itens.find(i => i.id === task.itemId)?.quantidadeTotal ?? 0 })))
 }
@@ -99,10 +99,15 @@ export function calculateCapacity(
   const resourceCapacity = (r:CapacityResource) => hasContext
     ? capacityForWeek(r,kind,week,context.collaborators??[],context.unavailable??[])
     : weeklyHours(r)
-  const timeByTask = new Map<string,number>()
+  const timeByTask = new Set<string>()
+  const weekStartMs=Date.parse(week+'T00:00:00Z')
+  const weekEndMs=weekStartMs+7*86400000
+  const withinWeek=(value:unknown)=>{
+    const millis=toMilliseconds(value)
+    return millis!==null && millis>=weekStartMs && millis<weekEndMs
+  }
   for(const entry of context.timeEntries??[]){
-    if(Number.isFinite(entry.duracaoMs) && entry.duracaoMs>=0)
-      timeByTask.set(entry.taskId,(timeByTask.get(entry.taskId)??0)+entry.duracaoMs/3600000)
+    if(Number.isFinite(entry.duracaoMs) && entry.duracaoMs>=0 && withinWeek(entry.registradoEm)) timeByTask.add(entry.taskId)
   }
   const resourceKey=(resource:CapacityResource)=>kind==='maoObra'?'team:'+resource.id:'machine:'+resource.id
   for (const r of resources) {
@@ -142,16 +147,35 @@ export function calculateCapacity(
     if (task.status === 'em_execucao') row.emExecucao += 1
     const start = toMilliseconds(task.iniciadoEm)
     const end = toMilliseconds(task.concluidoEm)
-    const measured = timeByTask.get(task.id)
+    const measured = timeByTask.has(task.id)
     // Tempo decorrido entre eventos. Não confundir com horas-homem apontadas.
-    if (measured !== undefined) {
-      row.decorridasHoras += measured
-    } else if (start != null && end != null && end >= start && task.status === 'concluida') {
+    if (measured) {
+      // As sessões medidas são atribuídas pelo recurso do próprio registro ao final do cálculo.
+    } else if (start != null && end != null && end >= start && task.status === 'concluida' && withinWeek(task.concluidoEm)) {
       row.decorridasHoras += (end - start) / 3600000
-    } else if (start != null && task.status === 'em_execucao' && now >= start) {
+    } else if (start != null && task.status === 'em_execucao' && now >= start && now>=weekStartMs && now<weekEndMs) {
       row.decorridasHoras += (now - start) / 3600000
     }
     rows.set(key, row)
+  }
+  const allTasks=new Map(orderTasks(orders,products).map(({task,order})=>[task.id,{task,order}]))
+  for(const entry of context.timeEntries??[]){
+    if(!Number.isFinite(entry.duracaoMs) || entry.duracaoMs<0 || !withinWeek(entry.registradoEm))continue
+    const record=allTasks.get(entry.taskId)
+    if(!record)continue
+    const id=kind==='maquinas'?entry.maquinaId:entry.equipeId
+    const resource=resources.find(r=>r.id===id)
+    const name=resource?.nome || (kind==='maquinas'?
+      record.task.operacao.maquina||'Máquina não definida':
+      record.task.equipeNome||record.task.operacao.equipeNome||'Equipe não cadastrada')
+    const key=resource?resourceKey(resource):
+      (kind==='maquinas'?'machine:unassigned:':'team:unassigned:')+name.toLocaleLowerCase('pt-BR')
+    const row=rows.get(key)??{
+      nome:name,previstasHoras:0,concluidasHoras:0,decorridasHoras:0,
+      emExecucao:0,semTempo:0,capacidadeHoras:0,configurado:false,quantidade:0,tarefas:0,
+    }
+    row.decorridasHoras+=entry.duracaoMs/3600000
+    rows.set(key,row)
   }
   const result = [...rows.values()].sort((a, b) => b.previstasHoras - a.previstasHoras || a.nome.localeCompare(b.nome))
   const totals = result.reduce<CapacityTotals>((a, row) => ({
