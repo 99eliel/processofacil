@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ArrowLeft, ArrowRight, BarChart3, Boxes, ClipboardList, Factory, FileText,
-  Home, PackageCheck, Plus, Settings2, ShieldCheck, Workflow,
+  Home, PackageCheck, Plus, Search, Settings2, ShieldCheck, Workflow, HelpCircle, X,
 } from 'lucide-react'
 import { useSystem } from './system/SystemProvider'
 import { useTenantCollection } from './hooks/useTenantCollection'
@@ -17,6 +17,9 @@ import GuidedPieceFlowPage from './pages/GuidedPieceFlowPage'
 import PlanningPage from './pages/PlanningPage'
 import ProductionPage from './pages/ProductionPage'
 import ReportsPage from './pages/ReportsPage'
+import HomeDashboard from './pages/HomeDashboard'
+import QuickAccess from './components/QuickAccess'
+import type { ProductionBalance } from './firebase/productionLedger'
 import DiagnosticsPage from './pages/DiagnosticsPage'
 import type { Material, Product, ProductionOrderRecord, TechnicalSheetSummary } from './domain/types'
 import './remap.css'
@@ -24,6 +27,7 @@ import './production-upgrades.css'
 import './diagnostics.css'
 import './reports-upgrades.css'
 import './time-studies.css'
+import './easy-ux.css'
 
 type Page = 'inicio' | 'catalogo' | 'ordens' | 'planejamento' | 'producao' | 'gestao' | 'configuracoes'
 type CatalogTab = 'fichas' | 'produtos' | 'materiais' | 'novo'
@@ -46,13 +50,29 @@ export default function App() {
   const [configTab, setConfigTab] = useState<ConfigTab>('empresa')
   const [focusProductCode, setFocusProductCode] = useState('')
   const [toast, setToast] = useState('')
+  const [quickOpen, setQuickOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+  const [focusOrderId, setFocusOrderId] = useState('')
   const empresaId = system.activeCompany?.id
   const { items: materials } = useTenantCollection<Material>(empresaId, 'materiais', 'descricao')
   const { items: products } = useTenantCollection<Product>(empresaId, 'produtos', 'descricao')
   const { items: sheets } = useTenantCollection<TechnicalSheetSummary>(empresaId, 'fichas', 'produtoDescricao')
   const { items: orders } = useTenantCollection<ProductionOrderRecord>(empresaId, 'ordensProducao', 'numero')
+  const { items: balances } = useTenantCollection<ProductionBalance>(empresaId, 'saldosOperacoes', 'taskId')
 
-  const navigate = (destination: Page) => {
+  useEffect(() => {
+    const handleQuickSearch = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLocaleLowerCase() === 'k') {
+        event.preventDefault()
+        setQuickOpen((value) => !value)
+      }
+    }
+    window.addEventListener('keydown', handleQuickSearch)
+    return () => window.removeEventListener('keydown', handleQuickSearch)
+  }, [])
+
+  const navigate = (destination: Page, opId?: string) => {
+    if (destination === 'ordens' || destination === 'producao') setFocusOrderId(opId ?? '')
     setPage(destination)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -64,11 +84,11 @@ export default function App() {
     if (productCode) setFocusProductCode(productCode)
     setCatalogTab('fichas'); navigate('catalogo')
   }
-  const openProduction = () => {
-    setProductionTab('apontamentos'); navigate('producao')
+  const openProduction = (opId?: string) => {
+    setProductionTab('apontamentos'); navigate('producao', opId)
   }
   const currentSection = sections.find((section) => section.id === page)
-  const activeOrders = orders.filter((order) => !order.excluido && !['concluida', 'cancelada'].includes(order.status)).length
+
 
   return <div className="app-shell pf-shell">
     <div className="pf-app-layout">
@@ -78,39 +98,16 @@ export default function App() {
           <span><strong>Processo Fácil</strong><small>{system.activeCompany?.nomeFantasia || 'Ambiente principal'}</small></span>
         </button>
         <div className="pf-header-right">
-          {page !== 'inicio' && <button className="pf-home-link" onClick={() => navigate('inicio')}><Home size={16}/> Menu inicial</button>}
-          <button className="pf-settings-link" title="Configurações" onClick={() => navigate('configuracoes')}><Settings2 size={19}/></button>
+          <button className="pf-header-search" onClick={() => setQuickOpen(true)} title="Busca rápida (Ctrl + K)"><Search size={17}/><span>Busca rápida</span><kbd>Ctrl K</kbd></button>
+          {page !== 'inicio' && <button className="pf-home-link" onClick={() => navigate('inicio')}><Home size={16}/> Início</button>}
+          <button className="pf-settings-link" title="Como usar" aria-label="Como usar o Processo Fácil" onClick={() => setHelpOpen(true)}><HelpCircle size={19}/></button>
+          <button className="pf-settings-link" title="Configurações" aria-label="Configurações" onClick={() => navigate('configuracoes')}><Settings2 size={19}/></button>
         </div>
       </header>
       <main className="pf-content">
-        {page === 'inicio' && <div className="pf-home">
-          <section className="pf-hero">
-            <div><span className="pf-overline">Gestão industrial, sem complicação</span>
-              <h1>O que vamos fazer hoje?</h1>
-              <p>Da Ficha Técnica à produção real. Escolha uma área para começar.</p>
-            </div>
-            <button className="pf-hero-action" onClick={() => { setCatalogTab('novo'); navigate('catalogo') }}>
-              <Plus size={19}/> Novo produto <ArrowRight size={17}/>
-            </button>
-          </section>
-          <div className="pf-home-metrics">
-            <div><small>Produtos ativos</small><strong>{products.filter((p) => !p.excluido && p.status === 'ativo').length}</strong></div>
-            <div><small>Fichas publicadas</small><strong>{sheets.filter((s) => s.status === 'padrao').length}</strong></div>
-            <div><small>OPs em aberto</small><strong>{activeOrders}</strong></div>
-            <div><small>Materiais ativos</small><strong>{materials.filter((m) => m.ativo).length}</strong></div>
-          </div>
-          <section className="pf-home-section">
-            <h2>Áreas do sistema</h2>
-            <div className="pf-home-grid">{sections.map((section) => {
-              const Icon = section.icon
-              return <button className="pf-home-card" key={section.id} onClick={() => navigate(section.id)}>
-                <span className="pf-card-top"><span className="pf-card-icon"><Icon size={25}/></span><ArrowRight size={17}/></span>
-                <small>{section.group}</small><strong>{section.title}</strong><p>{section.description}</p>
-              </button>
-            })}</div>
-          </section>
-          <p className="pf-home-footnote">Módulos conectados. Os dados da Ficha Técnica alimentam as OPs, o planejamento e a produção.</p>
-        </div>}
+        {page === 'inicio' && <HomeDashboard products={products} sheets={sheets} materials={materials}
+          orders={orders} balances={balances} navigate={navigate}
+          createProduct={() => { setCatalogTab('novo'); navigate('catalogo') }}/>}
         {page !== 'inicio' && <div className="pf-workspace">
           <div className="pf-module-header">
             <button className="pf-back" onClick={() => navigate('inicio')}><ArrowLeft size={15}/> Voltar</button>
@@ -128,14 +125,14 @@ export default function App() {
             {catalogTab === 'materiais' && <MaterialsPage notify={notify}/>}
             {catalogTab === 'novo' && <GuidedPieceFlowPage notify={notify} openOperator={openProduction} openPassport={() => openPassport()}/>}
           </>}
-          {page === 'ordens' && <ProductionOrdersPage notify={notify} openProduction={openProduction}/>}
+          {page === 'ordens' && <ProductionOrdersPage notify={notify} initialOrderId={focusOrderId} openProduction={openProduction}/>}
           {page === 'planejamento' && <PlanningPage notify={notify}/>}
           {page === 'producao' && <>
             <div className="pf-tabbar">
               <button className={productionTab === 'apontamentos' ? 'active' : ''} onClick={() => setProductionTab('apontamentos')}><Factory size={15}/> Apontamentos</button>
               <button className={productionTab === 'qualidade' ? 'active' : ''} onClick={() => setProductionTab('qualidade')}><ShieldCheck size={15}/> Qualidade</button>
             </div>
-            {productionTab === 'apontamentos' && <ProductionPage notify={notify}/>}
+            {productionTab === 'apontamentos' && <ProductionPage notify={notify} initialOrderId={focusOrderId}/>}
             {productionTab === 'qualidade' && <QualityPage notify={notify}/>}
           </>}
           {page === 'gestao' && <ReportsPage/>}
@@ -154,6 +151,28 @@ export default function App() {
         </div>}
       </main>
     </div>
-    {toast && <div className="toast"><ShieldCheck size={16}/> {toast}</div>}
+    <QuickAccess open={quickOpen} onClose={() => setQuickOpen(false)} onNavigate={navigate} orders={orders}/>
+    {helpOpen && <div className="pf-search-backdrop" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) setHelpOpen(false)
+    }}>
+      <section className="pf-search-dialog pf-help-dialog" role="dialog" aria-modal="true" aria-label="Como usar o Processo Fácil">
+        <div className="pf-search-input-row"><HelpCircle size={21}/><strong>Como usar o Processo Fácil</strong>
+          <button onClick={() => setHelpOpen(false)} aria-label="Fechar ajuda"><X size={19}/></button></div>
+        <div className="pf-help-content">
+          <p>Use este roteiro para seguir o processo sem precisar conhecer todos os módulos.</p>
+          <ol>
+            <li><strong>Ficha Técnica:</strong> cadastre o produto e publique sua revisão com as operações necessárias.</li>
+            <li><strong>Ordem de Produção:</strong> informe produto, quantidade e necessidade; depois libere a OP.</li>
+            <li><strong>Planejamento (opcional):</strong> escolha equipe, máquina e data se sua empresa precisar.</li>
+            <li><strong>Produção:</strong> registre unidades boas e defeituosas em cada etapa. Retrabalhos ficam registrados.</li>
+            <li><strong>Gestão:</strong> acompanhe o que foi concluído, filtre períodos e emita relatórios.</li>
+          </ol>
+          <p><strong>Dica:</strong> use o botão Busca rápida ou <kbd>Ctrl</kbd> + <kbd>K</kbd> para encontrar funções e OPs sem navegar por várias telas.</p>
+          <p className="pf-help-warning">Ambiente de testes: o workspace principal não possui autenticação individual segura. Use apenas dados fictícios.</p>
+          <button className="primary-button" onClick={() => { setHelpOpen(false); navigate('inicio') }}>Ir para o início <Home size={16}/></button>
+        </div>
+      </section>
+    </div>}
+    {toast && <div className="toast" role="status"><ShieldCheck size={16}/> {toast}</div>}
   </div>
 }
