@@ -140,7 +140,7 @@ export function resourceForTask(
 ) {
   if (kind==='maoObra') return allocation?.equipeId || legacy?.equipeId || task.equipeId || task.operacao.equipeId || ''
   const provided = allocation?.maquinaId || legacy?.maquinaId || task.operacao.maquinaId
-  if (provided && resources.some(r=>r.id===provided)) return provided
+  if (provided) return provided
   // Compatibilidade com Fichas Técnicas já publicadas que gravam somente o nome.
   return resources.find(r=>normalizeResourceName(r.nome)===normalizeResourceName(task.operacao.maquina||''))?.id||''
 }

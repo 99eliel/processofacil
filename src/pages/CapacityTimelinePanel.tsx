@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import type { CapacityResource } from '../domain/capacityEngine'
 import {
@@ -19,11 +19,12 @@ type Props={
   teams:CapacityResource[]
   collaborators:Collaborator[]
   unavailable:ResourceUnavailability[]
+  week:string
+  setWeek:(value:string)=>void
 }
 export default function CapacityTimelinePanel({
-  kind,orders,balances,allocations,legacy,machines,teams,collaborators,unavailable,
+  kind,orders,balances,allocations,legacy,machines,teams,collaborators,unavailable,week,setWeek,
 }:Props){
-  const [week,setWeek]=useState(()=>new Date().toISOString().slice(0,10))
   const start=startOfWeek(week),end=businessDays(start,7).at(-1)??start
   const resources=kind==='maquinas'?machines:teams
   const loads=useMemo(()=>buildOperationLoads(orders,balances,allocations,machines,teams,legacy),
