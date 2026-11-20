@@ -231,6 +231,7 @@ export async function releaseProductionOrder(
 
     transaction.update(orderRef, {
       status: nextStatus,
+      modoProducao: 'quantidade',
       workflowStageId: firstWorkflowStageId ?? null,
       itens: frozenItems,
       kit: Array.from(kitMap.values()),
@@ -271,7 +272,25 @@ export async function advanceProductionOrder(
     const data = snap.data() as ProductionOrderRecord
     if (data.workflowStageId !== currentStageId) throw new Error('A OP já mudou de etapa. Atualize a tela.')
 
+    if (data.excluido || data.status !== 'em_fluxo') throw new Error('A OP precisa estar em fluxo e ativa.')
     const final = !nextStageId
+    // Novas OPs têm encerramento quantitativo; antigas continuam com seu fluxo histórico.
+    if (final && data.modoProducao === 'quantidade') {
+      if (!data.itens.length) throw new Error('OP sem itens não pode ser concluída.')
+      for (const item of data.itens) {
+        const operations = (data.operacoes ?? []).filter((task) => task.itemId === item.id)
+          .sort((a, b) => a.operacao.ordem - b.operacao.ordem)
+        const last = operations[operations.length - 1]
+        if (!last) throw new Error('Item sem operações: ' + item.produtoCodigo)
+        const balanceRef = doc(db, 'empresas', empresaId, 'saldosOperacoes', last.id)
+        const balanceSnap = await transaction.get(balanceRef)
+        const good = Number(balanceSnap.data()?.boas ?? 0)
+        if (good < item.quantidadeTotal) {
+          throw new Error('Produção pendente em ' + item.produtoCodigo + ': ' +
+            good + '/' + item.quantidadeTotal + ' boas. Finalize os apontamentos antes de concluir o Workflow.')
+        }
+      }
+    }
     const history = [
       ...(data.historico ?? []),
       {
