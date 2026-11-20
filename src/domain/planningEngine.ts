@@ -73,7 +73,7 @@ export type LoadRecord = {
 
 export const normalizeResourceName = (name: string) => name.normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ').trim()
-const dateValid = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(date + 'T12:00:00Z'))
+const dateValid = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(date + 'T12:00:00Z')) && new Date(date+'T12:00:00Z').toISOString().slice(0,10)===date
 const dayValue = (date: string) => dateValid(date) ? new Date(date + 'T12:00:00Z').getUTCDay() : -1
 export const validDate = dateValid
 
@@ -108,7 +108,7 @@ export function unavailableCount(
   kind:'maquinas'|'maoObra',resourceId:string,date:string,unavailable:ResourceUnavailability[],
   collaborators:Collaborator[]=[],
 ) {
-  const ids = new Set(collaborators.filter(w=>w.equipeId===resourceId).map(w=>w.id))
+  const ids = new Set(collaborators.filter(w=>w.equipeId===resourceId&&w.ativo).map(w=>w.id))
   const direct = unavailable.filter(r=>!r.excluido && r.tipo===kind && r.recursoId===resourceId && date>=r.dataInicio && date<=r.dataFim)
     .reduce((sum,r)=>sum+Math.max(0,Number(r.quantidade)||0),0)
   const people = kind==='maoObra' ? new Set(unavailable.filter(r=>!r.excluido && r.tipo==='colaborador' &&
