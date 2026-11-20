@@ -1,3 +1,35 @@
+# Checklist rápido para o teste de amanhã — Processo Fácil
+
+A Ficha Técnica publicada já existente foi preservada nesta atualização. **Use dados fictícios**, pois o workspace principal ainda não está protegido por autenticação individual.
+
+## Teste principal (fluxo completo)
+
+1. **Produtos e Fichas Técnicas:** abra uma ficha publicada e confirme as operações e os tempos-padrão. Não precisa editá-la.
+2. **Ordens de Produção:** crie uma OP de exemplo com 10 unidades e duas operações; libere-a. A nova OP fica marcada para conclusão por quantidade.
+3. **Produção:** escolha a OP, primeira etapa; registre **7 boas e 3 defeituosas**. Na segunda etapa, o saldo inicial disponível deve ser 7.
+4. **Produção → Recuperar peças:** na primeira etapa, informe **3 recuperadas**, responsável e motivo. O saldo deve virar 10 boas e 0 defeituosas, sem criar unidades extras.
+5. **Produção:** aponte 10 boas na segunda etapa. Volte à OP e conclua-a após finalizar aprovações configuradas, se houver.
+6. **Planejamento:** confira a carga de horas da equipe/máquina. Progresso parcial deve reduzir a demanda restante. Experimente também Cronometragem e Balanceamento.
+7. **Gestão e Relatórios:** filtre a OP; confira apontamentos, retrabalho, produção por responsável e exportação CSV/PDF.
+8. **Configurações → Diagnóstico:** verifique se há erros ou pendências. O aviso de segurança do workspace principal é esperado nesta fase.
+
+## Falhas que os testes automatizados já verificam
+
+- Quantidade da próxima etapa limitada a **boas** na anterior.
+- Progresso de acabados baseado na **última** operação, não na soma das etapas.
+- Carga de horas reduzida pelo apontamento parcial.
+- Produto arquivado não deve remover o snapshot da OP do cálculo de capacidade.
+- Balanceamento respeita equipe já atribuída e sinaliza excedentes.
+
+## Limitações conhecidas e próximos passos
+
+- O balanceamento é apenas uma sugestão, não transfere equipe nem verifica habilitações individuais.
+- Cronometragem não sobrescreve tempos de revisões publicadas; é material para nova revisão.
+- Controle completo de estoque, faturamento, premiações e autenticação por empresa ainda não está incluído.
+- Para ativar uso real por clientes, é obrigatório refazer o login, a autorização por empresa e as regras do Firestore/Storage.
+
+---
+
 # Roteiro de testes — Processo Fácil 2.0
 
 ## Antes de começar
