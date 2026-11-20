@@ -5,6 +5,7 @@ import { db } from '../firebase/config'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import { useSystem } from '../system/SystemProvider'
 import type { Product, ProductionOrderRecord } from '../domain/types'
+import type { OperationBalance } from '../domain/progressEngine'
 import { calculateCapacity, numberHours, type CapacityResource, type CapacitySettingsRecord } from '../domain/capacityEngine'
 import './CapacityPage.css'
 
@@ -27,6 +28,7 @@ export default function CapacityPage({ kind, notify }: Props) {
   const { items: orders, loading: ordersLoading, error: ordersError } = useTenantCollection<ProductionOrderRecord>(empresaId, 'ordensProducao', 'numero')
   const { items: products, loading: productsLoading, error: productsError } = useTenantCollection<Product>(empresaId, 'produtos', 'descricao')
   const { items: configurations, loading: configLoading, error: configError } = useTenantCollection<CapacitySettingsRecord>(empresaId, 'configuracoesCapacidade', 'tipo')
+  const { items: balances, loading: balanceLoading, error: balanceError } = useTenantCollection<OperationBalance>(empresaId, 'saldosOperacoes', 'taskId')
   const stored = configurations.find(c => c.id === kind)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<CapacityResource[]>([])
@@ -35,8 +37,8 @@ export default function CapacityPage({ kind, notify }: Props) {
   const machines = kind === 'maquinas'
   const savedResources = stored?.recursos ?? []
   const calculation = useMemo(
-    () => calculateCapacity(orders, products, savedResources, kind),
-    [orders, products, stored, kind],
+    () => calculateCapacity(orders, products, savedResources, kind, Date.now(), balances),
+    [orders, products, stored, kind, balances],
   )
   const { rows, totals } = calculation
   const title = machines ? 'Carga Máquina' : 'Carga Mão de Obra'
@@ -83,7 +85,7 @@ export default function CapacityPage({ kind, notify }: Props) {
     }
   }
 
-  if (ordersLoading || productsLoading || configLoading) {
+  if (ordersLoading || productsLoading || configLoading || balanceLoading) {
     return <div className="loading-panel"><Loader2 className="spin" size={22} /> Carregando capacidade...</div>
   }
   const configured = savedResources.some(r => r.ativo)
@@ -100,13 +102,13 @@ export default function CapacityPage({ kind, notify }: Props) {
       {!editing && <button className="primary-button" onClick={beginEdit}><Save size={16} /> Configurar capacidade</button>}
     </section>
 
-    {(ordersError || productsError || configError || error) &&
-      <div className="form-error page-message">{error || ordersError || productsError || configError}</div>}
+    {(ordersError || productsError || configError || balanceError || error) &&
+      <div className="form-error page-message">{error || ordersError || productsError || configError || balanceError}</div>}
 
     <div className="capacity-kpis">
-      <article className="panel"><small>Demanda restante (sem calendário)</small><strong>{numberHours(totals.planejadas)} h</strong><span>Soma do tempo padrão das operações abertas</span></article>
+      <article className="panel"><small>Demanda restante (sem calendário)</small><strong>{numberHours(totals.planejadas)} h</strong><span>Quantidade boa restante × tempo-padrão por operação</span></article>
       <article className="panel"><small>Capacidade por semana</small><strong>{numberHours(totals.capacidade)} h</strong><span>Recursos ativos × jornada × eficiência</span></article>
-      <article className="panel"><small>Tempo padrão concluído</small><strong>{numberHours(totals.concluidasPadrao)} h</strong><span>Estimativa técnica das operações finalizadas</span></article>
+      <article className="panel"><small>Tempo padrão concluído</small><strong>{numberHours(totals.concluidasPadrao)} h</strong><span>Horas-padrão equivalentes às unidades boas apontadas</span></article>
       <article className="panel"><small>Tempo real decorrido</small><strong>{numberHours(totals.decorridas)} h</strong><span>Entre início e conclusão, inclui possíveis pausas</span></article>
     </div>
 
@@ -168,7 +170,7 @@ export default function CapacityPage({ kind, notify }: Props) {
             <td>{row.capacidadeHoras > 0 && (machines || row.tarefas > 0) ? `${numberHours(percentage(row.previstasHoras, row.capacidadeHoras))}%` : '—'}</td></tr>)}
         </tbody></table></div>}
       {!machines && <p className="helper-text">As operações são vinculadas às equipes no Passaporte Digital, em cada revisão de produto. Quando uma OP é liberada, a atribuição da equipe fica registrada na operação. Operações antigas sem vínculo aparecem em “Sem equipe atribuída”; novas atribuições valem para novas OPs.</p>}
-      <p className="helper-text">* A demanda é calculada pelo tempo padrão por peça × quantidade total da OP. O decorrido real é o intervalo de execução registrado pelo operador, não uma medição de horas produtivas por unidade. Operações concluídas saem da demanda restante. Não são atribuídas datas às operações automaticamente.</p>
+      <p className="helper-text">* A demanda restante considera quantidade da OP menos unidades boas apontadas em cada operação, multiplicadas pelo tempo-padrão do Passaporte. Operações concluídas no fluxo antigo mantêm o tratamento anterior. O tempo decorrido é apenas o intervalo entre início/fim, não horas-homem. Não há programação automática por datas.</p>
     </section>
   </div>
 }

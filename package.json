@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "check": "tsc -b",
     "predev": "node scripts/prepare-index.mjs",
-    "prebuild": "node scripts/prepare-index.mjs"
+    "prebuild": "node scripts/prepare-index.mjs",
+    "test": "node --test src/domain/*.test.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
