@@ -204,7 +204,7 @@ export default function ProductionPage({ notify, initialOrderId }: {
           {balance.toPoint === 0 && balance.defective > 0 && <div className="pf-next-operation">
             <span><Wrench size={18}/> Há {balance.defective} peça(s) com defeito nesta operação.</span>
             <button className="secondary-button compact" onClick={() => setTab('retrabalho')}>Abrir retrabalho →</button>
-          </div>}}
+          </div>}
           <div className="pf-tabbar">
             <button className={tab === 'produzir' ? 'active' : ''} onClick={() => setTab('produzir')}><Save size={15}/> Apontar produção</button>
             <button className={tab === 'retrabalho' ? 'active' : ''} onClick={() => setTab('retrabalho')}><Wrench size={15}/> Recuperar peças ({balance.defective})</button>
