@@ -1,5 +1,6 @@
 import { completeProductionOrder, type ProductionBalance } from '../firebase/productionLedger'
 import { useEffect, useState } from 'react'
+import { orderProgress, stepProgress } from '../domain/progressEngine'
 import {
   ArrowLeft,
   ArrowRight,
@@ -9,6 +10,8 @@ import {
   Factory,
   Loader2,
   PackageCheck,
+  Search,
+  Filter,
   Plus,
   RotateCcw,
   Send,
@@ -38,7 +41,11 @@ type DraftItem = {
   variantes: ProductionVariant[]
 }
 
-export default function ProductionOrdersPage({ notify, openProduction }: { notify: (message: string) => void; openProduction?: () => void }) {
+export default function ProductionOrdersPage({ notify, openProduction, initialOrderId }: {
+  notify: (message: string) => void
+  openProduction?: (opId?: string) => void
+  initialOrderId?: string
+}) {
   const auth = useSystem()
   const empresaId = auth.activeCompany?.id
   const user = auth.user
@@ -53,6 +60,11 @@ export default function ProductionOrdersPage({ notify, openProduction }: { notif
   const [prazo, setPrazo] = useState('')
   const [observacao, setObservacao] = useState('')
   const [showDeleted, setShowDeleted] = useState(false)
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('todos')
+  const [advancedIds, setAdvancedIds] = useState<string[]>([])
+  const [focusedOrderId, setFocusedOrderId] = useState('')
+  const [pendingNewId, setPendingNewId] = useState('')
   const [draftItems, setDraftItems] = useState<DraftItem[]>([])
   const [busy, setBusy] = useState(false)
   const [localError, setLocalError] = useState('')
@@ -67,6 +79,18 @@ export default function ProductionOrdersPage({ notify, openProduction }: { notif
     const latest = orders.find((item) => item.id === selected.id)
     if (latest) setSelected(latest)
   }, [orders])
+
+  useEffect(() => {
+    if (!initialOrderId || focusedOrderId === initialOrderId) return
+    const found = orders.find((order) => order.id === initialOrderId)
+    if (found) { setSelected(found); setFocusedOrderId(initialOrderId) }
+  }, [initialOrderId, focusedOrderId, orders])
+
+  useEffect(() => {
+    if (!pendingNewId) return
+    const found = orders.find((order) => order.id === pendingNewId)
+    if (found) { setSelected(found); setPendingNewId('') }
+  }, [orders, pendingNewId])
 
   const firstStage = [...workflow.etapas].sort((a, b) => a.ordem - b.ordem)[0] ?? null
   const profiles = auth.activeMembership?.perfis ?? []
@@ -89,6 +113,7 @@ export default function ProductionOrdersPage({ notify, openProduction }: { notif
     setPrazo('')
     setObservacao('')
     setDraftItems([newDraftItem()])
+    setAdvancedIds([])
     setLocalError('')
     setModal(true)
   }
@@ -107,6 +132,8 @@ export default function ProductionOrdersPage({ notify, openProduction }: { notif
         id: variant.id || crypto.randomUUID(),
       })),
     })))
+    setAdvancedIds(order.itens.filter((item) => item.variantes.length !== 1
+      || item.variantes[0]?.nome !== 'Padrão').map((item) => item.id))
     setLocalError('')
     setModal(true)
   }
@@ -140,8 +167,13 @@ export default function ProductionOrdersPage({ notify, openProduction }: { notif
       }
     })
 
-    if (items.some((item) => !item.produtoCodigo)) {
-      setLocalError('Selecione o produto de todos os itens.')
+    if (items.length === 0 || items.some((item) => !item.produtoCodigo)) {
+      setLocalError('Adicione pelo menos um produto e selecione todos os itens.')
+      return
+    }
+    if (items.some((item) => item.variantes.length === 0 || item.variantes.some((variant) =>
+      !Number.isSafeInteger(variant.quantidade) || variant.quantidade <= 0))) {
+      setLocalError('Cada produto precisa ter quantidades inteiras e maiores que zero.')
       return
     }
 
@@ -172,7 +204,8 @@ export default function ProductionOrdersPage({ notify, openProduction }: { notif
           user.uid,
           { prazo, observacao, itens: items },
         )
-        notify(`${result.numero} criada.`)
+        notify(`${result.numero} criada. Confira e clique em Liberar OP quando estiver pronta.`)
+        setPendingNewId(result.id)
       }
 
       setModal(false)
@@ -301,14 +334,33 @@ export default function ProductionOrdersPage({ notify, openProduction }: { notif
         <div className="detail-hero-actions">
           <OrderStatus status={selected.status} />
           {openProduction && !selected.excluido && ['liberada', 'em_fluxo', 'reprovada'].includes(selected.status) &&
-            <button className="secondary-button compact" onClick={openProduction}><Factory size={15}/> Abrir produção</button>}
+            <button className="secondary-button compact" onClick={() => openProduction(selected.id)}><Factory size={15}/> Abrir produção</button>}
           {!selected.excluido && <button className="secondary-button compact" disabled={busy} onClick={() => openEditOrder(selected)}><Edit3 size={15} /> Editar</button>}
           <button className={selected.excluido ? 'secondary-button compact' : 'danger-button compact'} disabled={busy} onClick={() => void toggleDeleted(selected)}>
             {selected.excluido ? <RotateCcw size={15} /> : <Trash2 size={15} />} {selected.excluido ? 'Restaurar' : 'Excluir'}
           </button>
         </div>
       </section>
-      {localError && <div className="form-error page-message">{localError}</div>}
+      {localError && <div className="form-error page-message" role="alert">{localError}</div>}
+      {selected.status !== 'rascunho' && selected.status !== 'cancelada' && !selected.excluido && (() => {
+        const progress = orderProgress(selected, operationBalances)
+        return <section className="panel pf-order-summary">
+          <div className="pf-order-summary-top">
+            <div><span className="section-kicker">AVANÇO DA PRODUÇÃO</span><h3>{progress.percentage}% concluído</h3></div>
+            <strong>{progress.finished} de {progress.planned} peças boas acabadas</strong>
+          </div>
+          <div className="pf-progress"><span style={{ width: progress.percentage + '%' }}/></div>
+          {progress.remaining > 0 && <p className="helper-text">Faltam {progress.remaining} unidades boas para concluir a produção.</p>}
+          {progress.ready && <p className="form-success">Todas as quantidades finais foram apontadas. Confira as aprovações e conclua a OP.</p>}
+          {progress.missingOperations > 0 && <p className="form-error">{progress.missingOperations} item(ns) sem operações congeladas.</p>}
+          <div className="pf-order-task-preview">
+            {(selected.operacoes ?? []).slice(0, 8).map((task) => {
+              const step = stepProgress(selected, task, operationBalances)
+              return <div key={task.id}><span>{task.operacao.nome}</span><strong>{step.good}/{step.target} boas</strong></div>
+            })}
+          </div>
+        </section>
+      })()}
 
       <div className="two-columns">
         <section className="panel">
@@ -332,22 +384,28 @@ export default function ProductionOrdersPage({ notify, openProduction }: { notif
         </section>
       </div>
 
-      <section className="panel">
-        <div className="panel-head"><div><span className="section-kicker">Necessidade bruta</span><h3>Kit congelado</h3></div><span className="count-badge">{selected.kit.length}</span></div>
+      <details className="panel pf-order-expand">
+        <summary><strong>Materiais necessários (kit congelado)</strong><span>{selected.kit.length} linhas · Ver detalhes</span></summary>
         {selected.kit.length === 0 ? <div className="empty-state small-empty"><Factory size={28} /><strong>Kit ainda não gerado</strong><span>Ele será calculado quando a OP for liberada.</span></div> :
           <div className="table-wrap"><table><thead><tr><th>Código</th><th>Material</th><th>Fornecedor</th><th>Quantidade</th><th>Unidade</th><th>Cor</th></tr></thead><tbody>{selected.kit.map((line) => <tr key={line.id}><td><strong>{line.codigoSnapshot}</strong></td><td>{line.descricaoSnapshot}</td><td>{line.fornecedorSnapshot || '—'}</td><td>{line.quantidadeNecessaria.toFixed(4)}</td><td>{line.unidade}</td><td>{line.corFixa || line.corRegra}</td></tr>)}</tbody></table></div>}
-      </section>
+      </details>
 
-      <section className="panel">
-        <div className="panel-head"><div><span className="section-kicker">Rastreabilidade</span><h3>Histórico</h3></div></div>
+      <details className="panel pf-order-expand">
+        <summary><strong>Histórico e rastreabilidade</strong><span>Ver registros</span></summary>
         <p className="helper-text">A conclusão por produção exige que a última operação de cada produto tenha todas as unidades boas apontadas. Uma OP com aprovações em andamento deve finalizar seu Workflow antes.</p>
         <div className="timeline">{[...(selected.historico ?? [])].reverse().map((entry) => <div key={entry.id}><i /><strong>{entry.acao}</strong><small>Usuário: {entry.uid}</small></div>)}</div>
-      </section>
+      </details>
     </>
   }
 
+  const today = new Date().toLocaleDateString('en-CA')
+  const norm = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR')
+  const query = norm(search.trim())
   const ordered = [...orders]
     .filter((order) => showDeleted ? Boolean(order.excluido) : !order.excluido)
+    .filter((order) => statusFilter === 'todos' || order.status === statusFilter)
+    .filter((order) => !query || norm([order.numero, order.status, order.observacao ?? '',
+      ...order.itens.flatMap((item) => [item.produtoCodigo, item.produtoDescricao])].join(' ')).includes(query))
     .reverse()
 
   return <>
@@ -360,14 +418,42 @@ export default function ProductionOrdersPage({ notify, openProduction }: { notif
         <button className="primary-button" onClick={openNewOrder}><Plus size={18} /> Nova OP</button>
       </div>
     </section>
-    {localError && <div className="form-error page-message">{localError}</div>}
-    {error && <div className="form-error page-message">{error}</div>}
+    <section className="pf-orders-filters" aria-label="Encontrar ordens de produção">
+      <label><Search size={18}/><input type="search" value={search} onChange={(e) => setSearch(e.target.value)}
+        placeholder="Buscar por número, produto ou observação..." aria-label="Buscar ordens"/></label>
+      <label className="pf-order-status-filter"><Filter size={15}/>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filtrar situação da OP">
+          <option value="todos">Todas as situações</option>
+          <option value="rascunho">Aguardando liberação</option>
+          <option value="liberada">Liberadas</option>
+          <option value="em_fluxo">Em produção</option>
+          <option value="reprovada">Reprovadas</option>
+          <option value="concluida">Concluídas</option>
+          <option value="cancelada">Canceladas</option>
+        </select>
+      </label>
+    </section>
+    {localError && <div className="form-error page-message" role="alert">{localError}</div>}
+    {error && <div className="form-error page-message" role="alert">{error}</div>}
     {loading ? <div className="loading-panel"><Loader2 className="spin" size={24} /> Carregando OPs...</div> :
-      <div className="op-list">{ordered.length === 0 ? <section className="panel"><div className="empty-state"><Factory size={30} /><strong>Nenhuma OP criada</strong><span>Crie uma ordem para iniciar o planejamento.</span></div></section> : ordered.map((order) => {
+      <div className="op-list">{ordered.length === 0 ? <section className="panel"><div className="empty-state"><Factory size={30} /><strong>Nenhuma OP encontrada</strong>
+        <span>{search || statusFilter !== 'todos' ? 'Tente outros filtros ou limpe a pesquisa.' : 'Crie uma ordem para iniciar o planejamento.'}</span>
+        {(search || statusFilter !== 'todos') && <button className="secondary-button compact" onClick={() => { setSearch(''); setStatusFilter('todos') }}>Limpar filtros</button>}
+      </div></section> : ordered.map((order) => {
         const stage = workflow.etapas.find((item) => item.id === order.workflowStageId)
+        const progress = orderProgress(order, operationBalances)
+        const late = !['rascunho','concluida','cancelada'].includes(order.status) && order.prazo && order.prazo < today
         return <article className={`op-card manageable-op-card ${order.excluido ? 'deleted-record' : ''}`} key={order.id}>
           <button className="op-card-main" onClick={() => setSelected(order)}>
-            <div className="op-top"><div><span className="op-number">{order.numero}</span><h3>{order.itens.length} produto(s) · {order.itens.reduce((sum, item) => sum + item.quantidadeTotal, 0)} unidade(s)</h3><small>{stage ? `Etapa: ${stage.nome}` : statusLabel(order.status)}{order.prazo ? ` · Necessidade ${order.prazo}` : ''}{order.observacao ? ` · ${order.observacao}` : ''}</small></div><OrderStatus status={order.status} /></div>
+            <div className="op-top"><div><span className="op-number">{order.numero}</span><h3>{order.itens.map((item) => item.produtoDescricao).join(' · ')}</h3>
+              <small>{order.itens.length} produto(s) · {progress.planned} unidade(s) · {stage ? `Etapa: ${stage.nome}` : statusLabel(order.status)}</small>
+              {late && <small className="pf-order-overdue">Necessidade vencida: {order.prazo}</small>}
+              {order.observacao && <small>{order.observacao}</small>}
+            </div><OrderStatus status={order.status}/></div>
+            {order.status !== 'rascunho' && <div className="pf-order-progress-line">
+              <span className="pf-progress"><span style={{ width: progress.percentage + '%' }}/></span>
+              <strong>{progress.percentage}%</strong>
+            </div>}
           </button>
           <div className="op-card-actions">
             {!order.excluido && <button title="Editar" onClick={() => openEditOrder(order)}><Edit3 size={15} /> Editar</button>}
@@ -379,20 +465,37 @@ export default function ProductionOrdersPage({ notify, openProduction }: { notif
       })}</div>}
 
     {modal && <div className="modal-backdrop"><section className="form-modal op-modal">
-      <div className="modal-head"><div><span className="section-kicker">Planejamento</span><h2>{editingOrderId ? 'Editar Ordem de Produção' : 'Nova Ordem de Produção'}</h2></div><button className="icon-button" onClick={() => setModal(false)}><X size={18} /></button></div>
+      <div className="modal-head"><div><span className="section-kicker">CADASTRO SIMPLIFICADO</span><h2>{editingOrderId ? 'Editar Ordem de Produção' : 'Nova Ordem de Produção'}</h2>
+        {!editingOrderId && <p className="helper-text">Selecione o produto e informe a quantidade. Os demais detalhes são opcionais.</p>}</div><button className="icon-button" onClick={() => setModal(false)}><X size={18} /></button></div>
       <div className="op-form-body">
-        <label className="editor-label"><span>Necessidade (opcional)</span><input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} /></label>
-        <label className="editor-label"><span>Observação</span><textarea rows={3} value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Observações gerais da Ordem de Produção" /></label>
+        <label className="editor-label"><span>Necessidade (data desejada)</span><input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} /></label>
         {metadataOnly && <div className="info-banner"><Factory size={18} /><div><strong>OP já liberada</strong><span>Para preservar rastreabilidade, produtos, quantidades, revisão, kit e operações congeladas não são alterados. Você ainda pode editar necessidade e observação.</span></div></div>}
         {!metadataOnly && draftItems.map((item, index) => <div className="op-item-editor" key={item.id}>
-          <div className="op-item-head"><strong>Item {index + 1}</strong><button className="icon-button danger-icon" onClick={() => setDraftItems(draftItems.filter((entry) => entry.id !== item.id))}><Trash2 size={14} /></button></div>
+          <div className="op-item-head"><strong>Produto {index + 1}</strong><button className="icon-button danger-icon" title="Remover este produto" disabled={draftItems.length <= 1} onClick={() => setDraftItems(draftItems.filter((entry) => entry.id !== item.id))}><Trash2 size={14}/></button></div>
           <label className="editor-label"><span>Produto *</span><select value={item.produtoCodigo} onChange={(e) => updateItem(item.id, { produtoCodigo: e.target.value })}><option value="">Selecione...</option>{products.filter((product) => product.status === 'ativo' && !product.excluido).map((product) => <option key={product.id} value={product.codigo}>{product.codigo} — {product.descricao}</option>)}</select></label>
-          <label className="editor-label"><span>Cor / acabamento do produto</span><input value={item.cor} onChange={(e) => updateItem(item.id, { cor: e.target.value })} placeholder="Ex.: Azul marinho, natural, galvanizado..." /></label>
-          <div className="variant-list">{item.variantes.map((variant) => <div className="variant-row" key={variant.id}><input value={variant.nome} onChange={(e) => updateVariant(item.id, variant.id, { nome: e.target.value })} placeholder="Variante / tamanho / versão" /><input type="number" min={1} value={variant.quantidade} onChange={(e) => updateVariant(item.id, variant.id, { quantidade: Number(e.target.value) })} /><button className="icon-button" onClick={() => updateItem(item.id, { variantes: item.variantes.filter((entry) => entry.id !== variant.id) })}><Trash2 size={14} /></button></div>)}</div>
-          <button className="text-button" onClick={() => addVariant(item.id)}><Plus size={14} /> Adicionar variante</button>
+          {!advancedIds.includes(item.id) && item.variantes.length === 1 && <label className="editor-label pf-simple-quantity">
+            <span>Quantidade de unidades *</span><input type="number" inputMode="numeric" min={1} step={1} value={item.variantes[0].quantidade}
+              onChange={(e) => updateVariant(item.id, item.variantes[0].id, { quantidade: Number(e.target.value) })}/>
+          </label>}
+          <button type="button" className="pf-optional-toggle" onClick={() => setAdvancedIds((old) => old.includes(item.id) ? old.filter((id) => id !== item.id) : [...old, item.id])}>
+            {advancedIds.includes(item.id) ? 'Ocultar detalhes do produto' : 'Adicionar cor, tamanho ou versões (opcional)'}
+          </button>
+          {advancedIds.includes(item.id) && <>
+            <label className="editor-label"><span>Cor / acabamento (opcional)</span><input value={item.cor} onChange={(e) => updateItem(item.id, { cor: e.target.value })} placeholder="Ex.: Azul marinho, natural, galvanizado..."/></label>
+            <div className="pf-variants-caption">Tamanhos ou versões e quantidade de cada um</div>
+            <div className="variant-list">{item.variantes.map((variant) => <div className="variant-row" key={variant.id}>
+              <input value={variant.nome} onChange={(e) => updateVariant(item.id, variant.id, { nome: e.target.value })} aria-label="Nome da variante" placeholder="Ex.: P, M, G ou Padrão"/>
+              <input type="number" min={1} step={1} inputMode="numeric" aria-label="Quantidade da variante" value={variant.quantidade} onChange={(e) => updateVariant(item.id, variant.id, { quantidade: Number(e.target.value) })}/>
+              <button className="icon-button" title="Remover variante" disabled={item.variantes.length <= 1} onClick={() => updateItem(item.id, { variantes: item.variantes.filter((entry) => entry.id !== variant.id) })}><Trash2 size={14}/></button>
+            </div>)}</div>
+            <button className="text-button" onClick={() => addVariant(item.id)}><Plus size={14}/> Adicionar tamanho ou versão</button>
+          </>}
         </div>)}
-        {!metadataOnly && <button className="secondary-button compact" onClick={addItem}><Plus size={15} /> Adicionar produto</button>}
-        {localError && <div className="form-error">{localError}</div>}
+        {!metadataOnly && <button className="secondary-button compact" onClick={addItem}><Plus size={15}/> Adicionar outro produto à mesma OP</button>}
+        <label className="editor-label"><span>Observações (opcional)</span><textarea rows={2} value={observacao}
+          onChange={(e) => setObservacao(e.target.value)} placeholder="Informação adicional para a produção, se necessário"/></label>
+        {!metadataOnly && <p className="pf-order-tip">A OP começa como rascunho. Depois de revisar, clique em <strong>Liberar OP</strong> para iniciar a produção.</p>}
+        {localError && <div className="form-error" role="alert">{localError}</div>}
       </div>
       <div className="modal-actions"><button className="secondary-button" onClick={() => setModal(false)}>Cancelar</button><button className="primary-button" onClick={saveOrder} disabled={busy}>{busy ? <Loader2 className="spin" size={16} /> : <CheckCircle2 size={16} />} {editingOrderId ? (metadataOnly ? 'Salvar dados gerais' : 'Salvar alterações') : 'Criar OP'}</button></div>
     </section></div>}
