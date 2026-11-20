@@ -12,7 +12,8 @@ import {
   serverTimestamp,
   writeBatch,
 } from 'firebase/firestore'
-import { db } from '../firebase/config'
+import { db, auth } from '../firebase/config'
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import type {
   Company,
   CompanyMembership,
@@ -65,11 +66,16 @@ type SystemContextValue = {
   settings: CompanySettings
   refreshActiveCompany: () => Promise<void>
   refreshSystem: () => Promise<void>
+  secureMode: boolean
+  authenticated: boolean
+  signInGoogle: () => Promise<void>
+  signOutUser: () => Promise<void>
 }
 
 const SystemContext = createContext<SystemContextValue | null>(null)
 
 const WORKSPACE_ID = 'principal'
+const SECURE_MODE = import.meta.env.VITE_REQUIRE_AUTH === 'true'
 const SYSTEM_USER: SystemUser = {
   uid: 'operador-local',
   displayName: 'Operador principal',
@@ -132,6 +138,8 @@ export function SystemProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState('')
   const [activeCompany, setActiveCompany] = useState<Company | null>(null)
   const [settings, setSettings] = useState<CompanySettings>(defaultSettings)
+  const [signedUser, setSignedUser] = useState<SystemUser | null>(null)
+  const [membership, setMembership] = useState<CompanyMembership>(SYSTEM_MEMBERSHIP)
 
   const loadCompany = async () => {
     const [companySnap, settingsSnap] = await Promise.all([
@@ -162,12 +170,30 @@ export function SystemProvider({ children }: { children: ReactNode }) {
     setLoading(true)
     setError('')
     try {
-      await ensureWorkspace()
+      if (SECURE_MODE) {
+        const fb = auth.currentUser
+        if (!fb) {
+          setActiveCompany(null)
+          setSignedUser(null)
+          return
+        }
+        const memberRef=doc(db,'empresas',WORKSPACE_ID,'membros',fb.uid)
+        const memberSnap=await getDoc(memberRef)
+        if(!memberSnap.exists()||!memberSnap.data().ativo)
+          throw new Error('Este usuário não está cadastrado como membro ativo da empresa. Solicite autorização ao administrador.')
+        const roles=memberSnap.data().perfis
+        if(!Array.isArray(roles)||roles.length===0)
+          throw new Error('O cadastro de acesso não contém perfis autorizados.')
+        setMembership({empresaId:WORKSPACE_ID,nomeFantasia:'Ambiente Principal',
+          ...(memberSnap.data() as Partial<CompanyMembership>),perfis:roles,ativo:true} as CompanyMembership)
+      }else{
+        await ensureWorkspace()
+      }
       await loadCompany()
     } catch (reason) {
       console.error('Falha no bootstrap do Processo Fácil:', reason)
       const message = reason instanceof Error ? reason.message : 'Não foi possível iniciar o ambiente principal.'
-      if (message.toLowerCase().includes('permission-denied') || message.toLowerCase().includes('missing or insufficient permissions')) {
+      if (!SECURE_MODE && (message.toLowerCase().includes('permission-denied') || message.toLowerCase().includes('missing or insufficient permissions'))) {
         setError('O sistema já está sem autenticação, mas as regras do Firestore ainda bloqueiam o workspace principal. Publique o firestore.rules atualizado do repositório.')
       } else {
         setError(message)
@@ -178,7 +204,17 @@ export function SystemProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    void boot()
+    if (!SECURE_MODE) { void boot(); return }
+    return onAuthStateChanged(auth, (fb) => {
+      setSignedUser(fb ? {
+        uid:fb.uid,displayName:fb.displayName||fb.email||'Usuário',
+        email:fb.email,isAnonymous:false,
+      } : null)
+      void boot()
+    }, (reason) => {
+      setError(reason instanceof Error?reason.message:'Não foi possível verificar a autenticação.')
+      setLoading(false)
+    })
   }, [])
 
   const refreshActiveCompany = async () => {
@@ -188,17 +224,27 @@ export function SystemProvider({ children }: { children: ReactNode }) {
   const refreshSystem = async () => {
     await boot()
   }
+  const signInGoogle=async()=>{
+    setError('')
+    try{await signInWithPopup(auth,new GoogleAuthProvider())}
+    catch(e){setError(e instanceof Error?e.message:'Não foi possível entrar com Google.')}
+  }
+  const signOutUser=async()=>{await signOut(auth)}
 
   const value = useMemo<SystemContextValue>(() => ({
-    user: SYSTEM_USER,
+    user: SECURE_MODE && signedUser ? signedUser : SYSTEM_USER,
     loading,
     error,
-    activeMembership: SYSTEM_MEMBERSHIP,
+    activeMembership: SECURE_MODE ? membership : SYSTEM_MEMBERSHIP,
     activeCompany,
     settings,
     refreshActiveCompany,
     refreshSystem,
-  }), [loading, error, activeCompany, settings])
+    secureMode:SECURE_MODE,
+    authenticated:SECURE_MODE?Boolean(signedUser):true,
+    signInGoogle,
+    signOutUser,
+  }), [loading,error,activeCompany,settings,signedUser,membership])
 
   return <SystemContext.Provider value={value}>{children}</SystemContext.Provider>
 }

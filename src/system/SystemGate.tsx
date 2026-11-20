@@ -15,6 +15,17 @@ export default function SystemGate({ children }: { children: React.ReactNode }) 
     </div>
   }
 
+  if (system.secureMode && !system.authenticated) {
+    return <div className="system-boot-screen"><div className="system-boot-card">
+      <span className="boot-logo"><Database size={28}/></span>
+      <strong>Acesso ao Processo Fácil</strong>
+      <p>Entre com sua conta Google cadastrada na empresa.</p>
+      {system.error && <p className="form-error" role="alert">{system.error}</p>}
+      <button onClick={() => void system.signInGoogle()}>Entrar com Google</button>
+      <small>O acesso depende de um cadastro de membro ativo. Não existe cadastro público de administradores.</small>
+    </div></div>
+  }
+  
   if (system.error || !system.activeCompany) {
     return <div className="system-boot-screen">
       <div className="system-boot-card system-boot-error">
@@ -22,7 +33,8 @@ export default function SystemGate({ children }: { children: React.ReactNode }) 
         <strong>Não foi possível iniciar o ambiente</strong>
         <p>{system.error || 'O ambiente principal não foi encontrado.'}</p>
         <button onClick={() => system.refreshSystem()}><RefreshCw size={16} /> Tentar novamente</button>
-        <small>Modo operacional temporário: autenticação desativada e workspace fixo “principal”.</small>
+        {system.secureMode && <button onClick={() => void system.signOutUser()}>Sair e usar outra conta</button>}
+        <small>{system.secureMode?'Acesso autorizado por membro e login Google.':'Modo operacional temporário: autenticação desativada e workspace principal aberto.'}</small>
       </div>
     </div>
   }
