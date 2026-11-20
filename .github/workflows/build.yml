@@ -35,6 +35,8 @@ jobs:
         run: npm test
 
       - name: Build
+        env:
+          VITE_REQUIRE_AUTH: ${{ vars.PF_REQUIRE_AUTH }}
         run: npm run build
 
       - name: Publish compiled fallback to main

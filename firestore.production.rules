@@ -1,0 +1,87 @@
+// MODELO DE PRODUÇÃO: só publique após criar o primeiro membro administrador e ativar o login.
+// O arquivo firestore.rules legado continua sendo o ambiente de TESTE sem autenticação.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function authenticated() { return request.auth != null; }
+    function memberPath(companyId) {
+      return /databases/$(database)/documents/empresas/$(companyId)/membros/$(request.auth.uid);
+    }
+    function isMember(companyId) {
+      return authenticated() && exists(memberPath(companyId)) &&
+        get(memberPath(companyId)).data.ativo == true;
+    }
+    function hasRole(companyId, role) {
+      return isMember(companyId) && role in get(memberPath(companyId)).data.perfis;
+    }
+    function admin(companyId) { return hasRole(companyId, 'admin'); }
+    function writable(companyId, coll) {
+      return admin(companyId) ||
+        ((coll in ['produtos','fichas','materiais','fornecedores','categorias','measurementTemplates','templatesMedidas']) &&
+          hasRole(companyId,'engenharia')) ||
+        ((coll in ['ordensProducao','programacoes','programacaoOperacoes','configuracoesCapacidade',
+          'colaboradores','indisponibilidadesRecursos','estudosTempos']) && hasRole(companyId,'pcp')) ||
+        ((coll in ['apontamentos','saldosOperacoes','estornosApontamentos','retrabalhosOperacoes',
+          'estornosRetrabalhos','sessoesOperacoes','temposOperacoes']) && hasRole(companyId,'operador')) ||
+        (coll == 'inspecoes' && hasRole(companyId,'qualidade'));
+    }
+    function revisionTransition() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return (
+        resource.data.status == 'rascunho' &&
+          request.resource.data.status in ['rascunho','em_validacao']
+      ) || (
+        resource.data.status == 'em_validacao' &&
+          request.resource.data.status in ['em_validacao','rascunho','padrao'] &&
+          changed.hasOnly(['status','aprovadoPor','aprovadoEm','alteradoEm','alteradoPor'])
+      ) || (
+        resource.data.status == 'padrao' &&
+          request.resource.data.status == 'obsoleta' &&
+          changed.hasOnly(['status','alteradoEm','alteradoPor'])
+      );
+    }
+    match /empresas/{companyId} {
+      allow get, list: if isMember(companyId);
+      allow create, delete: if false;
+      allow update: if admin(companyId);
+      match /membros/{uid} {
+        allow get: if (authenticated() && request.auth.uid == uid) || admin(companyId);
+        allow list: if admin(companyId);
+        allow create, update, delete: if admin(companyId);
+      }
+      match /auditoria/{docId} {
+        allow read: if isMember(companyId);
+        allow create: if isMember(companyId) &&
+          request.resource.data.uid == request.auth.uid;
+        allow update, delete: if false;
+      }
+      match /inspecoes/{docId} {
+        allow read: if isMember(companyId);
+        allow create: if writable(companyId,'inspecoes');
+        allow update, delete: if false;
+      }
+      match /produtos/{code}/revisoes/{revisionId} {
+        allow read: if isMember(companyId);
+        allow create: if writable(companyId,'produtos');
+        allow update: if writable(companyId,'produtos') && revisionTransition();
+        allow delete: if false;
+      }
+      match /{coll}/{docId} {
+        allow read: if isMember(companyId) && coll != 'membros';
+        allow create, update: if coll != 'membros' && coll != 'auditoria' && coll != 'inspecoes' &&
+          writable(companyId,coll);
+        allow delete: if false;
+      }
+      match /{coll}/{docId}/{nested=**} {
+        allow read: if isMember(companyId) && coll != 'membros';
+        allow create, update: if coll != 'membros' && coll != 'produtos' &&
+          writable(companyId,coll);
+        allow delete: if false;
+      }
+    }
+    match /usuarios/{uid}/{nested=**} {
+      allow read, write: if false;
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

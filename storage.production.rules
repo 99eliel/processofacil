@@ -1,0 +1,18 @@
+// Exemplo de configuração privada para anexos do Processo Fácil.
+// Use em conjunto com firestore.production.rules, nunca com regras públicas do workspace.
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function member(companyId) {
+      return request.auth != null &&
+        firestore.exists(/databases/(default)/documents/empresas/$(companyId)/membros/$(request.auth.uid)) &&
+        firestore.get(/databases/(default)/documents/empresas/$(companyId)/membros/$(request.auth.uid)).data.ativo == true;
+    }
+    match /empresas/{companyId}/{allPaths=**} {
+      allow read: if member(companyId);
+      allow write: if member(companyId) &&
+        request.resource.size < 25 * 1024 * 1024;
+    }
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}
