@@ -19,6 +19,7 @@ import ProductionPage from './pages/ProductionPage'
 import ReportsPage from './pages/ReportsPage'
 import type { Material, Product, ProductionOrderRecord, TechnicalSheetSummary } from './domain/types'
 import './remap.css'
+import './production-upgrades.css'
 
 type Page = 'inicio' | 'catalogo' | 'ordens' | 'planejamento' | 'producao' | 'gestao' | 'configuracoes'
 type CatalogTab = 'fichas' | 'produtos' | 'materiais' | 'novo'

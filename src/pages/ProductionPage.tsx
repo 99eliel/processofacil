@@ -1,174 +1,260 @@
-import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, CheckCircle2, ClipboardList, Clock3, RotateCcw, Save, ShieldAlert } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { AlertTriangle, CheckCircle2, ClipboardList, RotateCcw, Save, ShieldAlert, Wrench } from 'lucide-react'
 import { useSystem } from '../system/SystemProvider'
 import { useTenantCollection } from '../hooks/useTenantCollection'
-import type { ProductionOrderRecord, ProductionOperationTask } from '../domain/types'
+import type { ProductionOrderRecord } from '../domain/types'
+import { stepProgress, orderProgress } from '../domain/progressEngine'
 import {
-  balanceFor, orderedItemTasks, precedingTask, plannedQuantity,
-  registerProduction, reverseProductionEntry,
+  registerProduction, reverseProductionEntry, registerRework, reverseRework,
   type ProductionBalance, type ProductionEntry, type ProductionReversal,
+  type ProductionRework, type ProductionReworkReversal,
 } from '../firebase/productionLedger'
 
-function dateLabel(value: unknown) {
+type Worker = { id: string; nome: string; ativo: boolean }
+const numberFormat = new Intl.NumberFormat('pt-BR')
+function dateOf(value: unknown) {
   if (value && typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function') {
-    return value.toDate().toLocaleString('pt-BR')
+    return value.toDate() as Date
   }
-  return 'Registro recente'
+  return null
 }
-const pct = (value: number, max: number) => max > 0 ? Math.min(100, Math.round(value * 100 / max)) : 0
+const formatTime = (value: unknown) => dateOf(value)?.toLocaleString('pt-BR') ?? 'Aguardando sincronização'
 
 export default function ProductionPage({ notify }: { notify: (message: string) => void }) {
   const { activeCompany, user } = useSystem()
-  const empresaId = activeCompany?.id
-  const ordersQuery = useTenantCollection<ProductionOrderRecord>(empresaId, 'ordensProducao', 'numero')
-  const balanceQuery = useTenantCollection<ProductionBalance>(empresaId, 'saldosOperacoes', 'taskId')
-  const entriesQuery = useTenantCollection<ProductionEntry>(empresaId, 'apontamentos', 'criadoEm')
-  const reversalsQuery = useTenantCollection<ProductionReversal>(empresaId, 'estornosApontamentos', 'entryId')
+  const companyId = activeCompany?.id
+  const ordersQuery = useTenantCollection<ProductionOrderRecord>(companyId, 'ordensProducao', 'numero')
+  const balancesQuery = useTenantCollection<ProductionBalance>(companyId, 'saldosOperacoes', 'taskId')
+  const entriesQuery = useTenantCollection<ProductionEntry>(companyId, 'apontamentos', 'criadoEm')
+  const reversalsQuery = useTenantCollection<ProductionReversal>(companyId, 'estornosApontamentos', 'entryId')
+  const reworksQuery = useTenantCollection<ProductionRework>(companyId, 'retrabalhosOperacoes', 'criadoEm')
+  const reworkReversalsQuery = useTenantCollection<ProductionReworkReversal>(companyId, 'estornosRetrabalhos', 'reworkId')
+  const workersQuery = useTenantCollection<Worker>(companyId, 'colaboradores', 'nome')
+
   const orders = useMemo(
-    () => ordersQuery.items.filter((o) => !o.excluido && ['liberada', 'em_fluxo', 'reprovada'].includes(o.status)).sort((a, b) => b.numero.localeCompare(a.numero)),
+    () => ordersQuery.items.filter((o) => !o.excluido && ['liberada', 'em_fluxo', 'reprovada'].includes(o.status))
+      .sort((a, b) => b.numero.localeCompare(a.numero)),
     [ordersQuery.items],
   )
-  const [opId, setOpId] = useState('')
-  const [taskId, setTaskId] = useState('')
+  const [selectedOrderId, setSelectedOrderId] = useState('')
+  const [selectedTaskId, setSelectedTaskId] = useState('')
   const [good, setGood] = useState('')
   const [bad, setBad] = useState('0')
+  const [reworkQuantity, setReworkQuantity] = useState('')
   const [operatorName, setOperatorName] = useState('')
   const [notes, setNotes] = useState('')
+  const [reworkNotes, setReworkNotes] = useState('')
+  const [tab, setTab] = useState<'produzir' | 'retrabalho'>('produzir')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [reverseId, setReverseId] = useState('')
   const [reverseReason, setReverseReason] = useState('')
-  const selected = orders.find((o) => o.id === opId) ?? orders[0]
-  const tasks = selected?.operacoes ?? []
-  const current = tasks.find((t) => t.id === taskId) ?? tasks[0]
-  const balance = current ? balanceFor(balanceQuery.items, current.id) : null
-  const previous = selected && current ? precedingTask(selected, current) : null
-  const available = selected && current
-    ? previous ? Number(balanceFor(balanceQuery.items, previous.id)?.boas ?? 0) : plannedQuantity(selected, current)
-    : 0
-  const consumed = Number(balance?.total ?? 0)
-  const remaining = Math.max(0, available - consumed)
-  const goal = selected && current ? plannedQuantity(selected, current) : 0
+  const order = orders.find((o) => o.id === selectedOrderId) ?? orders[0]
+  const tasks = useMemo(
+    () => [...(order?.operacoes ?? [])].sort((a, b) =>
+      (order?.itens.findIndex((item) => item.id === a.itemId) ?? 0)
+       - (order?.itens.findIndex((item) => item.id === b.itemId) ?? 0)
+      || a.operacao.ordem - b.operacao.ordem),
+    [order],
+  )
+  const current = tasks.find((t) => t.id === selectedTaskId) ?? tasks[0]
+  const balance = current ? stepProgress(order, current, balancesQuery.items) : null
+  const progress = order ? orderProgress(order, balancesQuery.items) : null
+  const validEntries = entriesQuery.items
+    .filter((entry) => entry.opId === order?.id && entry.taskId === current?.id)
+    .sort((a, b) => (dateOf(b.criadoEm)?.getTime() ?? 0) - (dateOf(a.criadoEm)?.getTime() ?? 0))
+  const validReworks = reworksQuery.items
+    .filter((entry) => entry.opId === order?.id && entry.taskId === current?.id)
+    .sort((a, b) => (dateOf(b.criadoEm)?.getTime() ?? 0) - (dateOf(a.criadoEm)?.getTime() ?? 0))
+  const reversedEntries = useMemo(
+    () => new Set(reversalsQuery.items.map((entry) => entry.entryId)), [reversalsQuery.items],
+  )
+  const reversedReworks = useMemo(
+    () => new Set(reworkReversalsQuery.items.map((entry) => entry.reworkId)), [reworkReversalsQuery.items],
+  )
 
-  useEffect(() => { setTaskId(''); setGood(''); setBad('0') }, [selected?.id])
-  useEffect(() => { setGood(''); setBad('0') }, [current?.id])
-  const existingEntries = entriesQuery.items.filter((entry) => entry.opId === selected?.id && entry.taskId === current?.id)
-    .sort((a, b) => dateLabel(b.criadoEm).localeCompare(dateLabel(a.criadoEm)))
-  const reversed = new Set(reversalsQuery.items.map((item) => item.entryId))
-  const loading = ordersQuery.loading || balanceQuery.loading || entriesQuery.loading || reversalsQuery.loading
+  const setOrder = (id: string) => {
+    setSelectedOrderId(id); setSelectedTaskId(''); setGood(''); setBad('0')
+    setReworkQuantity(''); setTab('produzir'); setReverseId(''); setError('')
+  }
+  const setTask = (id: string) => {
+    setSelectedTaskId(id); setGood(''); setBad('0'); setReworkQuantity(''); setTab('produzir')
+    setReverseId(''); setError('')
+  }
 
   const register = async () => {
-    if (!empresaId || !user || !selected || !current || busy) return
-    const goodNumber = Number(good)
-    const badNumber = Number(bad)
+    if (!companyId || !user || !order || !current || busy) return
     setBusy(true); setError('')
     try {
-      await registerProduction(empresaId, user.uid, {
-        opId: selected.id, taskId: current.id, boas: goodNumber,
-        defeituosas: badNumber, operadorNome: operatorName,
-        observacao: notes,
+      await registerProduction(companyId, user.uid, {
+        opId: order.id, taskId: current.id,
+        boas: good.trim() === '' ? 0 : Number(good),
+        defeituosas: bad.trim() === '' ? 0 : Number(bad),
+        operadorNome: operatorName, observacao: notes,
       })
       setGood(''); setBad('0'); setNotes('')
-      notify('Produção apontada com sucesso.')
+      notify('Apontamento registrado com saldo atualizado.')
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Não foi possível registrar a produção.')
-    } finally {
-      setBusy(false)
-    }
+      setError(reason instanceof Error ? reason.message : 'Falha ao registrar produção.')
+    } finally { setBusy(false) }
   }
 
-  const reverse = async (entry: ProductionEntry) => {
-    if (!empresaId || !user || busy) return
+  const rework = async () => {
+    if (!companyId || !user || !order || !current || busy) return
     setBusy(true); setError('')
     try {
-      await reverseProductionEntry(empresaId, user.uid, entry, reverseReason)
-      setReverseId(''); setReverseReason('')
-      notify('Apontamento estornado. O histórico foi preservado.')
+      await registerRework(companyId, user.uid, {
+        opId: order.id, taskId: current.id, quantidade: Number(reworkQuantity),
+        operadorNome: operatorName, observacao: reworkNotes,
+      })
+      setReworkQuantity(''); setReworkNotes('')
+      notify('Retrabalho registrado. Unidades recuperadas e disponibilizadas para a etapa seguinte.')
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Não foi possível estornar.')
-    } finally {
-      setBusy(false)
-    }
+      setError(reason instanceof Error ? reason.message : 'Falha ao registrar retrabalho.')
+    } finally { setBusy(false) }
   }
 
-  if (loading) return <div className="loading-panel">Carregando produção...</div>
+  const reverse = async (entry: ProductionEntry | ProductionRework, kind: 'entry' | 'rework') => {
+    if (!companyId || !user || busy) return
+    setBusy(true); setError('')
+    try {
+      if (kind === 'entry') await reverseProductionEntry(companyId, user.uid, entry as ProductionEntry, reverseReason)
+      else await reverseRework(companyId, user.uid, entry as ProductionRework, reverseReason)
+      setReverseId(''); setReverseReason('')
+      notify('Estorno registrado. Histórico preservado.')
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Não foi possível estornar.')
+    } finally { setBusy(false) }
+  }
+
+  const busyLoading = ordersQuery.loading || balancesQuery.loading || entriesQuery.loading ||
+    reversalsQuery.loading || reworksQuery.loading || reworkReversalsQuery.loading || workersQuery.loading
+  const firstError = ordersQuery.error || balancesQuery.error || entriesQuery.error || reversalsQuery.error ||
+    reworksQuery.error || reworkReversalsQuery.error || workersQuery.error || error
+
+  if (busyLoading) return <div className="loading-panel">Carregando acompanhamento de produção...</div>
+
   return <div className="pf-page">
-    <section className="pf-page-heading">
-      <div><span className="section-kicker">Chão de fábrica</span><h2>Apontamento da Produção</h2>
-        <p>Registre quantidades parciais por operação. Cada lançamento permanece no histórico.</p></div>
-    </section>
-    {(ordersQuery.error || balanceQuery.error || entriesQuery.error || reversalsQuery.error || error) &&
-      <div className="form-error page-message">{error || ordersQuery.error || balanceQuery.error || entriesQuery.error || reversalsQuery.error}</div>}
-    {!selected ? <div className="panel empty-state"><ClipboardList size={28} /><strong>Nenhuma OP liberada</strong><span>Libere uma OP com Ficha Técnica publicada para iniciar a produção.</span></div> : <>
+    <section className="pf-page-heading"><div>
+      <span className="section-kicker">Chão de fábrica</span><h2>Produção real</h2>
+      <p>Acompanhe a passagem das unidades por operação, sem perder histórico de perdas e recuperações.</p>
+    </div></section>
+    {firstError && <div className="form-error page-message" role="alert">{firstError}</div>}
+    {!order ? <section className="panel empty-state"><ClipboardList size={28}/>
+      <strong>Nenhuma OP disponível</strong><span>Crie e libere uma OP para começar os apontamentos.</span>
+    </section> : <>
       <section className="panel pf-form-card">
-        <div className="pf-two-columns">
-          <label>Ordem de Produção
-            <select value={selected.id} onChange={(e) => { setOpId(e.target.value); setTaskId('') }}>
-              {orders.map((o) => <option value={o.id} key={o.id}>{o.numero} · {o.itens.map((i) => i.produtoDescricao).join(', ')}</option>)}
-            </select>
-          </label>
-          <label>Operação
-            <select value={current?.id ?? ''} onChange={(e) => setTaskId(e.target.value)}>
-              {tasks.map((t) => <option value={t.id} key={t.id}>{t.produtoDescricao} · {t.operacao.codigo} · {t.operacao.nome}</option>)}
-            </select>
-          </label>
-        </div>
-        {current ? <>
+        <label className="pf-field-label">Ordem de Produção
+          <select value={order.id} onChange={(e) => setOrder(e.target.value)}>
+            {orders.map((o) => <option key={o.id} value={o.id}>{o.numero} · {o.itens.map((item) => item.produtoDescricao).join(', ')}</option>)}
+          </select>
+        </label>
+        {progress && <div className="pf-op-summary">
+          <div><small>Meta de produtos acabados</small><strong>{numberFormat.format(progress.planned)}</strong></div>
+          <div><small>Acabados aprovados</small><strong>{numberFormat.format(progress.finished)}</strong></div>
+          <div><small>Faltam finalizar</small><strong>{numberFormat.format(progress.remaining)}</strong></div>
+          <div><small>Progresso final</small><strong>{progress.percentage}%</strong></div>
+        </div>}
+        {order.status === 'reprovada' && <div className="capacity-note"><ShieldAlert size={16}/> OP reprovada na Qualidade. Verifique inspeção e retrabalho.</div>}
+      </section>
+      <section className="panel pf-form-card">
+        <h3>Etapas da produção</h3>
+        <div className="pf-operation-grid">{tasks.map((task) => {
+          const p = stepProgress(order, task, balancesQuery.items)
+          return <button key={task.id} className={'pf-operation-card' + (current?.id === task.id ? ' selected' : '')}
+            onClick={() => setTask(task.id)}>
+            <small>{task.produtoDescricao} · Etapa {task.operacao.ordem}</small>
+            <strong>{task.operacao.nome}</strong>
+            <span>{p.good}/{p.target} boas · {p.defective} defeituosas</span>
+            <div className="pf-progress"><span style={{ width: p.percentage + '%' }}/></div>
+          </button>
+        })}</div>
+        {tasks.length === 0 && <div className="capacity-note"><AlertTriangle size={16}/> OP sem operações congeladas; confira a Ficha Técnica e crie uma nova OP.</div>}
+      </section>
+      {current && balance && <>
+        <section className="panel pf-form-card">
+          <div className="pf-section-heading"><h3>{current.operacao.codigo} · {current.operacao.nome}</h3><span className="pf-muted">Tempo-padrão: {current.operacao.tempoPadraoMin ?? '—'} min/un.</span></div>
           <div className="pf-op-summary">
-            <div><small>Quantidade da OP</small><strong>{goal}</strong></div>
-            <div><small>Disponível nesta etapa</small><strong>{available}</strong></div>
-            <div><small>Produção boa acumulada</small><strong>{balance?.boas ?? 0}</strong></div>
-            <div><small>Saldo para apontar</small><strong>{remaining}</strong></div>
+            <div><small>Recebidas para esta etapa</small><strong>{balance.available}</strong></div>
+            <div><small>Boas disponíveis para a próxima</small><strong>{balance.good}</strong></div>
+            <div><small>Pendentes de processar</small><strong>{balance.toPoint}</strong></div>
+            <div><small>Aguardando retrabalho</small><strong>{balance.defective}</strong></div>
           </div>
-          <div className="pf-progress"><span style={{ width: String(pct(consumed, goal)) + '%' }} /></div>
-          <p className="helper-text">Etapa {current.operacao.ordem} · {current.operacao.maquina || 'Sem máquina informada'} · Tempo padrão: {current.operacao.tempoPadraoMin ?? '—'} min/unidade.</p>
-          {previous && available === 0 && <div className="capacity-note"><AlertTriangle size={16} /> Aguardando peças boas da operação anterior: {previous.operacao.nome}.</div>}
-          {current.status === 'bloqueada' && <div className="capacity-note"><ShieldAlert size={16} /> Operação bloqueada. Resolva o problema na gestão da OP.</div>}
+          {balance.previous && balance.available === 0 && <div className="capacity-note"><AlertTriangle size={16}/> Aguardando liberação de peças boas da etapa anterior: {balance.previous.operacao.nome}.</div>}
+          {current.status === 'bloqueada' && <div className="capacity-note"><ShieldAlert size={16}/> Operação bloqueada no fluxo anterior. Desbloqueie antes de apontar.</div>}
+          {current.status === 'concluida' && <div className="capacity-note">Esta operação foi concluída pelo fluxo antigo. Os apontamentos por quantidade não podem ser misturados a ela.</div>}
+          <div className="pf-tabbar">
+            <button className={tab === 'produzir' ? 'active' : ''} onClick={() => setTab('produzir')}><Save size={15}/> Apontar produção</button>
+            <button className={tab === 'retrabalho' ? 'active' : ''} onClick={() => setTab('retrabalho')}><Wrench size={15}/> Recuperar peças ({balance.defective})</button>
+          </div>
           <div className="pf-two-columns">
             <label>Operador / responsável *
-              <input placeholder="Nome do responsável pelo lançamento" value={operatorName} onChange={(e) => setOperatorName(e.target.value)} />
+              <input list="pf-colaboradores" value={operatorName} onChange={(e) => setOperatorName(e.target.value)} placeholder="Digite ou selecione quem executou" autoComplete="off"/>
+              <datalist id="pf-colaboradores">{workersQuery.items.filter((worker) => worker.ativo).map((worker) => <option key={worker.id} value={worker.nome}/>)}</datalist>
             </label>
-            <label>Unidades boas *
-              <input type="number" min="0" step="1" value={good} onChange={(e) => setGood(e.target.value)} placeholder="Ex.: 100" />
-            </label>
-            <label>Unidades com defeito
-              <input type="number" min="0" step="1" value={bad} onChange={(e) => setBad(e.target.value)} />
-            </label>
-            <label>Observações
-              <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional" />
-            </label>
+            {tab === 'produzir' ? <>
+              <label>Unidades boas<input type="number" min="0" max={balance.toPoint} step="1" value={good} onChange={(e) => setGood(e.target.value)} placeholder="Ex.: 100"/></label>
+              <label>Unidades defeituosas<input type="number" min="0" max={balance.toPoint} step="1" value={bad} onChange={(e) => setBad(e.target.value)}/></label>
+              <label>Observações<input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional"/></label>
+            </> : <>
+              <label>Quantidade recuperada<input type="number" min="1" max={balance.defective} step="1" value={reworkQuantity} onChange={(e) => setReworkQuantity(e.target.value)}/></label>
+              <label>Correção realizada *<input value={reworkNotes} onChange={(e) => setReworkNotes(e.target.value)} placeholder="Ex.: costura refeita e inspecionada"/></label>
+            </>}
           </div>
-          <button className="primary-button" disabled={busy || remaining <= 0 || current.status === 'bloqueada'}
-            onClick={() => void register()}><Save size={16}/> {busy ? 'Salvando...' : 'Registrar produção'}</button>
+          {tab === 'produzir' ? <button className="primary-button" disabled={busy || balance.toPoint <= 0 || current.status === 'bloqueada' || current.status === 'concluida'}
+            onClick={() => void register()}><Save size={16}/> {busy ? 'Salvando...' : 'Registrar apontamento'}</button>
+            : <button className="primary-button" disabled={busy || balance.defective <= 0 || current.status === 'bloqueada' || current.status === 'concluida'}
+              onClick={() => void rework()}><Wrench size={16}/> {busy ? 'Salvando...' : 'Confirmar peças recuperadas'}</button>}
+          <p className="helper-text">Unidades com defeito não avançam para a etapa seguinte. Após corrigir, use “Recuperar peças” para transformar o saldo defeituoso em saldo bom, sem duplicar unidades.</p>
           {current.operacao.instrucoes?.filter(Boolean).length > 0 && <section className="pf-instructions">
             <strong>Instruções do Passaporte</strong>
-            {current.operacao.instrucoes.filter(Boolean).map((line, i) => <p key={i}>{line}</p>)}
+            {current.operacao.instrucoes.filter(Boolean).map((line, index) => <p key={index}>{line}</p>)}
           </section>}
-          {current.operacao.midias?.filter((media) => Boolean(media.url)).length > 0 &&
-            <div className="pf-image-grid">{current.operacao.midias.filter((media) => Boolean(media.url))
-              .map((media) => media.tipo === 'imagem'
-                ? <img key={media.id} src={media.url} alt={media.legenda || current.operacao.nome}/>
-                : <video key={media.id} controls preload="metadata" src={media.url} aria-label={media.legenda || current.operacao.nome}/>)}</div>}
-        </> : <div className="capacity-note">A OP não contém operações. Publique a Ficha Técnica com operações e libere uma nova OP.</div>}
-      </section>
-      {current && <section className="panel pf-form-card">
-        <h3>Histórico da operação</h3>
-        {existingEntries.length === 0 ? <p className="helper-text">Nenhum apontamento registrado para esta operação.</p> :
-          <div className="pf-entry-list">{existingEntries.map((entry) => <div key={entry.id} className="pf-entry">
-            <div><strong>{entry.operadorNome}</strong><small>{dateLabel(entry.criadoEm)}</small>
-              <span><CheckCircle2 size={13}/> {entry.boas} boas · {entry.defeituosas} com defeito</span>
-              {entry.observacao && <small>{entry.observacao}</small>}
-            </div>
-            {reversed.has(entry.id) ? <span className="pf-muted">Estornado</span> :
-              <button className="secondary-button compact" onClick={() => { setReverseId(entry.id); setReverseReason('') }}><RotateCcw size={13}/> Corrigir</button>}
-            {reverseId === entry.id && !reversed.has(entry.id) && <div className="pf-reversal">
-              <label>Motivo do estorno<input value={reverseReason} onChange={(e) => setReverseReason(e.target.value)} placeholder="Por que corrigir este apontamento?" /></label>
-              <div><button className="secondary-button compact" onClick={() => setReverseId('')}>Cancelar</button>
-                <button className="primary-button compact" disabled={busy || !reverseReason.trim()} onClick={() => void reverse(entry)}>Confirmar estorno</button></div>
-              <small>Para corrigir uma quantidade, estorne o registro e lance o valor correto. O estorno pode ser bloqueado se a próxima etapa já consumiu essas peças.</small>
-            </div>}
-          </div>)}</div>}
-      </section>}
+          {current.operacao.midias?.some((media) => media.url) && <div className="pf-image-grid">
+            {current.operacao.midias.filter((media) => Boolean(media.url)).map((media) =>
+              media.tipo === 'imagem' ? <img key={media.id} src={media.url} alt={media.legenda || current.operacao.nome}/>
+                : <video key={media.id} src={media.url} controls preload="metadata" aria-label={media.legenda || current.operacao.nome}/>)}
+          </div>}
+        </section>
+        <section className="panel pf-form-card">
+          <h3>Histórico da operação</h3>
+          <p className="helper-text">As correções não apagam lançamentos originais. Um estorno pode ser recusado se a etapa seguinte já consumiu essas unidades.</p>
+          {validEntries.length === 0 && validReworks.length === 0 && <p className="helper-text">Nenhum registro nesta operação.</p>}
+          <div className="pf-entry-list">
+            {validEntries.map((entry) => {
+              const isReversed = reversedEntries.has(entry.id)
+              return <div className="pf-entry" key={entry.id}>
+                <div><strong>{entry.operadorNome}</strong><small>{formatTime(entry.criadoEm)} · Produção</small>
+                  <span><CheckCircle2 size={13}/> {entry.boas} boas · {entry.defeituosas} defeituosas</span>
+                  {entry.observacao && <small>{entry.observacao}</small>}
+                </div>
+                {isReversed ? <span className="pf-muted">Estornado</span> :
+                  <button className="secondary-button compact" onClick={() => { setReverseId('entry:' + entry.id); setReverseReason('') }}><RotateCcw size={13}/> Corrigir</button>}
+                {reverseId === 'entry:' + entry.id && !isReversed && <div className="pf-reversal">
+                  <label>Motivo do estorno<input value={reverseReason} onChange={(e) => setReverseReason(e.target.value)}/></label>
+                  <div><button className="secondary-button compact" onClick={() => setReverseId('')}>Cancelar</button>
+                    <button className="primary-button compact" disabled={busy || !reverseReason.trim()} onClick={() => void reverse(entry, 'entry')}>Confirmar estorno</button></div>
+                </div>}
+              </div>
+            })}
+            {validReworks.map((entry) => {
+              const isReversed = reversedReworks.has(entry.id)
+              return <div className="pf-entry" key={'rw:' + entry.id}>
+                <div><strong>{entry.operadorNome}</strong><small>{formatTime(entry.criadoEm)} · Retrabalho</small>
+                  <span><Wrench size={13}/> {entry.quantidade} recuperada(s)</span><small>{entry.observacao}</small>
+                </div>
+                {isReversed ? <span className="pf-muted">Estornado</span> :
+                  <button className="secondary-button compact" onClick={() => { setReverseId('rework:' + entry.id); setReverseReason('') }}><RotateCcw size={13}/> Corrigir</button>}
+                {reverseId === 'rework:' + entry.id && !isReversed && <div className="pf-reversal">
+                  <label>Motivo do estorno<input value={reverseReason} onChange={(e) => setReverseReason(e.target.value)}/></label>
+                  <div><button className="secondary-button compact" onClick={() => setReverseId('')}>Cancelar</button>
+                    <button className="primary-button compact" disabled={busy || !reverseReason.trim()} onClick={() => void reverse(entry, 'rework')}>Confirmar estorno</button></div>
+                </div>}
+              </div>
+            })}
+          </div>
+        </section>
+      </>}
     </>}
   </div>
 }
