@@ -140,6 +140,7 @@ export async function releaseProductionOrder(
       if (!revisionSnap.exists()) throw new Error(`A revisão vigente do produto ${item.produtoCodigo} não foi encontrada.`)
       const revision = { id: revisionSnap.id, ...revisionSnap.data() } as TechnicalRevision
       if (revision.status !== 'padrao') throw new Error(`A revisão vigente do produto ${item.produtoCodigo} não está publicada.`)
+      if (!(revision.operacoes ?? []).length) throw new Error(`O produto ${item.produtoCodigo} não tem operações no Passaporte publicado. Configure as operações antes de liberar a OP.`)
 
       frozenItems.push({ ...item, revisao: vigente })
 

@@ -5,6 +5,15 @@ O **Processo Fácil** é uma plataforma universal e configurável para padroniza
 A planilha da Koleni foi o caso real que originou a ideia e continua servindo apenas como **referência/template de confecção**. Nenhuma regra específica daquele processo é obrigatória para os demais clientes.
 
 
+
+## PCP integrado — Carga Máquina e Mão de Obra
+
+As duas cargas passaram a utilizar um único planejamento **por operação**, com data e turno, recurso estável por ID, equipe nominal, absências e manutenção, tempo efetivamente apontado, gargalos e uma previsão teórica por carteira. O simulador de balanceamento passou a analisar todas as OPs ativas, mantendo as atribuições existentes.
+
+Para usar e testar as novidades consulte **[PCP_INTEGRADO.md](./PCP_INTEGRADO.md)**.
+
+**Segurança:** o modo autenticado e as regras fechadas estão preparados, mas **não ativados** até provisionar um administrador. Consulte [SEGURANCA_MIGRACAO.md](./SEGURANCA_MIGRACAO.md). O workspace de testes continua aberto; nunca use dados reais de clientes nesta configuração.
+
 ## Remapeamento 2.0 — ambiente de teste
 
 O sistema tem cinco áreas: **Produtos e Fichas Técnicas**, **Ordens de Produção**, **Planejamento**, **Produção**, **Gestão e Relatórios**. Configurações concentram os cadastros administrativos, o Workflow e o Laboratório.

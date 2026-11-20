@@ -7,6 +7,8 @@ import { useSystem } from '../system/SystemProvider'
 import type { Product, ProductionOrderRecord } from '../domain/types'
 import type { OperationBalance } from '../domain/progressEngine'
 import { calculateCapacity, numberHours, type CapacityResource, type CapacitySettingsRecord } from '../domain/capacityEngine'
+import CapacityTimelinePanel from './CapacityTimelinePanel'
+import { startOfWeek, normalizeResourceName, type OperationSchedule, type LegacySchedule, type Collaborator, type ResourceUnavailability, type TimedOperation } from '../domain/planningEngine'
 import './CapacityPage.css'
 
 type Kind = 'maquinas' | 'maoObra'
@@ -19,6 +21,7 @@ const freshResource = (kind: Kind): CapacityResource => ({
   diasSemana: 5,
   eficiencia: 85,
   ativo: true,
+  turnos: ['integral'],
 })
 const percentage = (a: number, b: number) => b > 0 ? a / b * 100 : 0
 
@@ -29,6 +32,12 @@ export default function CapacityPage({ kind, notify }: Props) {
   const { items: products, loading: productsLoading, error: productsError } = useTenantCollection<Product>(empresaId, 'produtos', 'descricao')
   const { items: configurations, loading: configLoading, error: configError } = useTenantCollection<CapacitySettingsRecord>(empresaId, 'configuracoesCapacidade', 'tipo')
   const { items: balances, loading: balanceLoading, error: balanceError } = useTenantCollection<OperationBalance>(empresaId, 'saldosOperacoes', 'taskId')
+  const { items: allocations, loading: allocLoading, error: allocError } = useTenantCollection<OperationSchedule>(empresaId,'programacaoOperacoes','opNumero')
+  const { items: olderPrograms, loading: legacyLoading, error: legacyError } = useTenantCollection<LegacySchedule>(empresaId,'programacoes','opId')
+  const { items: collaborators, loading: workersLoading, error: workersError } = useTenantCollection<Collaborator>(empresaId,'colaboradores','nome')
+  const { items: unavailable, loading: unavailableLoading, error: unavailableError } = useTenantCollection<ResourceUnavailability>(empresaId,'indisponibilidadesRecursos','dataInicio')
+  const { items: timeEntries, loading: timingLoading, error: timingError } = useTenantCollection<TimedOperation>(empresaId,'temposOperacoes','opId')
+  const [week,setWeek] = useState(()=>new Date().toISOString().slice(0,10))
   const stored = configurations.find(c => c.id === kind)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<CapacityResource[]>([])
@@ -37,10 +46,14 @@ export default function CapacityPage({ kind, notify }: Props) {
   const machines = kind === 'maquinas'
   const savedResources = stored?.recursos ?? []
   const calculation = useMemo(
-    () => calculateCapacity(orders, products, savedResources, kind, Date.now(), balances),
-    [orders, products, stored, kind, balances],
+    () => calculateCapacity(orders, products, savedResources, kind, Date.now(), balances, {
+      allocations,legacy:olderPrograms,collaborators,unavailable,timeEntries,weekStart:startOfWeek(week),
+    }),
+    [orders, products, stored, kind, balances, allocations,olderPrograms,collaborators,unavailable,timeEntries,week],
   )
   const { rows, totals } = calculation
+  const machineResources = configurations.find(c=>c.id==='maquinas')?.recursos??[]
+  const teamResources = configurations.find(c=>c.id==='maoObra')?.recursos??[]
   const title = machines ? 'Carga Máquina' : 'Carga Mão de Obra'
   const beginEdit = () => {
     setDraft(savedResources.map(r => ({ ...r })))
@@ -51,14 +64,14 @@ export default function CapacityPage({ kind, notify }: Props) {
     setDraft(current => current.map(r => r.id === id ? { ...r, ...patchValue } : r))
   const save = async () => {
     if (!empresaId || !user || saving) return
-    if (draft.some(r => !r.nome.trim() || !Number.isFinite(r.quantidade) || r.quantidade < 0
+    if (draft.some(r => !r.nome.trim() || !Number.isSafeInteger(r.quantidade) || r.quantidade < 0
       || !Number.isFinite(r.horasDia) || r.horasDia < 0 || r.horasDia > 24
-      || !Number.isFinite(r.diasSemana) || r.diasSemana < 0 || r.diasSemana > 7
+      || !Number.isSafeInteger(r.diasSemana) || r.diasSemana < 0 || r.diasSemana > 7
       || !Number.isFinite(r.eficiencia) || r.eficiencia < 0 || r.eficiencia > 100)) {
       setError('Confira os nomes, quantidades e limites de horas, dias e eficiência.')
       return
     }
-    if (new Set(draft.map(r => r.nome.trim().toLocaleLowerCase('pt-BR'))).size !== draft.length) {
+    if (new Set(draft.map(r => normalizeResourceName(r.nome))).size !== draft.length) {
       setError('Não é possível cadastrar dois recursos com o mesmo nome.')
       return
     }
@@ -85,7 +98,7 @@ export default function CapacityPage({ kind, notify }: Props) {
     }
   }
 
-  if (ordersLoading || productsLoading || configLoading || balanceLoading) {
+  if (ordersLoading || productsLoading || configLoading || balanceLoading || allocLoading || legacyLoading || workersLoading || unavailableLoading || timingLoading) {
     return <div className="loading-panel"><Loader2 className="spin" size={22} /> Carregando capacidade...</div>
   }
   const configured = savedResources.some(r => r.ativo)
@@ -95,21 +108,20 @@ export default function CapacityPage({ kind, notify }: Props) {
       <div>
         <span className="section-kicker">Planejamento e acompanhamento de execução</span>
         <h2>{title}</h2>
-        <p>{machines
-          ? 'Compare a carga por tipo de máquina com a capacidade semanal cadastrada.'
-          : 'Compare a carga planejada e o tempo decorrido de cada equipe com a capacidade semanal cadastrada.'}</p>
+        <p>{machines ? 'Compare operações atribuídas, máquinas e capacidade descontando manutenções.' :
+          'Confira horas, colaboradores ativos, ausências e a demanda das equipes.'}</p>
       </div>
       {!editing && <button className="primary-button" onClick={beginEdit}><Save size={16} /> Configurar capacidade</button>}
     </section>
 
-    {(ordersError || productsError || configError || balanceError || error) &&
-      <div className="form-error page-message">{error || ordersError || productsError || configError || balanceError}</div>}
+    {(ordersError || productsError || configError || balanceError || allocError || legacyError || workersError || unavailableError || timingError || error) &&
+      <div className="form-error page-message">{error || ordersError || productsError || configError || balanceError || allocError || legacyError || workersError || unavailableError || timingError}</div>}
 
     <div className="capacity-kpis">
       <article className="panel"><small>Demanda restante (sem calendário)</small><strong>{numberHours(totals.planejadas)} h</strong><span>Quantidade boa restante × tempo-padrão por operação</span></article>
-      <article className="panel"><small>Capacidade por semana</small><strong>{numberHours(totals.capacidade)} h</strong><span>Recursos ativos × jornada × eficiência</span></article>
+      <article className="panel"><small>Disponibilidade da semana</small><strong>{numberHours(totals.capacidade)} h</strong><span>Recursos ativos × jornada × eficiência</span></article>
       <article className="panel"><small>Tempo padrão concluído</small><strong>{numberHours(totals.concluidasPadrao)} h</strong><span>Horas-padrão equivalentes às unidades boas apontadas</span></article>
-      <article className="panel"><small>Tempo real decorrido</small><strong>{numberHours(totals.decorridas)} h</strong><span>Entre início e conclusão, inclui possíveis pausas</span></article>
+      <article className="panel"><small>Horas reais / tempo decorrido</small><strong>{numberHours(totals.decorridas)} h</strong><span>Apontamento real quando disponível; em tarefas antigas, intervalo decorrido</span></article>
     </div>
 
     {!configured && !editing && <div className="capacity-note"><AlertTriangle size={17} /> Configure {machines ? 'as máquinas' : 'o tamanho e a jornada da equipe'} para comparar capacidade e demanda.</div>}
@@ -124,7 +136,7 @@ export default function CapacityPage({ kind, notify }: Props) {
           ? `Excesso de ${numberHours(totals.planejadas - totals.capacidade)} h`
           : totals.capacidade > 0 ? `Folga de ${numberHours(totals.capacidade - totals.planejadas)} h` : '—'}</strong>
       </div>
-      <p className="helper-text">Comparação de referência: demanda total pendente versus uma semana típica de capacidade. Não é programação por datas ou previsão automática de entrega.</p>
+      <p className="helper-text">A demanda soma todas as OPs abertas; a disponibilidade considera a semana de referência do calendário abaixo, colaboradores ativos, faltas, férias e manutenção. A barra não representa prazo garantido.</p>
       <div className="capacity-summary">Operações: <strong>{totals.operacoes}</strong> · Em execução: <strong>{totals.emExecucao}</strong></div>
     </section>
 
@@ -150,6 +162,19 @@ export default function CapacityPage({ kind, notify }: Props) {
             <label>Horas por dia<input type="number" min="0" max="24" step="0.5" value={r.horasDia} onChange={e => patch(r.id, { horasDia: Number(e.target.value) })} /></label>
             <label>Dias por semana<input type="number" min="0" max="7" step="1" value={r.diasSemana} onChange={e => patch(r.id, { diasSemana: Number(e.target.value) })} /></label>
             <label>Eficiência (%)<input type="number" min="0" max="100" step="1" value={r.eficiencia} onChange={e => patch(r.id, { eficiencia: Number(e.target.value) })} /></label>
+            <div className="pf-weekdays-field"><strong>Dias de trabalho</strong>
+              <div className="pf-weekday-picker">{[['Seg',1],['Ter',2],['Qua',3],['Qui',4],['Sex',5],['Sáb',6],['Dom',0]].map(([label,day])=>{
+                const selected=r.diasAtivos??Array.from({length:r.diasSemana},(_,i)=>i<6?i+1:0)
+                return <label key={day} className="pf-weekday"><input type="checkbox" checked={selected.includes(Number(day))}
+                  onChange={e=>patch(r.id,{diasAtivos:e.target.checked?[...selected,Number(day)]:selected.filter(x=>x!==Number(day))})}/>
+                  {label}</label>
+              })}</div>
+            </div>
+            <label>Turnos utilizados<select value={(r.turnos?.length?r.turnos:['integral']).join(',')} onChange={e=>patch(r.id,{turnos:e.target.value.split(',') as NonNullable<CapacityResource['turnos']>})}>
+              <option value="integral">Dia inteiro (sem divisão)</option><option value="manha">Somente manhã</option>
+              <option value="tarde">Somente tarde</option><option value="noite">Somente noite</option>
+              <option value="manha,tarde">Manhã + tarde</option><option value="manha,tarde,noite">Manhã + tarde + noite</option>
+            </select></label>
           </div>
         </article>)}
       </div>
@@ -170,7 +195,10 @@ export default function CapacityPage({ kind, notify }: Props) {
             <td>{row.capacidadeHoras > 0 && (machines || row.tarefas > 0) ? `${numberHours(percentage(row.previstasHoras, row.capacidadeHoras))}%` : '—'}</td></tr>)}
         </tbody></table></div>}
       {!machines && <p className="helper-text">As operações são vinculadas às equipes no Passaporte Digital, em cada revisão de produto. Quando uma OP é liberada, a atribuição da equipe fica registrada na operação. Operações antigas sem vínculo aparecem em “Sem equipe atribuída”; novas atribuições valem para novas OPs.</p>}
-      <p className="helper-text">* A demanda restante considera quantidade da OP menos unidades boas apontadas em cada operação, multiplicadas pelo tempo-padrão do Passaporte. Operações concluídas no fluxo antigo mantêm o tratamento anterior. O tempo decorrido é apenas o intervalo entre início/fim, não horas-homem. Não há programação automática por datas.</p>
+      <p className="helper-text">* A demanda considera unidades ainda não aprovadas × tempo-padrão. Atribuições de programação por operação prevalecem sobre a Ficha Técnica congelada. Quando há colaboradores cadastrados para uma equipe, somente os ativos entram na capacidade; no restante, vale a quantidade manual.</p>
     </section>
+    <CapacityTimelinePanel kind={kind} orders={orders} balances={balances} allocations={allocations}
+      legacy={olderPrograms} machines={machineResources} teams={teamResources}
+      collaborators={collaborators} unavailable={unavailable} week={week} setWeek={setWeek}/>
   </div>
 }

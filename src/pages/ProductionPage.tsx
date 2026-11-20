@@ -4,6 +4,7 @@ import { useSystem } from '../system/SystemProvider'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import type { ProductionOrderRecord } from '../domain/types'
 import { stepProgress, orderProgress } from '../domain/progressEngine'
+import ProductionTimerPanel from './ProductionTimerPanel'
 import {
   registerProduction, reverseProductionEntry, registerRework, reverseRework,
   type ProductionBalance, type ProductionEntry, type ProductionReversal,
@@ -234,6 +235,8 @@ export default function ProductionPage({ notify, initialOrderId }: {
             : <button className="primary-button" disabled={busy || balance.defective <= 0 || current.status === 'bloqueada' || current.status === 'concluida'}
               onClick={() => void rework()}><Wrench size={16}/> {busy ? 'Salvando...' : 'Confirmar peças recuperadas'}</button>}
           <p className="helper-text">Unidades com defeito não avançam para a etapa seguinte. Após corrigir, use “Recuperar peças” para transformar o saldo defeituoso em saldo bom, sem duplicar unidades.</p>
+          <ProductionTimerPanel key={current.id} opId={order.id} taskId={current.id}
+            operator={operatorName} notify={notify}/>
           {current.operacao.instrucoes?.filter(Boolean).length > 0 && <section className="pf-instructions">
             <strong>Instruções do Passaporte</strong>
             {current.operacao.instrucoes.filter(Boolean).map((line, index) => <p key={index}>{line}</p>)}
