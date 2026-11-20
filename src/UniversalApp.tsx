@@ -23,6 +23,7 @@ import './remap.css'
 import './production-upgrades.css'
 import './diagnostics.css'
 import './reports-upgrades.css'
+import './time-studies.css'
 
 type Page = 'inicio' | 'catalogo' | 'ordens' | 'planejamento' | 'producao' | 'gestao' | 'configuracoes'
 type CatalogTab = 'fichas' | 'produtos' | 'materiais' | 'novo'

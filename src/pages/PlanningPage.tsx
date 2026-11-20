@@ -5,10 +5,11 @@ import { db } from '../firebase/config'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import { useSystem } from '../system/SystemProvider'
 import CapacityPage from './CapacityPage'
+import TimeStudiesPage from './TimeStudiesPage'
 import type { ProductionOrderRecord } from '../domain/types'
 import type { CapacitySettingsRecord } from '../domain/capacityEngine'
 
-type PlanningTab = 'programacao' | 'maquinas' | 'equipes' | 'colaboradores'
+type PlanningTab = 'programacao' | 'maquinas' | 'equipes' | 'colaboradores' | 'cronometragem'
 type Schedule = {
   id: string
   opId: string
@@ -135,10 +136,12 @@ export default function PlanningPage({ notify }: { notify: (message: string) => 
       <button className={tab === 'maquinas' ? 'active' : ''} onClick={() => setTab('maquinas')}>Máquinas</button>
       <button className={tab === 'equipes' ? 'active' : ''} onClick={() => setTab('equipes')}>Equipes</button>
       <button className={tab === 'colaboradores' ? 'active' : ''} onClick={() => setTab('colaboradores')}>Colaboradores</button>
+      <button className={tab === 'cronometragem' ? 'active' : ''} onClick={() => setTab('cronometragem')}>Cronometragem</button>
     </div>
     {error && <div className="form-error page-message">{error}</div>}
     {tab === 'maquinas' && <CapacityPage kind="maquinas" notify={notify} />}
     {tab === 'equipes' && <CapacityPage kind="maoObra" notify={notify} />}
+    {tab === 'cronometragem' && <TimeStudiesPage notify={notify}/>}
     {tab === 'programacao' && <>
       <section className="pf-op-summary">
         <div><small>OPs aguardando programação</small><strong>{unscheduled.length}</strong></div>
