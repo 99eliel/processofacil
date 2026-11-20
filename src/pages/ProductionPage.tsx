@@ -20,7 +20,10 @@ function dateOf(value: unknown) {
 }
 const formatTime = (value: unknown) => dateOf(value)?.toLocaleString('pt-BR') ?? 'Aguardando sincronização'
 
-export default function ProductionPage({ notify }: { notify: (message: string) => void }) {
+export default function ProductionPage({ notify, initialOrderId }: {
+  notify: (message: string) => void
+  initialOrderId?: string
+}) {
   const { activeCompany, user } = useSystem()
   const companyId = activeCompany?.id
   const ordersQuery = useTenantCollection<ProductionOrderRecord>(companyId, 'ordensProducao', 'numero')
@@ -49,7 +52,8 @@ export default function ProductionPage({ notify }: { notify: (message: string) =
   const [error, setError] = useState('')
   const [reverseId, setReverseId] = useState('')
   const [reverseReason, setReverseReason] = useState('')
-  const order = orders.find((o) => o.id === selectedOrderId) ?? orders[0]
+  const order = orders.find((o) => o.id === selectedOrderId) ??
+    orders.find((o) => o.id === initialOrderId) ?? orders[0]
   const tasks = useMemo(
     () => [...(order?.operacoes ?? [])].sort((a, b) =>
       (order?.itens.findIndex((item) => item.id === a.itemId) ?? 0)
@@ -57,9 +61,18 @@ export default function ProductionPage({ notify }: { notify: (message: string) =
       || a.operacao.ordem - b.operacao.ordem),
     [order],
   )
-  const current = tasks.find((t) => t.id === selectedTaskId) ?? tasks[0]
+  const current = tasks.find((t) => t.id === selectedTaskId) ??
+    tasks.find((t) => {
+      const step = stepProgress(order, t, balancesQuery.items)
+      return step.toPoint > 0 || step.defective > 0
+    }) ?? tasks[0]
   const balance = current ? stepProgress(order, current, balancesQuery.items) : null
   const progress = order ? orderProgress(order, balancesQuery.items) : null
+  const nextAvailable = current ? tasks.find((task) => {
+    if (task.id === current.id) return false
+    const step = stepProgress(order, task, balancesQuery.items)
+    return step.toPoint > 0 || step.defective > 0
+  }) : null
   const validEntries = entriesQuery.items
     .filter((entry) => entry.opId === order?.id && entry.taskId === current?.id)
     .sort((a, b) => (dateOf(b.criadoEm)?.getTime() ?? 0) - (dateOf(a.criadoEm)?.getTime() ?? 0))
@@ -158,7 +171,7 @@ export default function ProductionPage({ notify }: { notify: (message: string) =
         {order.status === 'reprovada' && <div className="capacity-note"><ShieldAlert size={16}/> OP reprovada na Qualidade. Verifique inspeção e retrabalho.</div>}
       </section>
       <section className="panel pf-form-card">
-        <h3>Etapas da produção</h3>
+        <div className="pf-section-heading"><h3>Etapas da produção</h3><span className="pf-muted">Selecione uma operação para apontar</span></div>
         <div className="pf-operation-grid">{tasks.map((task) => {
           const p = stepProgress(order, task, balancesQuery.items)
           return <button key={task.id} className={'pf-operation-card' + (current?.id === task.id ? ' selected' : '')}
@@ -166,6 +179,7 @@ export default function ProductionPage({ notify }: { notify: (message: string) =
             <small>{task.produtoDescricao} · Etapa {task.operacao.ordem}</small>
             <strong>{task.operacao.nome}</strong>
             <span>{p.good}/{p.target} boas · {p.defective} defeituosas</span>
+            <em className="pf-operation-hint">{p.toPoint > 0 ? 'Pode apontar ' + p.toPoint : p.defective > 0 ? 'Retrabalho pendente' : 'Sem saldo pendente'}</em>
             <div className="pf-progress"><span style={{ width: p.percentage + '%' }}/></div>
           </button>
         })}</div>
@@ -183,6 +197,14 @@ export default function ProductionPage({ notify }: { notify: (message: string) =
           {balance.previous && balance.available === 0 && <div className="capacity-note"><AlertTriangle size={16}/> Aguardando liberação de peças boas da etapa anterior: {balance.previous.operacao.nome}.</div>}
           {current.status === 'bloqueada' && <div className="capacity-note"><ShieldAlert size={16}/> Operação bloqueada no fluxo anterior. Desbloqueie antes de apontar.</div>}
           {current.status === 'concluida' && <div className="capacity-note">Esta operação foi concluída pelo fluxo antigo. Os apontamentos por quantidade não podem ser misturados a ela.</div>}
+          {balance.toPoint === 0 && balance.defective === 0 && nextAvailable && <div className="pf-next-operation">
+            <span><CheckCircle2 size={18}/> Esta etapa não tem peças pendentes. Continue em outra operação.</span>
+            <button className="secondary-button compact" onClick={() => setTask(nextAvailable.id)}>Ir para {nextAvailable.operacao.nome} →</button>
+          </div>}
+          {balance.toPoint === 0 && balance.defective > 0 && <div className="pf-next-operation">
+            <span><Wrench size={18}/> Há {balance.defective} peça(s) com defeito nesta operação.</span>
+            <button className="secondary-button compact" onClick={() => setTab('retrabalho')}>Abrir retrabalho →</button>
+          </div>}}
           <div className="pf-tabbar">
             <button className={tab === 'produzir' ? 'active' : ''} onClick={() => setTab('produzir')}><Save size={15}/> Apontar produção</button>
             <button className={tab === 'retrabalho' ? 'active' : ''} onClick={() => setTab('retrabalho')}><Wrench size={15}/> Recuperar peças ({balance.defective})</button>
@@ -193,14 +215,20 @@ export default function ProductionPage({ notify }: { notify: (message: string) =
               <datalist id="pf-colaboradores">{workersQuery.items.filter((worker) => worker.ativo).map((worker) => <option key={worker.id} value={worker.nome}/>)}</datalist>
             </label>
             {tab === 'produzir' ? <>
-              <label>Unidades boas<input type="number" min="0" max={balance.toPoint} step="1" value={good} onChange={(e) => setGood(e.target.value)} placeholder="Ex.: 100"/></label>
-              <label>Unidades defeituosas<input type="number" min="0" max={balance.toPoint} step="1" value={bad} onChange={(e) => setBad(e.target.value)}/></label>
+              <label>Unidades boas<input type="number" min="0" max={balance.toPoint} step="1" inputMode="numeric" value={good} onChange={(e) => setGood(e.target.value)} placeholder="Ex.: 100"/></label>
+              <label>Unidades defeituosas<input type="number" min="0" max={balance.toPoint} step="1" inputMode="numeric" value={bad} onChange={(e) => setBad(e.target.value)}/></label>
               <label>Observações<input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional"/></label>
             </> : <>
               <label>Quantidade recuperada<input type="number" min="1" max={balance.defective} step="1" value={reworkQuantity} onChange={(e) => setReworkQuantity(e.target.value)}/></label>
               <label>Correção realizada *<input value={reworkNotes} onChange={(e) => setReworkNotes(e.target.value)} placeholder="Ex.: costura refeita e inspecionada"/></label>
             </>}
           </div>
+          {tab === 'produzir' && balance.toPoint > 0 && <div className="pf-fast-quantities">
+            <span>Preencher quantidade boa:</span>
+            {[1, 5, 10].filter((value) => value <= balance.toPoint).map((value) =>
+              <button type="button" key={value} onClick={() => { setGood(String(value)); setBad('0') }}>{value} un.</button>)}
+            <button type="button" onClick={() => { setGood(String(balance.toPoint)); setBad('0') }}>Todas disponíveis ({balance.toPoint})</button>
+          </div>}
           {tab === 'produzir' ? <button className="primary-button" disabled={busy || balance.toPoint <= 0 || current.status === 'bloqueada' || current.status === 'concluida'}
             onClick={() => void register()}><Save size={16}/> {busy ? 'Salvando...' : 'Registrar apontamento'}</button>
             : <button className="primary-button" disabled={busy || balance.defective <= 0 || current.status === 'bloqueada' || current.status === 'concluida'}
