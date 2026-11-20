@@ -51,6 +51,8 @@ export default function PlanningPage({ notify }: { notify: (message: string) => 
   const [workerId, setWorkerId] = useState('')
   const [person, setPerson] = useState(emptyWorker)
   const [editing, setEditing] = useState(false)
+  const [editingOpId, setEditingOpId] = useState('')
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const [editingWorker, setEditingWorker] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -59,8 +61,9 @@ export default function PlanningPage({ notify }: { notify: (message: string) => 
   const unscheduled = orders.filter((o) => !schedules.some((s) => s.opId === o.id))
   const nameFor = (list: typeof teams, id: string) => list.find((item) => item.id === id)?.nome || 'Não atribuída'
 
-  const openNew = () => { setDraft({ ...emptySchedule, opId: unscheduled[0]?.id ?? '' }); setError(''); setEditing(true) }
+  const openNew = () => { setEditingOpId(''); setDraft({ ...emptySchedule, opId: unscheduled[0]?.id ?? '' }); setError(''); setEditing(true) }
   const openEdit = (schedule: Schedule) => {
+    setEditingOpId(schedule.opId)
     setDraft({ opId: schedule.opId, data: schedule.data, prioridade: schedule.prioridade, equipeId: schedule.equipeId, maquinaId: schedule.maquinaId, observacao: schedule.observacao })
     setEditing(true); setError('')
   }
@@ -84,6 +87,7 @@ export default function PlanningPage({ notify }: { notify: (message: string) => 
       })
       await batch.commit()
       setEditing(false)
+      setEditingOpId('')
       notify('Programação salva.')
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Falha ao salvar programação.')
@@ -132,14 +136,20 @@ export default function PlanningPage({ notify }: { notify: (message: string) => 
       <div><span className="section-kicker">Planejamento e Controle da Produção</span><h2>Planejamento</h2>
         <p>Uma central para programação, capacidade de máquinas e equipes.</p></div>
     </section>
-    <div className="pf-tabbar">
+    <div className="pf-planning-caption">ROTINA DO DIA A DIA</div>
+    <div className="pf-tabbar pf-planning-nav">
       <button className={tab === 'programacao' ? 'active' : ''} onClick={() => setTab('programacao')}>Programação</button>
       <button className={tab === 'maquinas' ? 'active' : ''} onClick={() => setTab('maquinas')}>Máquinas</button>
       <button className={tab === 'equipes' ? 'active' : ''} onClick={() => setTab('equipes')}>Equipes</button>
       <button className={tab === 'colaboradores' ? 'active' : ''} onClick={() => setTab('colaboradores')}>Colaboradores</button>
+      <button className={['cronometragem','balanceamento'].includes(tab) ? 'active' : ''} onClick={() => setShowAdvanced((value) => !value)}>Ferramentas técnicas {showAdvanced ? '−' : '+'}</button>
+    </div>
+    {(showAdvanced || ['cronometragem', 'balanceamento'].includes(tab)) && <div className="pf-tools-nav">
+      <span>Ferramentas opcionais</span>
       <button className={tab === 'cronometragem' ? 'active' : ''} onClick={() => setTab('cronometragem')}>Cronometragem</button>
       <button className={tab === 'balanceamento' ? 'active' : ''} onClick={() => setTab('balanceamento')}>Balanceamento</button>
-    </div>
+      <small>Estudos e simulações não alteram automaticamente as Fichas Técnicas ou OPs.</small>
+    </div>}
     {error && <div className="form-error page-message">{error}</div>}
     {tab === 'maquinas' && <CapacityPage kind="maquinas" notify={notify} />}
     {tab === 'equipes' && <CapacityPage kind="maoObra" notify={notify} />}
@@ -152,27 +162,12 @@ export default function PlanningPage({ notify }: { notify: (message: string) => 
         <div><small>Máquinas cadastradas</small><strong>{machines.filter((x) => x.ativo).length}</strong></div>
         <div><small>Equipes cadastradas</small><strong>{teams.filter((x) => x.ativo).length}</strong></div>
       </section>
-      <section className="panel pf-form-card">
-        <div className="pf-section-heading"><h3>Programação das OPs</h3>
-          <button className="primary-button compact" onClick={openNew} disabled={orders.length === 0}><Plus size={16}/> Programar OP</button>
-        </div>
-        {scheduleQuery.error || orderQuery.error || resourcesQuery.error ? <div className="form-error">{scheduleQuery.error || orderQuery.error || resourcesQuery.error}</div> : null}
-        <p className="helper-text">A programação é opcional. Defina a data, prioridade e os recursos previstos para cada OP. O lançamento real será feito em Produção.</p>
-        <div className="pf-table-scroll"><table className="pf-data-table"><thead><tr><th>OP</th><th>Data</th><th>Prioridade</th><th>Equipe</th><th>Máquina</th><th>Ações</th></tr></thead>
-          <tbody>{schedules.map((schedule) => <tr key={schedule.id}>
-            <td><strong>{schedule.opNumero}</strong></td><td>{schedule.data.split('-').reverse().join('/')}</td><td>{schedule.prioridade}</td>
-            <td>{schedule.equipeId ? nameFor(teams, schedule.equipeId) : '—'}</td>
-            <td>{schedule.maquinaId ? nameFor(machines, schedule.maquinaId) : '—'}</td>
-            <td><div className="pf-table-actions"><button onClick={() => openEdit(schedule)} aria-label="Editar programação"><Pencil size={15}/></button>
-              <button onClick={() => void removeSchedule(schedule)} aria-label="Retirar da programação"><Trash2 size={15}/></button></div></td>
-          </tr>)}</tbody></table></div>
-        {schedules.length === 0 && <p className="helper-text">Nenhuma OP programada ainda.</p>}
-      </section>
-      {editing && <section className="panel pf-form-card">
-        <h3>Programar ordem</h3>
+      {editing && <section className="panel pf-form-card pf-schedule-editor">
+        <h3>{editingOpId ? 'Editar programação' : 'Programar uma OP'}</h3>
+        <p className="helper-text">Defina quando a OP será trabalhada. Equipe e máquina são opcionais.</p>
         <div className="pf-two-columns">
           <label>Ordem de produção *
-            <select value={draft.opId} onChange={(e) => setDraft({ ...draft, opId: e.target.value })}>
+            <select value={draft.opId} disabled={Boolean(editingOpId)} onChange={(e) => setDraft({ ...draft, opId: e.target.value })}>
               <option value="">Selecione...</option>
               {orders.map((order) => <option key={order.id} value={order.id}>{order.numero} · {order.itens.map((i) => i.produtoDescricao).join(', ')}</option>)}
             </select>
@@ -189,8 +184,25 @@ export default function PlanningPage({ notify }: { notify: (message: string) => 
           </select></label>
           <label>Observações<input value={draft.observacao} onChange={(e) => setDraft({ ...draft, observacao: e.target.value })}/></label>
         </div>
-        <div className="pf-actions"><button className="secondary-button" onClick={() => setEditing(false)}>Cancelar</button><button className="primary-button" disabled={busy} onClick={() => void saveSchedule()}><Save size={16}/> Salvar programação</button></div>
+        <div className="pf-actions"><button className="secondary-button" onClick={() => { setEditing(false); setEditingOpId('') }}>Cancelar</button><button className="primary-button" disabled={busy} onClick={() => void saveSchedule()}><Save size={16}/> Salvar programação</button></div>
       </section>}
+      <section className="panel pf-form-card">
+        <div className="pf-section-heading"><h3>Programação das OPs</h3>
+          <button className="primary-button compact" onClick={openNew} disabled={orders.length === 0}><Plus size={16}/> Programar OP</button>
+        </div>
+        {scheduleQuery.error || orderQuery.error || resourcesQuery.error ? <div className="form-error">{scheduleQuery.error || orderQuery.error || resourcesQuery.error}</div> : null}
+        <p className="helper-text">A programação é opcional. Defina a data, prioridade e os recursos previstos para cada OP. O lançamento real será feito em Produção.</p>
+        <div className="pf-table-scroll"><table className="pf-data-table"><thead><tr><th>OP</th><th>Data</th><th>Prioridade</th><th>Equipe</th><th>Máquina</th><th>Ações</th></tr></thead>
+          <tbody>{schedules.map((schedule) => <tr key={schedule.id}>
+            <td><strong>{schedule.opNumero}</strong></td><td>{schedule.data.split('-').reverse().join('/')}</td><td>{schedule.prioridade}</td>
+            <td>{schedule.equipeId ? nameFor(teams, schedule.equipeId) : '—'}</td>
+            <td>{schedule.maquinaId ? nameFor(machines, schedule.maquinaId) : '—'}</td>
+            <td><div className="pf-table-actions"><button onClick={() => openEdit(schedule)} aria-label="Editar programação"><Pencil size={15}/></button>
+              <button onClick={() => void removeSchedule(schedule)} aria-label="Retirar da programação"><Trash2 size={15}/></button></div></td>
+          </tr>)}</tbody></table></div>
+        {schedules.length === 0 && <p className="helper-text">Nenhuma OP programada ainda.</p>}
+      </section>
+
     </>}
     {tab === 'colaboradores' && <section className="panel pf-form-card">
       <div className="pf-section-heading"><h3>Colaboradores</h3>
