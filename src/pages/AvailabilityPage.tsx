@@ -5,7 +5,7 @@ import { db } from '../firebase/config'
 import { useTenantCollection } from '../hooks/useTenantCollection'
 import { useSystem } from '../system/SystemProvider'
 import { type CapacitySettingsRecord } from '../domain/capacityEngine'
-import { type Collaborator,type ResourceUnavailability,validDate } from '../domain/planningEngine'
+import { effectiveHeadcount,type Collaborator,type ResourceUnavailability,validDate } from '../domain/planningEngine'
 type Draft={tipo:'maquinas'|'maoObra'|'colaborador';recursoId:string;dataInicio:string;dataFim:string;quantidade:number;motivo:string}
 const initial:Draft={tipo:'maquinas',recursoId:'',dataInicio:'',dataFim:'',quantidade:1,motivo:''}
 export default function AvailabilityPage({notify}:{notify:(v:string)=>void}){
@@ -27,7 +27,8 @@ export default function AvailabilityPage({notify}:{notify:(v:string)=>void}){
     if(!Number.isSafeInteger(draft.quantidade)||draft.quantidade<1){setError('Quantidade indisponível precisa ser inteira e maior que zero.');return}
     if(!choices.some(r=>r.id===draft.recursoId)){setError('Recurso inválido.');return}
     const selected=choices.find(r=>r.id===draft.recursoId)
-    if(draft.tipo!=='colaborador'&&selected&&'quantidade' in selected && draft.quantidade>Number(selected.quantidade)){
+    if(draft.tipo!=='colaborador'&&selected&&'quantidade' in selected &&
+      draft.quantidade>effectiveHeadcount(draft.tipo,selected,people.items)){
       setError('A indisponibilidade não pode superar a quantidade configurada do recurso.');return
     }
     setBusy(true);setError('')

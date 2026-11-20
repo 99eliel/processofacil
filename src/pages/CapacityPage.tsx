@@ -8,7 +8,7 @@ import type { Product, ProductionOrderRecord } from '../domain/types'
 import type { OperationBalance } from '../domain/progressEngine'
 import { calculateCapacity, numberHours, type CapacityResource, type CapacitySettingsRecord } from '../domain/capacityEngine'
 import CapacityTimelinePanel from './CapacityTimelinePanel'
-import { startOfWeek, type OperationSchedule, type LegacySchedule, type Collaborator, type ResourceUnavailability, type TimedOperation } from '../domain/planningEngine'
+import { startOfWeek, normalizeResourceName, type OperationSchedule, type LegacySchedule, type Collaborator, type ResourceUnavailability, type TimedOperation } from '../domain/planningEngine'
 import './CapacityPage.css'
 
 type Kind = 'maquinas' | 'maoObra'
@@ -21,6 +21,7 @@ const freshResource = (kind: Kind): CapacityResource => ({
   diasSemana: 5,
   eficiencia: 85,
   ativo: true,
+  turnos: ['integral'],
 })
 const percentage = (a: number, b: number) => b > 0 ? a / b * 100 : 0
 
@@ -63,14 +64,14 @@ export default function CapacityPage({ kind, notify }: Props) {
     setDraft(current => current.map(r => r.id === id ? { ...r, ...patchValue } : r))
   const save = async () => {
     if (!empresaId || !user || saving) return
-    if (draft.some(r => !r.nome.trim() || !Number.isFinite(r.quantidade) || r.quantidade < 0
+    if (draft.some(r => !r.nome.trim() || !Number.isSafeInteger(r.quantidade) || r.quantidade < 0
       || !Number.isFinite(r.horasDia) || r.horasDia < 0 || r.horasDia > 24
-      || !Number.isFinite(r.diasSemana) || r.diasSemana < 0 || r.diasSemana > 7
+      || !Number.isSafeInteger(r.diasSemana) || r.diasSemana < 0 || r.diasSemana > 7
       || !Number.isFinite(r.eficiencia) || r.eficiencia < 0 || r.eficiencia > 100)) {
       setError('Confira os nomes, quantidades e limites de horas, dias e eficiência.')
       return
     }
-    if (new Set(draft.map(r => r.nome.trim().toLocaleLowerCase('pt-BR'))).size !== draft.length) {
+    if (new Set(draft.map(r => normalizeResourceName(r.nome))).size !== draft.length) {
       setError('Não é possível cadastrar dois recursos com o mesmo nome.')
       return
     }
@@ -161,6 +162,14 @@ export default function CapacityPage({ kind, notify }: Props) {
             <label>Horas por dia<input type="number" min="0" max="24" step="0.5" value={r.horasDia} onChange={e => patch(r.id, { horasDia: Number(e.target.value) })} /></label>
             <label>Dias por semana<input type="number" min="0" max="7" step="1" value={r.diasSemana} onChange={e => patch(r.id, { diasSemana: Number(e.target.value) })} /></label>
             <label>Eficiência (%)<input type="number" min="0" max="100" step="1" value={r.eficiencia} onChange={e => patch(r.id, { eficiencia: Number(e.target.value) })} /></label>
+            <label>Dias de trabalho
+              <div className="pf-weekday-picker">{[['Seg',1],['Ter',2],['Qua',3],['Qui',4],['Sex',5],['Sáb',6],['Dom',0]].map(([label,day])=>{
+                const selected=r.diasAtivos??Array.from({length:r.diasSemana},(_,i)=>i<6?i+1:0)
+                return <label key={day} className="pf-weekday"><input type="checkbox" checked={selected.includes(Number(day))}
+                  onChange={e=>patch(r.id,{diasAtivos:e.target.checked?[...selected,Number(day)]:selected.filter(x=>x!==Number(day))})}/>
+                  {label}</label>
+              })}</div>
+            </label>
             <label>Turnos utilizados<select value={(r.turnos?.length?r.turnos:['integral']).join(',')} onChange={e=>patch(r.id,{turnos:e.target.value.split(',') as NonNullable<CapacityResource['turnos']>})}>
               <option value="integral">Dia inteiro (sem divisão)</option><option value="manha">Somente manhã</option>
               <option value="tarde">Somente tarde</option><option value="noite">Somente noite</option>
