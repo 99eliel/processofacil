@@ -8,7 +8,7 @@ const sample=(taskId,horas,extra={})=>({
   equipeId:'T',maquinaId:'M',pendente:10,horas,semTempo:false,programado:true,prioridade:'normal',...extra,
 })
 test('previsão distribui horas entre dias, sem ultrapassar uma máquina',()=>{
- const results=forecastOperationLoads([sample('a',12),sample('b',5,{itemId:'b'})],
+ const results=forecastOperationLoads([sample('a',12),sample('b',5,{ordem:2})],
    [machine('M')],[machine('T')],[],[],'2026-11-16')
  assert.equal(results[0].dataPrevista,'2026-11-17')
  assert.equal(results[1].dataPrevista,'2026-11-18')
