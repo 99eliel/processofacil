@@ -49,6 +49,7 @@ export type TimedOperation = {
   id: string
   opId: string
   taskId: string
+  operadorNome?: string
   maquinaId?: string
   equipeId?: string
   duracaoMs: number

@@ -8,6 +8,7 @@ import {
   type ProductionRework, type ProductionReworkReversal,
 } from '../firebase/productionLedger'
 import { orderProgress, productionWarnings } from '../domain/progressEngine'
+import type {TimedOperation} from '../domain/planningEngine'
 
 function dateOf(value: unknown): Date | null {
   if (value && typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function') return value.toDate()
@@ -33,7 +34,7 @@ function downloadCsv(rows: string[][], filename: string) {
   document.body.appendChild(link); link.click(); link.remove()
   URL.revokeObjectURL(url)
 }
-type OperatorRow = { name: string; entries: number; good: number; bad: number; reworked: number }
+type OperatorRow = { name: string; entries: number; good: number; bad: number; reworked: number; workedMs:number }
 export default function ReportsPage() {
   const { activeCompany } = useSystem()
   const companyId = activeCompany?.id
@@ -44,6 +45,7 @@ export default function ReportsPage() {
   const reworksQuery = useTenantCollection<ProductionRework>(companyId, 'retrabalhosOperacoes', 'criadoEm')
   const reworkReversalsQuery = useTenantCollection<ProductionReworkReversal>(companyId, 'estornosRetrabalhos', 'reworkId')
   const inspectionsQuery = useTenantCollection<QualityInspection>(companyId, 'inspecoes', 'criadoEm')
+  const hoursQuery = useTenantCollection<TimedOperation>(companyId,'temposOperacoes','opId')
   const [orderFilter, setOrderFilter] = useState('')
   const [personFilter, setPersonFilter] = useState('')
   const [from, setFrom] = useState('')
@@ -64,9 +66,12 @@ export default function ReportsPage() {
     !reworkReversed.has(e.id) && allowedOrderIds.has(e.opId) &&
     (!orderFilter || e.opId === orderFilter) &&
     (!personFilter || e.operadorNome === personFilter) && matchesPeriod(e.criadoEm))
+  const measured=hoursQuery.items.filter(t=>allowedOrderIds.has(t.opId) && (!orderFilter||t.opId===orderFilter) &&
+    (!personFilter||t.operadorNome===personFilter) && matchesPeriod(t.registradoEm))
+  const totalHoursMs=measured.reduce((sum,t)=>sum+Math.max(0,Number(t.duracaoMs)||0),0)
   const inspected = inspectionsQuery.items.filter((i) =>
     allowedOrderIds.has(i.opId) && (!orderFilter || i.opId === orderFilter) && matchesPeriod(i.criadoEm))
-  const allPeople = [...new Set([...entriesQuery.items.map((e) => e.operadorNome), ...reworksQuery.items.map((e) => e.operadorNome)])]
+  const allPeople = [...new Set([...entriesQuery.items.map((e) => e.operadorNome), ...reworksQuery.items.map((e) => e.operadorNome),...hoursQuery.items.map(t=>t.operadorNome||'')])]
     .filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt-BR'))
   const plannedGood = entries.reduce((total, entry) => total + Number(entry.boas ?? 0), 0)
   const detectedBad = entries.reduce((total, entry) => total + Number(entry.defeituosas ?? 0), 0)
@@ -80,18 +85,24 @@ export default function ReportsPage() {
     const map = new Map<string, OperatorRow>()
     for (const entry of entries) {
       const name = entry.operadorNome || 'Não informado'
-      const row = map.get(name) ?? { name, entries: 0, good: 0, bad: 0, reworked: 0 }
+      const row = map.get(name) ?? { name, entries: 0, good: 0, bad: 0, reworked: 0, workedMs:0 }
       row.entries += 1; row.good += Number(entry.boas || 0); row.bad += Number(entry.defeituosas || 0)
       map.set(name, row)
     }
     for (const entry of reworks) {
       const name = entry.operadorNome || 'Não informado'
-      const row = map.get(name) ?? { name, entries: 0, good: 0, bad: 0, reworked: 0 }
+      const row = map.get(name) ?? { name, entries: 0, good: 0, bad: 0, reworked: 0, workedMs:0 }
       row.reworked += Number(entry.quantidade || 0)
       map.set(name, row)
     }
+    for(const time of measured){
+      const name=time.operadorNome||'Não informado'
+      const row=map.get(name)??{name,entries:0,good:0,bad:0,reworked:0,workedMs:0}
+      row.workedMs+=Math.max(0,Number(time.duracaoMs)||0)
+      map.set(name,row)
+    }
     return [...map.values()].sort((a, b) => b.good - a.good || a.name.localeCompare(b.name))
-  }, [entries, reworks])
+  }, [entries, reworks, measured])
   const operationRows = useMemo(() => {
     const map = new Map<string, { id: string; name: string; boas: number; defeitos: number; qtd: number }>()
     for (const entry of entries) {
@@ -108,9 +119,9 @@ export default function ReportsPage() {
     const minutes = Number(task?.operacao.tempoPadraoMin ?? 0)
     return sum + (minutes > 0 ? Number(entry.boas || 0) * minutes / 60 : 0)
   }, 0)
-  const loading = [ordersQuery, entriesQuery, balancesQuery, reversalsQuery, reworksQuery, reworkReversalsQuery, inspectionsQuery]
+  const loading = [ordersQuery, entriesQuery, balancesQuery, reversalsQuery, reworksQuery, reworkReversalsQuery, inspectionsQuery, hoursQuery]
     .some((q) => q.loading)
-  const error = [ordersQuery, entriesQuery, balancesQuery, reversalsQuery, reworksQuery, reworkReversalsQuery, inspectionsQuery]
+  const error = [ordersQuery, entriesQuery, balancesQuery, reversalsQuery, reworksQuery, reworkReversalsQuery, inspectionsQuery, hoursQuery]
     .map((q) => q.error).find(Boolean)
   const reset = () => { setOrderFilter(''); setPersonFilter(''); setStatusFilter('todos'); setFrom(''); setTo('') }
   const exportEntries = () => downloadCsv([
@@ -122,9 +133,16 @@ export default function ReportsPage() {
     ]),
   ], 'processo-facil-apontamentos.csv')
   const exportOperators = () => downloadCsv([
-    ['Responsável', 'Apontamentos', 'Boas processadas', 'Defeitos detectados', 'Recuperadas'],
-    ...operators.map((r) => [r.name, String(r.entries), String(r.good), String(r.bad), String(r.reworked)]),
+    ['Responsável', 'Apontamentos', 'Boas processadas', 'Defeitos detectados', 'Recuperadas','Horas efetivas'],
+    ...operators.map((r) => [r.name, String(r.entries), String(r.good), String(r.bad), String(r.reworked),(r.workedMs/3600000).toFixed(2)]),
   ], 'processo-facil-operadores.csv')
+  const exportHours=()=>downloadCsv([
+    ['OP','Operação','Responsável','Horas reais','Encerrado em'],
+    ...measured.map(t=>[orderById.get(t.opId)?.numero||t.opId,
+      orderById.get(t.opId)?.operacoes.find(op=>op.id===t.taskId)?.operacao.nome||t.taskId,
+      t.operadorNome||'',(Math.max(0,Number(t.duracaoMs)||0)/3600000).toFixed(2),
+      dateOf(t.registradoEm)?.toLocaleString('pt-BR')||''])
+  ],'processo-facil-horas-trabalhadas.csv')
   const countWarnings = calculatedOrders.reduce((sum, { order }) =>
     sum + productionWarnings(order, balancesQuery.items,
       [new Date().getFullYear(), String(new Date().getMonth()+1).padStart(2,'0'),String(new Date().getDate()).padStart(2,'0')].join('-')).length, 0)
@@ -157,6 +175,7 @@ export default function ReportsPage() {
         <button className="secondary-button" onClick={reset}>Limpar filtros</button>
         <button className="secondary-button" onClick={exportEntries}><Download size={15}/> CSV apontamentos</button>
         <button className="secondary-button" onClick={exportOperators}><Download size={15}/> CSV responsáveis</button>
+        <button className="secondary-button" onClick={exportHours}><Download size={15}/> CSV horas reais</button>
         <button className="primary-button" onClick={() => window.print()}><Printer size={15}/> Imprimir / PDF</button>
       </div>
     </section>
@@ -177,8 +196,12 @@ export default function ReportsPage() {
         <div><small>Inspeções no período</small><strong>{fmt(inspected.length)}</strong></div>
         <div><small>Horas-padrão boas*</small><strong>{plannedTime.toLocaleString('pt-BR',{maximumFractionDigits:1})} h</strong></div>
       </div>
+      <section className="pf-op-summary">
+        <div><small>Horas efetivas registradas no período</small><strong>{(totalHoursMs/3600000).toLocaleString('pt-BR',{maximumFractionDigits:1})} h</strong></div>
+        <div><small>Sessões encerradas no período</small><strong>{measured.length}</strong></div>
+      </section>
       {countWarnings > 0 && <div className="capacity-note pf-no-print">{countWarnings} alerta(s) operacionais identificados. Consulte Configurações → Diagnóstico.</div>}
-      <p className="helper-text">* Valores de apontamentos nas operações do período: uma peça pode aparecer em várias etapas. Recuperações não são peças novas e não entram novamente em “boas processadas”. ** Valores cumulativos da última etapa de cada produto; filtros de data e responsável não se aplicam a essas duas métricas.</p>
+      <p className="helper-text">* Valores de apontamentos nas operações do período: uma peça pode aparecer em várias etapas. Recuperações não são peças novas e não entram novamente em “boas processadas”. ** Valores cumulativos da última etapa de cada produto; filtros de data e responsável não se aplicam a essas duas métricas. As horas efetivas vêm somente de sessões de tempo encerradas e não são inferidas a partir de quantidades.</p>
       <section className="panel pf-form-card">
         <h3>Situação das ordens</h3>
         <div className="pf-table-scroll"><table className="pf-data-table">
@@ -194,10 +217,10 @@ export default function ReportsPage() {
       <section className="panel pf-form-card">
         <h3>Produção por responsável</h3>
         <div className="pf-table-scroll"><table className="pf-data-table"><thead><tr>
-          <th>Responsável</th><th>Lançamentos</th><th>Boas processadas</th><th>Defeitos</th><th>Recuperadas</th>
+          <th>Responsável</th><th>Lançamentos</th><th>Boas processadas</th><th>Defeitos</th><th>Recuperadas</th><th>Horas reais</th>
         </tr></thead><tbody>{operators.map((row) => <tr key={row.name}>
           <td><strong>{row.name}</strong></td><td>{fmt(row.entries)}</td><td>{fmt(row.good)}</td>
-          <td>{fmt(row.bad)}</td><td>{fmt(row.reworked)}</td></tr>)}</tbody></table></div>
+          <td>{fmt(row.bad)}</td><td>{fmt(row.reworked)}</td><td>{(row.workedMs/3600000).toLocaleString('pt-BR',{maximumFractionDigits:1})} h</td></tr>)}</tbody></table></div>
         {operators.length === 0 && <p className="helper-text">Nenhum registro no período.</p>}
       </section>
       <section className="panel pf-form-card">
