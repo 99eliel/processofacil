@@ -243,32 +243,43 @@ export function forecastOperationLoads(
   collaborators:Collaborator[],unavailable:ResourceUnavailability[],
   today:string,horizonDays=180,
 ):OperationForecast[]{
-  const sorted=[...input.filter(l=>l.pendente>0)].sort((a,b)=>{
-    const urgency=(p:LoadRecord['prioridade'])=>p==='urgente'?0:p==='alta'?1:2
-    return urgency(a.prioridade)-urgency(b.prioridade)||
-      (a.data||today).localeCompare(b.data||today)||
-      a.opNumero.localeCompare(b.opNumero)||a.itemId.localeCompare(b.itemId)||a.ordem-b.ordem
-  })
+  const urgency=(p:LoadRecord['prioridade'])=>p==='urgente'?0:p==='alta'?1:2
+  const opPriority=new Map<string,number>()
+  for(const task of input)opPriority.set(task.opId,Math.min(opPriority.get(task.opId)??2,urgency(task.prioridade)))
+  // Prioridade é da OP; dentro do item, respeite a sequência antes de simular outras etapas.
+  const sorted=[...input.filter(l=>l.pendente>0)].sort((a,b)=>
+    (opPriority.get(a.opId)??2)-(opPriority.get(b.opId)??2)||
+    (a.data||today).localeCompare(b.data||today)||
+    a.opNumero.localeCompare(b.opNumero)||a.itemId.localeCompare(b.itemId)||a.ordem-b.ordem
+  )
   const machineUsage=new Map<string,number>()
   const teamUsage=new Map<string,number>()
   const machineShiftUsage=new Map<string,number>()
   const teamShiftUsage=new Map<string,number>()
   const precedingEnd=new Map<string,string>()
+  const blockedItems=new Set<string>()
   const results:OperationForecast[]=[]
   const offsetDays=(date:string,n:number)=>businessDays(date,n+1).at(-1)||date
   for(const task of sorted){
     const itemKey=task.opId+'/'+task.itemId
+    if(blockedItems.has(itemKey)){
+      results.push({taskId:task.taskId,opNumero:task.opNumero,operacao:task.operacao,
+        horas:task.horas,dataPrevista:null,motivo:'Operação anterior sem previsão'})
+      continue
+    }
     const last=precedingEnd.get(itemKey)
     let start=(task.data&&task.data>today)?task.data:today
     if(last&&last>start)start=last
     const machine=machines.find(r=>r.id===task.maquinaId)
     const team=teams.find(r=>r.id===task.equipeId)
     if(task.semTempo||!Number.isFinite(task.horas)||task.horas<=0){
+      blockedItems.add(itemKey)
       results.push({taskId:task.taskId,opNumero:task.opNumero,operacao:task.operacao,
         horas:task.horas,dataPrevista:null,motivo:'Sem tempo-padrão válido'})
       continue
     }
     if(!machine&&!team){
+      blockedItems.add(itemKey)
       results.push({taskId:task.taskId,opNumero:task.opNumero,operacao:task.operacao,
         horas:task.horas,dataPrevista:null,motivo:'Sem equipe ou máquina cadastrada'})
       continue
@@ -304,6 +315,7 @@ export function forecastOperationLoads(
       if(remaining<0.001){finish=date;break}
     }
     if(finish)precedingEnd.set(itemKey,finish)
+    else blockedItems.add(itemKey)
     results.push({taskId:task.taskId,opNumero:task.opNumero,operacao:task.operacao,
       horas:task.horas,dataPrevista:finish,
       motivo:finish?'Estimativa por horas disponíveis':'Não coube na capacidade do período simulado'})
