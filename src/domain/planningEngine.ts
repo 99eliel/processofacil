@@ -58,6 +58,8 @@ export type LoadRecord = {
   opId: string
   opNumero: string
   taskId: string
+  itemId: string
+  ordem: number
   operacao: string
   produto: string
   data: string
@@ -162,7 +164,7 @@ export function buildOperationLoads(
       const plan=plans.get(task.id)
       const fallback=old.get(order.id)
       return {
-        opId:order.id,opNumero:order.numero,taskId:task.id,
+        opId:order.id,opNumero:order.numero,taskId:task.id,itemId:task.itemId,ordem:task.operacao.ordem,
         operacao:task.operacao.nome,produto:task.produtoDescricao,
         data:plan?.data||fallback?.data||'',
         turno:plan?.turno||'integral' as Shift,
@@ -222,4 +224,88 @@ export function planningAlerts(
     if(d.demanda>d.capacidade+0.001)alerts.push(d.data+' · '+d.recursoNome+': excesso de '+(d.demanda-d.capacidade).toFixed(1)+' h.')
   }
   return alerts
+}
+
+
+export type OperationForecast={
+  taskId:string
+  opNumero:string
+  operacao:string
+  horas:number
+  dataPrevista:string|null
+  motivo:string
+}
+
+/** Previsão exploratória: reserva horas disponíveis nas máquinas e equipes, sem alterar OPs. */
+export function forecastOperationLoads(
+  input:LoadRecord[],machines:CapacityResource[],teams:CapacityResource[],
+  collaborators:Collaborator[],unavailable:ResourceUnavailability[],
+  today:string,horizonDays=180,
+):OperationForecast[]{
+  const sorted=[...input.filter(l=>l.pendente>0)].sort((a,b)=>{
+    const urgency=(p:LoadRecord['prioridade'])=>p==='urgente'?0:p==='alta'?1:2
+    return urgency(a.prioridade)-urgency(b.prioridade)||
+      (a.data||today).localeCompare(b.data||today)||
+      a.opNumero.localeCompare(b.opNumero)||a.itemId.localeCompare(b.itemId)||a.ordem-b.ordem
+  })
+  const machineUsage=new Map<string,number>()
+  const teamUsage=new Map<string,number>()
+  const machineShiftUsage=new Map<string,number>()
+  const teamShiftUsage=new Map<string,number>()
+  const precedingEnd=new Map<string,string>()
+  const results:OperationForecast[]=[]
+  const offsetDays=(date:string,n:number)=>businessDays(date,n+1).at(-1)||date
+  for(const task of sorted){
+    const itemKey=task.opId+'/'+task.itemId
+    const last=precedingEnd.get(itemKey)
+    let start=(task.data&&task.data>today)?task.data:today
+    if(last&&last>start)start=last
+    const machine=machines.find(r=>r.id===task.maquinaId)
+    const team=teams.find(r=>r.id===task.equipeId)
+    if(task.semTempo||!Number.isFinite(task.horas)||task.horas<=0){
+      results.push({taskId:task.taskId,opNumero:task.opNumero,operacao:task.operacao,
+        horas:task.horas,dataPrevista:null,motivo:'Sem tempo-padrão válido'})
+      continue
+    }
+    if(!machine&&!team){
+      results.push({taskId:task.taskId,opNumero:task.opNumero,operacao:task.operacao,
+        horas:task.horas,dataPrevista:null,motivo:'Sem equipe ou máquina cadastrada'})
+      continue
+    }
+    let remaining=task.horas,finish:string|null=null
+    for(let day=0;day<Math.max(1,Math.min(365,horizonDays));day++){
+      const date=offsetDays(start,day)
+      const machineKey=(machine?.id||'')+'|'+date
+      const teamKey=(team?.id||'')+'|'+date
+      const machineShift=machineKey+'|'+task.turno
+      const teamShift=teamKey+'|'+task.turno
+      const machineCapacity=machine?capacityForDate(machine,'maquinas',date,collaborators,unavailable):Infinity
+      const teamCapacity=team?capacityForDate(team,'maoObra',date,collaborators,unavailable):Infinity
+      const machineShiftCap=machine?capacityForDate(machine,'maquinas',date,collaborators,unavailable,task.turno):Infinity
+      const teamShiftCap=team?capacityForDate(team,'maoObra',date,collaborators,unavailable,task.turno):Infinity
+      const free=Math.max(0,Math.min(
+        machineCapacity-(machineUsage.get(machineKey)||0),
+        teamCapacity-(teamUsage.get(teamKey)||0),
+        machineShiftCap-(machineShiftUsage.get(machineShift)||0),
+        teamShiftCap-(teamShiftUsage.get(teamShift)||0),
+      ))
+      if(free<=0)continue
+      const allocated=Math.min(free,remaining)
+      if(machine){
+        machineUsage.set(machineKey,(machineUsage.get(machineKey)||0)+allocated)
+        machineShiftUsage.set(machineShift,(machineShiftUsage.get(machineShift)||0)+allocated)
+      }
+      if(team){
+        teamUsage.set(teamKey,(teamUsage.get(teamKey)||0)+allocated)
+        teamShiftUsage.set(teamShift,(teamShiftUsage.get(teamShift)||0)+allocated)
+      }
+      remaining-=allocated
+      if(remaining<0.001){finish=date;break}
+    }
+    if(finish)precedingEnd.set(itemKey,finish)
+    results.push({taskId:task.taskId,opNumero:task.opNumero,operacao:task.operacao,
+      horas:task.horas,dataPrevista:finish,
+      motivo:finish?'Estimativa por horas disponíveis':'Não coube na capacidade do período simulado'})
+  }
+  return results
 }
