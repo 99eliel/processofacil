@@ -1,0 +1,7 @@
+
+.pf-report-filters{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.pf-report-filters label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:#4a6276}
+.pf-report-filters select,.pf-report-filters input{min-width:0;width:100%;border:1px solid #d7dfe8;border-radius:9px;background:#fff;min-height:40px;padding:9px;font-size:13px}
+@media (max-width:1050px){.pf-report-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.pf-report-filters{grid-template-columns:1fr}}
+@media print{.pf-report-document .pf-table-scroll{overflow:visible}.pf-report-document .pf-data-table{font-size:10px}}
