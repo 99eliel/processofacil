@@ -9,6 +9,7 @@ import './styles.css'
 import './universal.css'
 import './premium.css'
 import './technical-print.css'
+import './technical-print-v2.css'
 
 function cleanupLegacyPwa() {
   if (!('serviceWorker' in navigator)) return
