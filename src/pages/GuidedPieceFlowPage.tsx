@@ -794,14 +794,14 @@ export default function GuidedPieceFlowPage({
           <p className="piece-photo-help">Os dados de qualidade serão consultados pelo arquivo anexado.</p>
         </FormSection>
 
-        <FormSection number="9" icon={Scissors} title="Processo de corte" text="Preenche diretamente o quadro PROCESSO DE CORTE.">
+        <FormSection number="9" icon={Scissors} title="Dados de consumo" text="Preenche diretamente a seção Dados de consumo da Ficha Técnica.">
           <div className="guided-form-grid">
-            <label className="guided-field"><span>Encaixe</span><input value={cutting.encaixe} onChange={(e) => setCutting({ ...cutting, encaixe: e.target.value })} placeholder="Ex.: Corpo Polo 01" /></label>
-            <label className="guided-field"><span>Consumo de tecido</span><input value={cutting.consumoTecido} onChange={(e) => setCutting({ ...cutting, consumoTecido: e.target.value })} placeholder="Ex.: 155 m/peça" /></label>
+            <label className="guided-field"><span>Modelo</span><input value={cutting.encaixe} onChange={(e) => setCutting({ ...cutting, encaixe: e.target.value })} placeholder="Ex.: Corpo Polo 01" /></label>
+            <label className="guided-field"><span>Grade encaixada</span><input value={cutting.consumoTecido} onChange={(e) => setCutting({ ...cutting, consumoTecido: e.target.value })} placeholder="Ex.: P / M / G" /></label>
             <label className="guided-field"><span>Comprimento do risco</span><input value={cutting.comprimentoRisco} onChange={(e) => setCutting({ ...cutting, comprimentoRisco: e.target.value })} placeholder="Ex.: 6 m" /></label>
-            <label className="guided-field"><span>Altura do enfesto</span><input value={cutting.alturaEnfesto} onChange={(e) => setCutting({ ...cutting, alturaEnfesto: e.target.value })} placeholder="Ex.: 98 cm" /></label>
-            <label className="guided-field"><span>Nº de folhas</span><input value={cutting.numeroFolhas} onChange={(e) => setCutting({ ...cutting, numeroFolhas: e.target.value })} placeholder="Ex.: 10" /></label>
-            <label className="guided-field"><span>Perdas (%)</span><input value={cutting.perdasPercentual} onChange={(e) => setCutting({ ...cutting, perdasPercentual: e.target.value })} placeholder="Ex.: 8%" /></label>
+            <label className="guided-field"><span>Consumo</span><input value={cutting.alturaEnfesto} onChange={(e) => setCutting({ ...cutting, alturaEnfesto: e.target.value })} placeholder="Ex.: 1,55 m/peça" /></label>
+            <label className="guided-field"><span>Largura do tecido</span><input value={cutting.numeroFolhas} onChange={(e) => setCutting({ ...cutting, numeroFolhas: e.target.value })} placeholder="Ex.: 1,60 m" /></label>
+            <label className="guided-field"><span>Aproveitamento</span><input value={cutting.perdasPercentual} onChange={(e) => setCutting({ ...cutting, perdasPercentual: e.target.value })} placeholder="Ex.: 92%" /></label>
           </div>
         </FormSection>
 
@@ -854,7 +854,7 @@ export default function GuidedPieceFlowPage({
           <li className={operations.some((item) => item.nome && item.descricao) ? 'done' : ''}>Operações</li>
           <li className={needleThreads.some((item) => item.maquina || item.agulha || item.linha) ? 'done' : ''}>Agulhas / linhas</li>
           <li className={attachments.find((item) => item.tipo === 'qualidade')?.file ? 'done' : ''}>Qualidade</li>
-          <li className={cutting.encaixe || cutting.consumoTecido ? 'done' : ''}>Corte</li>
+          <li className={cutting.encaixe || cutting.consumoTecido ? 'done' : ''}>Consumo</li>
           <li className={attachments.some((item) => item.file) ? 'done' : ''}>Anexos</li>
           <li className={dna.maquinaPrincipal || dna.tempoPadraoMin || dna.nivelDificuldade ? 'done' : ''}>DNA</li>
           <li className={!production.criarOp || totalPieces > 0 ? 'done' : ''}>Produção</li>
