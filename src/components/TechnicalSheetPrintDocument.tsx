@@ -91,7 +91,7 @@ export default function TechnicalSheetPrintDocument({
   const totalTime = revision.dnaProduto.tempoPadraoMin ?? (calculatedTime > 0 ? calculatedTime : null)
 
   const primaryVideo = orderedOperations
-    .flatMap((operation) => operation.midias.map((media) => ({ operation, media })))
+    .flatMap((operation) => (operation.midias ?? []).map((media) => ({ operation, media })))
     .find(({ media }) => media.tipo === 'video')
 
   const technicalDrawing = revision.anexos.find((item) => item.tipo === 'desenho' && item.url)
@@ -310,7 +310,7 @@ export default function TechnicalSheetPrintDocument({
                     </div>
                     {operation.descricao?.trim() && <p>{operation.descricao}</p>}
                     {(operation.midias ?? []).some((media) => media.url) && <div className="ft-flex-operation-media">
-                      {operation.midias.filter((media) => media.url).map((media) =>
+                      {(operation.midias ?? []).filter((media) => media.url).map((media) =>
                         media.tipo === 'imagem'
                           ? <figure key={media.id}>
                               <img src={media.url} alt={media.legenda || 'Foto da operação'}/>
@@ -366,7 +366,7 @@ export default function TechnicalSheetPrintDocument({
                     : <strong>{attachment.nome}</strong>}
                 </div>)}
               </div>
-            </DynamicBox>
+            </DynamicBox>}
 
             {hasDna && <section className="ft-flex-dna">
               <div className="ft-flex-section-title">DNA DO PRODUTO <small>INFORMAÇÃO QUE GERA QUALIDADE E PRODUTIVIDADE</small></div>
