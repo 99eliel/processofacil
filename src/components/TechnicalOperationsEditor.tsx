@@ -8,12 +8,11 @@ import {
   ListChecks,
   Loader2,
   Plus,
+  Pencil,
   Trash2,
   Video,
 } from 'lucide-react'
 import { deleteOperationMedia, uploadOperationMedia } from '../firebase/storageRepository'
-import { useTenantCollection } from '../hooks/useTenantCollection'
-import type { CapacitySettingsRecord } from '../domain/capacityEngine'
 import type { TechnicalOperation, TechnicalRevision } from '../domain/types'
 
 type Props = {
@@ -53,9 +52,8 @@ export default function TechnicalOperationsEditor({
   notify,
   onError,
 }: Props) {
-  const { items: capacityConfigs } = useTenantCollection<CapacitySettingsRecord>(empresaId, 'configuracoesCapacidade', 'tipo')
-  const teams = capacityConfigs.find(item => item.id === 'maoObra')?.recursos.filter(item => item.ativo) ?? []
   const [expanded, setExpanded] = useState<string | null>(editor.operacoes[0]?.id ?? null)
+  const [editingTitle, setEditingTitle] = useState<{ id: string; original: string } | null>(null)
   const [uploading, setUploading] = useState('')
 
   const update = (id: string, patch: Partial<TechnicalOperation>) => {
@@ -71,6 +69,7 @@ export default function TechnicalOperationsEditor({
     const next = emptyOperation(editor.operacoes.length + 1)
     setEditor({ ...editor, operacoes: [...editor.operacoes, next] })
     setExpanded(next.id)
+    setEditingTitle({ id: next.id, original: '' })
   }
 
   const remove = async (operation: TechnicalOperation) => {
@@ -89,6 +88,7 @@ export default function TechnicalOperationsEditor({
         .filter((item) => item.id !== operation.id)
         .map((item, index) => ({ ...item, ordem: index + 1 })),
     })
+    if (editingTitle?.id === operation.id) setEditingTitle(null)
   }
 
   const move = (index: number, direction: -1 | 1) => {
@@ -176,18 +176,54 @@ export default function TechnicalOperationsEditor({
           return <article className="operation-editor-card" key={operation.id}>
             <div className="operation-editor-summary">
               <span className="operation-order">{operation.codigo || String((index + 1) * 10)}</span>
-              <button
-                type="button"
-                className="operation-title-button"
-                onClick={() => setExpanded(isExpanded ? null : operation.id)}
-              >
-                <strong>{operation.nome || 'Operação sem nome'}</strong>
-                <small>
-                  {operation.maquina || 'Máquina não definida'}
-                  {operation.tempoPadraoMin != null ? ` · ${operation.tempoPadraoMin} min` : ''}
-                  {operation.midias.some((item) => item.tipo === 'video') ? ' · vídeo' : ''}
-                </small>
-              </button>
+              {editingTitle?.id === operation.id && editable ? (
+                <div className="operation-title-editor">
+                  <input
+                    autoFocus
+                    aria-label="Nome da operação"
+                    placeholder="Digite o nome da operação"
+                    value={operation.nome}
+                    maxLength={150}
+                    onChange={(event) => update(operation.id, { nome: event.target.value })}
+                    onBlur={() => setEditingTitle(null)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        event.currentTarget.blur()
+                      } else if (event.key === 'Escape') {
+                        update(operation.id, { nome: editingTitle.original })
+                        setEditingTitle(null)
+                      }
+                    }}
+                  />
+                  <small>Digite o nome e pressione Enter para concluir.</small>
+                </div>
+              ) : (
+                <div className="operation-title-wrapper">
+                  <button
+                    type="button"
+                    className="operation-title-button"
+                    onClick={() => setExpanded(isExpanded ? null : operation.id)}
+                  >
+                    <strong>{operation.nome || 'Operação sem nome'}</strong>
+                    <small>
+                      {operation.maquina || 'Máquina não definida'}
+                      {operation.tempoPadraoMin != null ? ` · ${operation.tempoPadraoMin} min` : ''}
+                      {operation.midias.some((item) => item.tipo === 'video') ? ' · vídeo' : ''}
+                    </small>
+                  </button>
+                  {editable && <button
+                    type="button"
+                    className="operation-title-edit-button"
+                    aria-label={`Editar nome da operação ${operation.nome || 'sem nome'}`}
+                    title="Editar nome no título"
+                    onClick={() => {
+                      setExpanded(operation.id)
+                      setEditingTitle({ id: operation.id, original: operation.nome })
+                    }}
+                  ><Pencil size={14} /></button>}
+                </div>
+              )}
               {editable && <div className="operation-order-actions">
                 <button type="button" onClick={() => move(index, -1)} disabled={index === 0}><ChevronUp size={14} /></button>
                 <button type="button" onClick={() => move(index, 1)} disabled={index === editor.operacoes.length - 1}><ChevronDown size={14} /></button>
@@ -205,17 +241,7 @@ export default function TechnicalOperationsEditor({
             {isExpanded && <div className="operation-editor-body">
               <div className="form-grid operation-fields">
                 <label><span>Código / nº</span><input value={operation.codigo} disabled={!editable} onChange={(event) => update(operation.id, { codigo: event.target.value })} placeholder="Ex.: 30" /></label>
-                <label><span>Nome da operação *</span><input value={operation.nome} disabled={!editable} onChange={(event) => update(operation.id, { nome: event.target.value })} placeholder="Ex.: Pregar manga" /></label>
                 <label><span>Máquina</span><input value={operation.maquina} disabled={!editable} onChange={(event) => update(operation.id, { maquina: event.target.value })} placeholder="Ex.: Overlock 5 fios" /></label>
-                <label><span>Equipe responsável</span><select value={operation.equipeId ?? ''} disabled={!editable} onChange={(event) => {
-                  const team = teams.find(item => item.id === event.target.value)
-                  update(operation.id, { equipeId: team?.id ?? '', equipeNome: team?.nome ?? '' })
-                }}>
-                  <option value="">Sem equipe atribuída</option>
-                  {teams.map(team => <option value={team.id} key={team.id}>{team.nome}</option>)}
-                  {operation.equipeId && !teams.some(team => team.id === operation.equipeId) &&
-                    <option value={operation.equipeId}>{operation.equipeNome || 'Equipe indisponível'} (inativa/removida)</option>}
-                </select></label>
                 <label><span>Ferramenta / acessório</span><input value={operation.ferramenta} disabled={!editable} onChange={(event) => update(operation.id, { ferramenta: event.target.value })} placeholder="Ex.: Aparelho de viés" /></label>
                 <label><span>Tempo padrão (min)</span><input type="number" min="0" step="0.01" value={operation.tempoPadraoMin ?? ''} disabled={!editable} onChange={(event) => update(operation.id, { tempoPadraoMin: event.target.value === '' ? null : Number(event.target.value) })} /></label>
                 <label><span>Dificuldade</span><select value={operation.dificuldade} disabled={!editable} onChange={(event) => update(operation.id, { dificuldade: event.target.value as TechnicalOperation['dificuldade'] })}><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option></select></label>

@@ -485,7 +485,15 @@
 .operation-editor-card { border:1px solid #e2e8f0; border-radius:16px; background:#fbfdff; overflow:hidden; }
 .operation-editor-summary { display:grid; grid-template-columns:44px minmax(0,1fr) auto 34px; gap:9px; align-items:center; padding:10px; }
 .operation-order { width:40px; height:40px; border-radius:12px; display:grid; place-items:center; background:#0b1f4b; color:white; font-size:10px; font-weight:900; }
-.operation-title-button { border:0; background:transparent; text-align:left; padding:0; min-width:0; color:#294158; }
+.operation-title-button { border:0; background:transparent; text-align:left; padding:0; min-width:0; color:#294158; cursor:pointer; }
+.operation-title-wrapper { display:flex; align-items:center; gap:9px; min-width:0; }
+.operation-title-wrapper .operation-title-button { flex:1; }
+.operation-title-edit-button { flex:0 0 30px; height:30px; display:grid; place-items:center; border:1px solid #dce7ec; border-radius:8px; color:#53788b; background:#f7fbfc; cursor:pointer; }
+.operation-title-edit-button:hover { color:#0b7880; border-color:#b3d8da; background:#e9f7f6; }
+.operation-title-editor { min-width:0; display:flex; flex-direction:column; gap:4px; }
+.operation-title-editor input { width:100%; max-width:100%; min-width:0; border:1px solid #81c5c5; border-radius:8px; padding:7px 9px; font:600 13px inherit; color:#294158; background:white; }
+.operation-title-editor input:focus { outline:2px solid #c6e9e7; }
+.operation-title-editor small { color:#6d8795; font-size:10px; }
 .operation-title-button strong,.operation-title-button small { display:block; }
 .operation-title-button strong { font-size:11px; }
 .operation-title-button small { margin-top:3px; color:#7e90a2; font-size:8.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
