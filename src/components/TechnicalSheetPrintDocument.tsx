@@ -145,7 +145,6 @@ export default function TechnicalSheetPrintDocument({
     perfectPhoto?.url
     || primaryVideo
     || totalTime != null
-    || mainMachine
     || activeAttachments.find((item) => item.tipo === 'video')
     || revision.dnaProduto.nivelDificuldade,
   )
