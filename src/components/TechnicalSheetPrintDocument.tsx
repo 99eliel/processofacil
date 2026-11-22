@@ -324,7 +324,7 @@ export default function TechnicalSheetPrintDocument({
               <table className="ft-flex-table ft-needles-table"><thead><tr><th>MÁQUINA</th><th>AGULHA</th><th>LINHA</th><th>FIO</th></tr></thead><tbody>
                 {revision.agulhasLinhas.map((item) => <tr key={item.id}><td>{item.maquina}</td><td>{item.agulha}</td><td>{item.linha}</td><td>{item.fio ?? ''}</td></tr>)}
               </tbody></table>
-            </DynamicBox>
+            </DynamicBox>}
 
             {cuttingRows.length > 0 && <section className="ft-flex-two">
               <DynamicBox title="DADOS DE CONSUMO">
