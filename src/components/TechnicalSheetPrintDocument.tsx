@@ -257,6 +257,27 @@ export default function TechnicalSheetPrintDocument({
           </div>
         </Section>}
 
+        {hasDna && <Section title="DNA do produto">
+          <div className="pf-pdf-dna">
+            {totalTime !== null && <div><small>Tempo padrão total</small>
+              <strong>{numberBR(totalTime)} min</strong></div>}
+            {revision.dnaProduto.nivelDificuldade && <div>
+              <small>Nível de dificuldade</small>
+              <strong>{difficultyLabel(revision.dnaProduto.nivelDificuldade)}</strong>
+            </div>}
+            {perfectPhoto?.url && <div className="pf-pdf-perfect-photo"><small>Peça perfeita</small>
+              <img src={perfectPhoto.url} alt="Imagem de referência de peça perfeita"/></div>}
+          </div>
+        </Section>}
+
+        {annexes.length > 0 && <Section title="Anexos e referências">
+          <ul className="pf-pdf-attachments">{annexes.map((annex) => <li key={annex.id}>
+            <FileText size={13}/>
+            <a href={annex.url} target="_blank" rel="noreferrer">{annex.nome}</a>
+          </li>)}</ul>
+        </Section>}
+
+
         {orderedOperations.length > 0 && <Section title="Operações de produção" kind="pf-pdf-wide">
           <table className="pf-pdf-table pf-pdf-operations">
             <colgroup><col style={{width:'6%'}}/><col style={{width:'26%'}}/>
@@ -327,26 +348,6 @@ export default function TechnicalSheetPrintDocument({
               {item.obrigatorio && <small>Obrigatório</small>}
             </div>)}
           </div>
-        </Section>}
-
-        {hasDna && <Section title="DNA do produto">
-          <div className="pf-pdf-dna">
-            {totalTime !== null && <div><small>Tempo padrão total</small>
-              <strong>{numberBR(totalTime)} min</strong></div>}
-            {revision.dnaProduto.nivelDificuldade && <div>
-              <small>Nível de dificuldade</small>
-              <strong>{difficultyLabel(revision.dnaProduto.nivelDificuldade)}</strong>
-            </div>}
-            {perfectPhoto?.url && <div className="pf-pdf-perfect-photo"><small>Peça perfeita</small>
-              <img src={perfectPhoto.url} alt="Imagem de referência de peça perfeita"/></div>}
-          </div>
-        </Section>}
-
-        {annexes.length > 0 && <Section title="Anexos e referências">
-          <ul className="pf-pdf-attachments">{annexes.map((annex) => <li key={annex.id}>
-            <FileText size={13}/>
-            <a href={annex.url} target="_blank" rel="noreferrer">{annex.nome}</a>
-          </li>)}</ul>
         </Section>}
 
         <footer className="pf-pdf-footer">
