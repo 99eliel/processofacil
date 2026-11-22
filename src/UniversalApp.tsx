@@ -29,6 +29,7 @@ import './reports-upgrades.css'
 import './time-studies.css'
 import './easy-ux.css'
 import './pcp-upgrades.css'
+import './technical-bom-upgrades.css'
 
 type Page = 'inicio' | 'catalogo' | 'ordens' | 'planejamento' | 'producao' | 'gestao' | 'configuracoes'
 type CatalogTab = 'fichas' | 'produtos' | 'materiais' | 'novo'
