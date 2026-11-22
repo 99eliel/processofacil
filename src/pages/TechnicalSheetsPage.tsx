@@ -936,15 +936,24 @@ export default function TechnicalSheetsPage({
 
         <div className="ft-complete-subsection">
           <div className="ft-complete-subhead">
-            <h4>Agulhas e linhas</h4>
-            {editable && <button type="button" className="secondary-button compact" onClick={() => setEditor({ ...editor, agulhasLinhas: [...editor.agulhasLinhas, { id: crypto.randomUUID(), maquina: '', agulha: '', linha: '' }] })}><Plus size={15} /> Linha</button>}
+            <h4>Agulhas, linhas e fios</h4>
+            {editable && <button type="button" className="secondary-button compact" onClick={() => setEditor({ ...editor, agulhasLinhas: [...editor.agulhasLinhas, { id: crypto.randomUUID(), maquina: '', agulha: '', linha: '', fio: '' }] })}><Plus size={15} /> Adicionar registro</button>}
           </div>
           {editor.agulhasLinhas.length === 0 ? <div className="empty-state small-empty"><span>Nenhuma especificação cadastrada.</span></div> :
-            <div className="ft-needle-list">{editor.agulhasLinhas.map((item) => <div key={item.id}>
-              <input disabled={!editable} value={item.maquina} onChange={(e) => setEditor({ ...editor, agulhasLinhas: editor.agulhasLinhas.map((row) => row.id === item.id ? { ...row, maquina: e.target.value } : row) })} placeholder="Máquina" />
-              <input disabled={!editable} value={item.agulha} onChange={(e) => setEditor({ ...editor, agulhasLinhas: editor.agulhasLinhas.map((row) => row.id === item.id ? { ...row, agulha: e.target.value } : row) })} placeholder="Agulha" />
-              <input disabled={!editable} value={item.linha} onChange={(e) => setEditor({ ...editor, agulhasLinhas: editor.agulhasLinhas.map((row) => row.id === item.id ? { ...row, linha: e.target.value } : row) })} placeholder="Linha" />
-              {editable && <button className="icon-button danger-icon" onClick={() => setEditor({ ...editor, agulhasLinhas: editor.agulhasLinhas.filter((row) => row.id !== item.id) })}><Trash2 size={14} /></button>}
+            <div className="ft-needle-list">{editor.agulhasLinhas.map((item) => <div className={'ft-needle-row' + (editable ? '' : ' is-readonly')} key={item.id}>
+              <label className="ft-needle-field"><span>Máquina</span>
+                <input disabled={!editable} value={item.maquina} onChange={(e) => setEditor({ ...editor, agulhasLinhas: editor.agulhasLinhas.map((row) => row.id === item.id ? { ...row, maquina: e.target.value } : row) })} placeholder="Ex.: Reta" />
+              </label>
+              <label className="ft-needle-field"><span>Agulha</span>
+                <input disabled={!editable} value={item.agulha} onChange={(e) => setEditor({ ...editor, agulhasLinhas: editor.agulhasLinhas.map((row) => row.id === item.id ? { ...row, agulha: e.target.value } : row) })} placeholder="Ex.: DBx1 nº 11" />
+              </label>
+              <label className="ft-needle-field"><span>Linha</span>
+                <input disabled={!editable} value={item.linha} onChange={(e) => setEditor({ ...editor, agulhasLinhas: editor.agulhasLinhas.map((row) => row.id === item.id ? { ...row, linha: e.target.value } : row) })} placeholder="Ex.: 120 Poliéster" />
+              </label>
+              <label className="ft-needle-field"><span>Fio</span>
+                <input disabled={!editable} value={item.fio ?? ''} onChange={(e) => setEditor({ ...editor, agulhasLinhas: editor.agulhasLinhas.map((row) => row.id === item.id ? { ...row, fio: e.target.value } : row) })} placeholder="Informações do fio" />
+              </label>
+              {editable && <button type="button" className="icon-button danger-icon ft-needle-remove" aria-label="Remover registro de agulha, linha e fio" title="Remover registro" onClick={() => setEditor({ ...editor, agulhasLinhas: editor.agulhasLinhas.filter((row) => row.id !== item.id) })}><Trash2 size={14} /></button>}
             </div>)}</div>}
         </div>
 

@@ -90,6 +90,7 @@ type NeedleThreadDraft = {
   maquina: string
   agulha: string
   linha: string
+  fio: string
 }
 
 type OperationDraft = {
@@ -296,7 +297,7 @@ export default function GuidedPieceFlowPage({
     materials.some((item) => item.origem === 'existente' ? item.materialId : item.descricao.trim()),
     measurements.length > 0,
     operations.some((item) => item.nome.trim() && item.descricao.trim()),
-    needleThreads.some((item) => item.maquina.trim() || item.agulha.trim() || item.linha.trim()),
+    needleThreads.some((item) => item.maquina.trim() || item.agulha.trim() || item.linha.trim() || item.fio.trim()),
     Boolean(attachments.find((item) => item.tipo === 'qualidade')?.file),
     Boolean(cutting.encaixe.trim() || cutting.consumoTecido.trim()),
     attachments.some((item) => item.file),
@@ -494,7 +495,7 @@ export default function GuidedPieceFlowPage({
         dadosTecido: { ...fabric, cor: fabric.cor.trim() || piece.cor.trim() },
         processoCorte: cutting,
         agulhasLinhas: needleThreads
-          .filter((item) => item.maquina.trim() || item.agulha.trim() || item.linha.trim())
+          .filter((item) => item.maquina.trim() || item.agulha.trim() || item.linha.trim() || item.fio.trim())
           .map((item) => ({ ...item })),
         controleQualidade: {
           pontosCriticos: [],
@@ -768,16 +769,25 @@ export default function GuidedPieceFlowPage({
           </div>
         </FormSection>
 
-        <FormSection number="7" icon={Wrench} title="Agulhas e linhas" text="Preenche o quadro AGULHAS E LINHAS da Ficha Técnica.">
+        <FormSection number="7" icon={Wrench} title="Agulhas, linhas e fios" text="Cadastre as especificações de cada máquina. Esses dados aparecem na Ficha Técnica e na impressão.">
           <div className="piece-quality-list">
-            {needleThreads.map((row) => <div key={row.id} className="piece-triple-row">
-              <input value={row.maquina} onChange={(e) => setNeedleThreads(needleThreads.map((item) => item.id === row.id ? { ...item, maquina: e.target.value } : item))} placeholder="Máquina" />
-              <input value={row.agulha} onChange={(e) => setNeedleThreads(needleThreads.map((item) => item.id === row.id ? { ...item, agulha: e.target.value } : item))} placeholder="Agulha · Ex.: DBx1 nº 11" />
-              <input value={row.linha} onChange={(e) => setNeedleThreads(needleThreads.map((item) => item.id === row.id ? { ...item, linha: e.target.value } : item))} placeholder="Linha · Ex.: 120 Poliéster" />
-              <button onClick={() => setNeedleThreads(needleThreads.filter((item) => item.id !== row.id))}><Trash2 size={15} /></button>
+            {needleThreads.map((row) => <div key={row.id} className="piece-triple-row piece-needle-row">
+              <label className="piece-needle-field"><span>Máquina</span>
+                <input value={row.maquina} onChange={(e) => setNeedleThreads(needleThreads.map((item) => item.id === row.id ? { ...item, maquina: e.target.value } : item))} placeholder="Ex.: Reta" />
+              </label>
+              <label className="piece-needle-field"><span>Agulha</span>
+                <input value={row.agulha} onChange={(e) => setNeedleThreads(needleThreads.map((item) => item.id === row.id ? { ...item, agulha: e.target.value } : item))} placeholder="Ex.: DBx1 nº 11" />
+              </label>
+              <label className="piece-needle-field"><span>Linha</span>
+                <input value={row.linha} onChange={(e) => setNeedleThreads(needleThreads.map((item) => item.id === row.id ? { ...item, linha: e.target.value } : item))} placeholder="Ex.: 120 Poliéster" />
+              </label>
+              <label className="piece-needle-field"><span>Fio</span>
+                <input value={row.fio} onChange={(e) => setNeedleThreads(needleThreads.map((item) => item.id === row.id ? { ...item, fio: e.target.value } : item))} placeholder="Informações do fio" />
+              </label>
+              <button type="button" aria-label="Remover registro de agulha, linha e fio" title="Remover registro" onClick={() => setNeedleThreads(needleThreads.filter((item) => item.id !== row.id))}><Trash2 size={15} /></button>
             </div>)}
           </div>
-          <button className="guided-secondary-button piece-add-button" onClick={() => setNeedleThreads([...needleThreads, { id: crypto.randomUUID(), maquina: '', agulha: '', linha: '' }])}><Plus size={16} /> Adicionar máquina / agulha / linha</button>
+          <button className="guided-secondary-button piece-add-button" onClick={() => setNeedleThreads([...needleThreads, { id: crypto.randomUUID(), maquina: '', agulha: '', linha: '', fio: '' }])}><Plus size={16} /> Adicionar registro</button>
         </FormSection>
 
         <FormSection number="8" icon={ShieldCheck} title="Controle de qualidade" text="Cadastre os controles e, se quiser, anexe o arquivo técnico de qualidade do produto.">
@@ -852,7 +862,7 @@ export default function GuidedPieceFlowPage({
           <li className={materials.some((item) => item.materialId || item.descricao) ? 'done' : ''}>Aviamentos</li>
           <li className={measurements.length ? 'done' : ''}>Medidas</li>
           <li className={operations.some((item) => item.nome && item.descricao) ? 'done' : ''}>Operações</li>
-          <li className={needleThreads.some((item) => item.maquina || item.agulha || item.linha) ? 'done' : ''}>Agulhas / linhas</li>
+          <li className={needleThreads.some((item) => item.maquina || item.agulha || item.linha || item.fio) ? 'done' : ''}>Agulhas / linhas / fios</li>
           <li className={attachments.find((item) => item.tipo === 'qualidade')?.file ? 'done' : ''}>Qualidade</li>
           <li className={cutting.encaixe || cutting.consumoTecido ? 'done' : ''}>Consumo</li>
           <li className={attachments.some((item) => item.file) ? 'done' : ''}>Anexos</li>

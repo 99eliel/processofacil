@@ -243,6 +243,8 @@ export type TechnicalNeedleThread = {
   maquina: string
   agulha: string
   linha: string
+  /** Campo adicional das revisões novas; documentos antigos podem não possuí-lo. */
+  fio?: string
 }
 
 export type TechnicalQualityControl = {
