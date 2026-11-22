@@ -33,7 +33,9 @@ function normalizeRevision(id: string, data: Record<string, unknown>): Technical
       encaixe: '', consumoTecido: '', comprimentoRisco: '', alturaEnfesto: '',
       numeroFolhas: '', perdasPercentual: '',
     },
-    agulhasLinhas: Array.isArray(raw.agulhasLinhas) ? raw.agulhasLinhas : [],
+    agulhasLinhas: Array.isArray(raw.agulhasLinhas)
+      ? raw.agulhasLinhas.map((item) => ({ ...item, fio: item.fio ?? '' }))
+      : [],
     controleQualidade: raw.controleQualidade ?? { pontosCriticos: [], defeitosNaoAceitos: [] },
     anexos: Array.isArray(raw.anexos) ? raw.anexos : [],
     dnaProduto: raw.dnaProduto ?? {
