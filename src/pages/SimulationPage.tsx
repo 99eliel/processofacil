@@ -277,7 +277,7 @@ export default function SimulationPage({ notify, openOperator, openPassport }: P
         <span><CheckCircle2 size={16} /> Cadastro dos materiais usados</span>
         <span><CheckCircle2 size={16} /> Produto de teste</span>
         <span><CheckCircle2 size={16} /> Passaporte Digital REV 01 publicada</span>
-        <span><CheckCircle2 size={16} /> BOM e tabela de medidas</span>
+        <span><CheckCircle2 size={16} /> Materiais do Produto e tabela de medidas</span>
         <span><CheckCircle2 size={16} /> Sequência operacional + POPs</span>
         <span><CheckCircle2 size={16} /> OP já liberada</span>
         <span><CheckCircle2 size={16} /> Operações congeladas na OP</span>

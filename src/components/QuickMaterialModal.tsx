@@ -98,9 +98,9 @@ export default function QuickMaterialModal({ onClose, onCreated }: Props) {
       onMouseDown={(event) => event.stopPropagation()}>
       <div className="modal-head">
         <div>
-          <span className="section-kicker">CADASTRO RÁPIDO · LISTA DE MATERIAIS</span>
+          <span className="section-kicker">CADASTRO RÁPIDO · MATERIAIS DO PRODUTO</span>
           <h2>Novo material</h2>
-          <p>Cadastre aqui mesmo, sem perder os dados da Ficha Técnica. O material será incluído na BOM ao salvar.</p>
+          <p>Cadastre aqui mesmo, sem perder os dados da Ficha Técnica. O material será incluído nos Materiais do Produto ao salvar.</p>
         </div>
         <button className="modal-close" type="button" disabled={busy} title="Fechar" aria-label="Fechar"
           onClick={onClose}><X size={18}/></button>
@@ -169,7 +169,7 @@ export default function QuickMaterialModal({ onClose, onCreated }: Props) {
         <button className="primary-button" type="submit"
           disabled={busy || !codigo.trim() || !descricao.trim() || !category || !unidade || categoriesLoading}>
           {busy ? <Loader2 className="spin" size={16}/> : <PackagePlus size={16}/>}
-          {busy ? 'Cadastrando...' : 'Cadastrar e adicionar à BOM'}
+          {busy ? 'Cadastrando...' : 'Cadastrar e adicionar ao produto'}
         </button>
       </div>
     </form>
