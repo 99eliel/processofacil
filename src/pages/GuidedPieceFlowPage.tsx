@@ -276,7 +276,6 @@ export default function GuidedPieceFlowPage({
   ])
   const [dna, setDna] = useState({
     tempoPadraoMin: '',
-    maquinaPrincipal: '',
     nivelDificuldade: '' as '' | 'facil' | 'medio' | 'dificil',
   })
   const [materials, setMaterials] = useState<MaterialDraft[]>([])
@@ -301,7 +300,7 @@ export default function GuidedPieceFlowPage({
     Boolean(attachments.find((item) => item.tipo === 'qualidade')?.file),
     Boolean(cutting.encaixe.trim() || cutting.consumoTecido.trim()),
     attachments.some((item) => item.file),
-    Boolean(dna.maquinaPrincipal.trim() || dna.tempoPadraoMin || dna.nivelDificuldade),
+    Boolean(dna.tempoPadraoMin || dna.nivelDificuldade),
     !production.criarOp || totalPieces > 0,
   ].filter(Boolean).length
 
@@ -504,7 +503,7 @@ export default function GuidedPieceFlowPage({
         anexos: [],
         dnaProduto: {
           tempoPadraoMin: dna.tempoPadraoMin === '' ? null : Number(dna.tempoPadraoMin),
-          maquinaPrincipal: dna.maquinaPrincipal.trim(),
+          maquinaPrincipal: '', // Campo legado mantido apenas para compatibilidade com revisões antigas.
           nivelDificuldade: dna.nivelDificuldade,
         },
         tamanhos: sizes,
@@ -829,7 +828,6 @@ export default function GuidedPieceFlowPage({
         <FormSection number="11" icon={Sparkles} title="DNA do produto" text="Campos finais que aparecem no rodapé visual da Ficha Técnica.">
           <div className="guided-form-grid">
             <label className="guided-field"><span>Tempo padrão total (min)</span><input type="number" step="0.01" value={dna.tempoPadraoMin} onChange={(e) => setDna({ ...dna, tempoPadraoMin: e.target.value })} placeholder="Ex.: 2,85" /></label>
-            <label className="guided-field"><span>Máquina principal</span><input value={dna.maquinaPrincipal} onChange={(e) => setDna({ ...dna, maquinaPrincipal: e.target.value })} placeholder="Ex.: Overloque 5 fios" /></label>
             <label className="guided-field"><span>Nível de dificuldade</span><select value={dna.nivelDificuldade} onChange={(e) => setDna({ ...dna, nivelDificuldade: e.target.value as typeof dna.nivelDificuldade })}><option value="">Selecione...</option><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option></select></label>
           </div>
         </FormSection>
@@ -866,7 +864,7 @@ export default function GuidedPieceFlowPage({
           <li className={attachments.find((item) => item.tipo === 'qualidade')?.file ? 'done' : ''}>Qualidade</li>
           <li className={cutting.encaixe || cutting.consumoTecido ? 'done' : ''}>Consumo</li>
           <li className={attachments.some((item) => item.file) ? 'done' : ''}>Anexos</li>
-          <li className={dna.maquinaPrincipal || dna.tempoPadraoMin || dna.nivelDificuldade ? 'done' : ''}>DNA</li>
+          <li className={dna.tempoPadraoMin || dna.nivelDificuldade ? 'done' : ''}>DNA</li>
           <li className={!production.criarOp || totalPieces > 0 ? 'done' : ''}>Produção</li>
         </ul>
         <div className="piece-summary-note"><Sparkles size={16} /><span>Você pode cadastrar tudo aqui e depois editar detalhes no Passaporte completo.</span></div>

@@ -100,7 +100,6 @@ export default function TechnicalSheetPrintDocument({
     0,
   )
   const totalTime = revision.dnaProduto.tempoPadraoMin ?? (calculatedTime > 0 ? calculatedTime : null)
-  const mainMachine = revision.dnaProduto.maquinaPrincipal || machines[0]?.maquina || ''
 
   const primaryVideo = revision.operacoes
     .flatMap((operation) => operation.midias.map((media) => ({ operation, media })))
@@ -146,7 +145,6 @@ export default function TechnicalSheetPrintDocument({
     perfectPhoto?.url
     || primaryVideo
     || totalTime != null
-    || mainMachine
     || activeAttachments.find((item) => item.tipo === 'video')
     || revision.dnaProduto.nivelDificuldade,
   )
@@ -351,9 +349,8 @@ export default function TechnicalSheetPrintDocument({
               <div className="ft-flex-dna-grid">
                 {perfectPhoto?.url && <div><strong>PEÇA PERFEITA</strong><img src={perfectPhoto.url} alt="Peça perfeita" /></div>}
                 {primaryVideo && <div><strong>VÍDEO DE MONTAGEM</strong><div className="ft-flex-video"><Play size={22} /><span>{primaryVideo.operation.nome}</span></div></div>}
-                {(totalTime != null || mainMachine) && <div className="stats">
-                  {totalTime != null && <p><span>TEMPO PADRÃO</span><b>{formatNumber(totalTime)} min</b></p>}
-                  {mainMachine && <p><span>MÁQUINA PRINCIPAL</span><b>{mainMachine}</b></p>}
+                {totalTime != null && <div className="stats">
+                  <p><span>TEMPO PADRÃO</span><b>{formatNumber(totalTime)} min</b></p>
                 </div>}
                 {revision.dnaProduto.nivelDificuldade && <div className="difficulty">
                   <strong>NÍVEL DE DIFICULDADE</strong>
