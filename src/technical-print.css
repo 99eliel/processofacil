@@ -1763,3 +1763,171 @@
     padding-top: 1.5mm !important;
   }
 }
+
+
+/* Auditoria da impressão 2026-11: conteúdo atualizado e tipografia legível em A4. */
+.ft-flex-long-text {
+  margin:0;
+  padding:2.5mm 3mm;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  line-height:1.45;
+  font-size:2.55mm;
+  color:#31495c;
+}
+.ft-material-details-row td {
+  padding:1.25mm 1.6mm !important;
+  background:#f7fafb;
+  border-bottom:.3mm solid #cfdde5;
+}
+.ft-material-details {
+  display:flex;
+  flex-wrap:wrap;
+  gap:1.5mm 4mm;
+  color:#354e61;
+  font-size:2.15mm;
+  line-height:1.35;
+}
+.ft-material-details span {
+  display:inline-block;
+  overflow-wrap:anywhere;
+}
+.ft-material-details b {
+  font-weight:800;
+  color:#2c637a;
+  margin-right:.6mm;
+}
+.ft-flex-operation-instructions {
+  padding:1.8mm 2.5mm;
+  display:flex;
+  flex-direction:column;
+  gap:2mm;
+}
+.ft-flex-instruction-item {
+  display:block;
+  padding:2mm 2.5mm;
+  border:1px solid #dce6ec;
+  border-radius:1.4mm;
+  background:#fbfdfe;
+  break-inside:avoid;
+}
+.ft-flex-instruction-title {
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:2mm;
+  color:#1a3c55;
+  font-size:2.6mm;
+}
+.ft-flex-instruction-title span {
+  color:#667e90;
+  font-size:2.15mm;
+}
+.ft-flex-instruction-item p {
+  margin:1.8mm 0 0;
+  color:#355167;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  font-size:2.45mm;
+  line-height:1.42;
+}
+.ft-flex-operation-media {
+  margin-top:2mm;
+  display:flex;
+  gap:2mm;
+  flex-wrap:wrap;
+  align-items:flex-start;
+}
+.ft-flex-operation-media figure {
+  max-width:33mm;
+  min-width:24mm;
+  margin:0;
+  border:.2mm solid #dbe5ea;
+  padding:1.2mm;
+  background:white;
+  break-inside:avoid;
+}
+.ft-flex-operation-media img {
+  display:block;
+  width:100%;
+  height:25mm;
+  object-fit:contain;
+}
+.ft-flex-operation-media figcaption {
+  margin-top:1mm;
+  font-size:2mm;
+  color:#597184;
+  overflow-wrap:anywhere;
+}
+.ft-flex-operation-media a,
+.ft-flex-video a,
+.ft-flex-attachments a {
+  color:#176a95;
+  text-decoration:underline;
+  overflow-wrap:anywhere;
+  font-size:2.25mm;
+}
+.ft-flex-video a {
+  color:#d9f4fd;
+  font-weight:700;
+}
+.ft-flex-checklist {
+  padding:2mm 2.5mm;
+  display:flex;
+  flex-direction:column;
+  gap:1mm;
+}
+.ft-flex-checklist > div {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:1mm 4mm;
+  padding:1.5mm;
+  border-bottom:1px solid #e2eaf0;
+  color:#334d61;
+  font-size:2.35mm;
+  break-inside:avoid;
+}
+.ft-flex-checklist > div:last-child {border-bottom:0}
+.ft-flex-checklist small {font-size:2mm;font-weight:800;color:#54788c}
+.ft-flex-table th,
+.ft-flex-table td,
+.ft-flex-kv span,
+.ft-flex-kv strong {font-size:2.25mm;line-height:1.35}
+.ft-flex-section-title {font-size:2.5mm}
+.ft-flex-footer {font-size:2.2mm}
+.ft-flex-attachments {grid-template-columns:repeat(2,minmax(0,1fr))}
+.ft-flex-attachments > div {min-width:0}
+@media print {
+  /* Nunca tentar encaixar tabelas de muitas linhas numa única página. */
+  .ft-print-page .ft-flex-box {
+    break-inside:auto !important;
+    page-break-inside:auto !important;
+    overflow:visible !important;
+  }
+  .ft-flex-section-title,
+  .ft-flex-table thead {break-after:avoid !important;page-break-after:avoid !important}
+  .ft-flex-table tr,
+  .ft-material-details-row,
+  .ft-flex-kv > div,
+  .ft-flex-instruction-item,
+  .ft-flex-checklist > div {break-inside:avoid !important;page-break-inside:avoid !important}
+  .ft-flex-table th,
+  .ft-flex-table td {font-size:2.15mm !important;line-height:1.28 !important;padding:1.15mm 1.1mm !important}
+  .ft-flex-table th {font-size:2.1mm !important}
+  .ft-flex-kv span,
+  .ft-flex-kv strong {font-size:2.3mm !important;line-height:1.3 !important}
+  .ft-flex-section-title {font-size:2.5mm !important;padding:1.6mm 2.2mm !important}
+  .ft-flex-instruction-item p {font-size:2.45mm !important}
+  .ft-flex-footer {font-size:2.2mm !important}
+}
+
+/* Mantém cada material com seus detalhes ao atravessar a quebra de página. */
+@media print {
+  .ft-materials-table tbody.ft-material-group {
+    break-inside:avoid !important;
+    page-break-inside:avoid !important;
+  }
+}
