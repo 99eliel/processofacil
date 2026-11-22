@@ -961,7 +961,6 @@ export default function TechnicalSheetsPage({
           <h4>DNA do produto</h4>
           <div className="form-grid">
             <label><span>Tempo padrão total (min)</span><input type="number" step="0.01" disabled={!editable} value={editor.dnaProduto.tempoPadraoMin ?? ''} onChange={(e) => setEditor({ ...editor, dnaProduto: { ...editor.dnaProduto, tempoPadraoMin: e.target.value === '' ? null : Number(e.target.value) } })} /></label>
-            <label><span>Máquina principal</span><input disabled={!editable} value={editor.dnaProduto.maquinaPrincipal} onChange={(e) => setEditor({ ...editor, dnaProduto: { ...editor.dnaProduto, maquinaPrincipal: e.target.value } })} /></label>
             <label><span>Nível de dificuldade</span><select disabled={!editable} value={editor.dnaProduto.nivelDificuldade} onChange={(e) => setEditor({ ...editor, dnaProduto: { ...editor.dnaProduto, nivelDificuldade: e.target.value as TechnicalRevision['dnaProduto']['nivelDificuldade'] } })}><option value="">Não informado</option><option value="facil">Fácil</option><option value="medio">Médio</option><option value="dificil">Difícil</option></select></label>
           </div>
         </div>
