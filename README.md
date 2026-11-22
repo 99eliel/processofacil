@@ -92,7 +92,7 @@ A base atual está sendo tratada como produto operacional, não mais como protó
   - revisões;
   - rascunho, validação, padrão e obsoleta;
   - construção/processo;
-  - BOM;
+  - Materiais do Produto;
   - consumo;
   - perda;
   - fornecedor congelado na revisão;
@@ -104,7 +104,7 @@ A base atual está sendo tratada como produto operacional, não mais como protó
 - Workflow configurável;
 - Ordem de Produção com vários produtos e variantes;
 - revisão e kit congelados na liberação da OP;
-- necessidade bruta calculada a partir da BOM;
+- necessidade bruta calculada a partir dos Materiais do Produto;
 - Qualidade com várias amostras;
 - critérios numéricos e checklist;
 - reprovação e retorno para retrabalho;
@@ -165,7 +165,7 @@ empresas/{empresaId}/fichas/{produtoCodigo}/revisoes/{numero}/...
 - código de produto não é alterado por uma edição comum;
 - FT padrão nunca é sobrescrita;
 - editar FT padrão gera nova revisão;
-- OP liberada preserva snapshots da revisão e da BOM;
+- OP liberada preserva cópias dos dados da revisão e dos Materiais do Produto;
 - mudança posterior na FT não altera OP existente;
 - inspeções são imutáveis;
 - ações importantes geram auditoria;

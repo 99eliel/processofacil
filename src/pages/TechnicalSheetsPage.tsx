@@ -364,7 +364,7 @@ export default function TechnicalSheetsPage({
       ? { ...current, bom: [...current.bom, createBomLine(material)] }
       : current)
     setMaterialToAdd('')
-    notify('Material adicionado à BOM. Salve o rascunho da Ficha Técnica para registrar as alterações.')
+    notify('Material adicionado aos Materiais do Produto. Salve o rascunho da Ficha Técnica para registrar as alterações.')
   }
 
   const quickMaterialCreated = (material: Material) => {
@@ -373,7 +373,7 @@ export default function TechnicalSheetsPage({
       : current)
     setMaterialToAdd('')
     setQuickMaterialOpen(false)
-    notify('Material cadastrado e adicionado à BOM. Salve a Ficha Técnica para gravar a composição.')
+    notify('Material cadastrado e adicionado aos Materiais do Produto. Salve a Ficha Técnica para gravar as alterações.')
   }
 
   const updateBom = (id: string, patch: Partial<BomLine>) => {
@@ -786,7 +786,7 @@ export default function TechnicalSheetsPage({
           <div className="passport-meta">
             <Status status={editor.status} />
             <span>REV {String(editor.numero).padStart(2, '0')}</span>
-            <span>{editor.bom.length} itens na BOM</span>
+            <span>{editor.bom.length} materiais cadastrados</span>
             <span>{editor.operacoes.length} operações</span>
           </div>
         </div>
@@ -808,7 +808,7 @@ export default function TechnicalSheetsPage({
           {editor.numero > 1 && <label className="editor-label"><span>Motivo da revisão *</span><input value={editor.motivoRevisao ?? ''} onChange={(e) => editable && setEditor({ ...editor, motivoRevisao: e.target.value })} disabled={!editable} placeholder="O que mudou nesta revisão?" /></label>}
           <label className="editor-label"><span>Descrição de construção/processo *</span><textarea rows={10} value={editor.construcao} onChange={(e) => editable && setEditor({ ...editor, construcao: e.target.value })} disabled={!editable} placeholder="Descreva como o produto deve ser construído, montado ou executado..." /></label>
           <div className="block-toggles">
-            <button className={editor.blocos.bom ? 'active' : ''} disabled={!editable} onClick={() => setEditor({ ...editor, blocos: { ...editor.blocos, bom: !editor.blocos.bom } })}>BOM</button>
+            <button className={editor.blocos.bom ? 'active' : ''} disabled={!editable} onClick={() => setEditor({ ...editor, blocos: { ...editor.blocos, bom: !editor.blocos.bom } })}>Materiais do Produto</button>
             <button className={editor.blocos.medidas ? 'active' : ''} disabled={!editable} onClick={() => setEditor({ ...editor, blocos: { ...editor.blocos, medidas: !editor.blocos.medidas } })}>Medidas</button>
             <button className={editor.blocos.checklist ? 'active' : ''} disabled={!editable} onClick={() => setEditor({ ...editor, blocos: { ...editor.blocos, checklist: !editor.blocos.checklist } })}>Checklist</button>
           </div>
@@ -1097,12 +1097,12 @@ export default function TechnicalSheetsPage({
       />}
 
       {editor.blocos.bom && <section className="panel">
-        <div className="panel-head"><div><span className="section-kicker">Composição</span><h3>BOM — Lista de materiais</h3></div><span className="count-badge">{editor.bom.length}</span></div>
+        <div className="panel-head"><div><span className="section-kicker">Composição</span><h3>Materiais do Produto</h3></div><span className="count-badge">{editor.bom.length}</span></div>
         {editable && <div className="ft-bom-chooser print-hidden">
           <BomMaterialPicker materials={materials} selectedId={materialToAdd} onChange={setMaterialToAdd} disabled={busy}/>
           <div className="ft-bom-chooser-actions">
             <button className="secondary-button compact" type="button" onClick={addMaterial} disabled={!materialToAdd || busy}>
-              <PackagePlus size={16}/> Adicionar à BOM
+              <PackagePlus size={16}/> Adicionar material
             </button>
             <button className="primary-button compact" type="button" disabled={busy}
               onClick={() => { setQuickMaterialOpen(true); setLocalError('') }}>
@@ -1110,7 +1110,7 @@ export default function TechnicalSheetsPage({
             </button>
           </div>
         </div>}
-        {editor.bom.length === 0 ? <div className="empty-state small-empty"><PackagePlus size={28} /><strong>BOM vazia</strong><span>Adicione os materiais que compõem este produto.</span></div> :
+        {editor.bom.length === 0 ? <div className="empty-state small-empty"><PackagePlus size={28} /><strong>Nenhum material adicionado</strong><span>Adicione os materiais que compõem este produto.</span></div> :
           <div className="table-wrap"><table className="bom-table"><thead><tr><th>Material</th><th>Fornecedor</th><th>Consumo</th><th>Unidade</th><th>Perda %</th><th>Cor</th><th>Observação</th>{editable && <th></th>}</tr></thead><tbody>{editor.bom.map((line) => <tr key={line.id}><td><strong>{line.codigoSnapshot}</strong><small className="table-sub">{line.descricaoSnapshot}</small></td><td>{editable ? (() => {
           const material = materials.find((item) => item.id === line.materialId)
           const options = material?.fornecedores.filter(
