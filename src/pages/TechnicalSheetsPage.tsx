@@ -402,36 +402,6 @@ export default function TechnicalSheetsPage({
     })
   }
 
-  const toggleVariableConsumption = (line: BomLine) => {
-    if (!editor || !editable) return
-    const enabled = line.consumoPorTamanho
-      && Object.keys(line.consumoPorTamanho).length > 0
-
-    updateBom(line.id, {
-      consumoPorTamanho: enabled
-        ? {}
-        : Object.fromEntries(
-            editor.tamanhos.map((size) => [size, Number(line.consumo)]),
-          ),
-    })
-  }
-
-  const updateVariableConsumption = (
-    lineId: string,
-    size: string,
-    value: number,
-  ) => {
-    if (!editor || !editable) return
-    const line = editor.bom.find((item) => item.id === lineId)
-    if (!line) return
-    updateBom(lineId, {
-      consumoPorTamanho: {
-        ...(line.consumoPorTamanho ?? {}),
-        [size]: value,
-      },
-    })
-  }
-
   const applyMeasurementTemplate = () => {
     if (!editor || !editable || !measurementTemplateId) return
     const template = measurementTemplates.find((item) => item.id === measurementTemplateId)
@@ -1139,57 +1109,6 @@ export default function TechnicalSheetsPage({
             </select>
           ) : (line.fornecedorSnapshot || '—')
         })() : (line.fornecedorSnapshot || '—')}</td><td>{editable ? <input type="number" min="0.0001" step="0.0001" value={line.consumo} onChange={(e) => updateBom(line.id, { consumo: Number(e.target.value) })} /> : line.consumo}</td><td>{line.unidade}</td><td>{editable ? <input type="number" min="0" step="0.01" value={line.perdaPercentual} onChange={(e) => updateBom(line.id, { perdaPercentual: Number(e.target.value) })} /> : line.perdaPercentual}</td><td>{editable ? <div className="bom-color-editor"><select value={line.corRegra} onChange={(e) => updateBom(line.id, { corRegra: e.target.value as BomLine['corRegra'], corFixa: e.target.value === 'fixa' ? line.corFixa : '' })}><option value="nao_aplica">N/A</option><option value="produto">Segue produto</option><option value="fixa">Fixa</option></select>{line.corRegra === 'fixa' && <input value={line.corFixa ?? ''} onChange={(e) => updateBom(line.id, { corFixa: e.target.value })} placeholder="Cor/acabamento" />}</div> : (line.corRegra === 'fixa' ? line.corFixa || 'Fixa' : line.corRegra === 'produto' ? 'Segue produto' : 'N/A')}</td><td>{editable ? <input value={line.observacao ?? ''} onChange={(e) => updateBom(line.id, { observacao: e.target.value })} /> : line.observacao || '—'}</td>{editable && <td><button className="icon-button danger-icon" onClick={() => removeBom(line.id)}><Trash2 size={15} /></button></td>}</tr>)}</tbody></table></div>}
-        {editor.tamanhos.length > 0 && editor.bom.length > 0 && <div className="variant-consumption-panel">
-          <div className="variant-consumption-head">
-            <div>
-              <span className="section-kicker">Consumo por tamanho/variante</span>
-              <strong>Use apenas nos materiais cujo consumo muda conforme a variante.</strong>
-            </div>
-          </div>
-          {editor.bom.map((line) => {
-            const variable = Boolean(
-              line.consumoPorTamanho
-              && Object.keys(line.consumoPorTamanho).length > 0,
-            )
-            return <div className="variant-consumption-row" key={line.id}>
-              <div className="variant-consumption-material">
-                <strong>{line.codigoSnapshot}</strong>
-                <span>{line.descricaoSnapshot}</span>
-              </div>
-              <label className="variable-toggle print-hidden">
-                <input
-                  type="checkbox"
-                  checked={variable}
-                  disabled={!editable}
-                  onChange={() => toggleVariableConsumption(line)}
-                />
-                Varia por tamanho
-              </label>
-              {variable && <div className="variant-consumption-values">
-                {editor.tamanhos.map((size) => (
-                  <label key={size}>
-                    <span>{size}</span>
-                    {editable ? (
-                      <input
-                        type="number"
-                        min="0.0001"
-                        step="0.0001"
-                        value={line.consumoPorTamanho?.[size] ?? line.consumo}
-                        onChange={(event) => updateVariableConsumption(
-                          line.id,
-                          size,
-                          Number(event.target.value),
-                        )}
-                      />
-                    ) : (
-                      <strong>{line.consumoPorTamanho?.[size] ?? line.consumo}</strong>
-                    )}
-                  </label>
-                ))}
-              </div>}
-            </div>
-          })}
-        </div>}
       </section>}
 
       {editor.blocos.medidas && <section className="panel ft-measurements-panel">
