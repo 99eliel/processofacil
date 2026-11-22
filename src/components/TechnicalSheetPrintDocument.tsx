@@ -322,7 +322,7 @@ export default function TechnicalSheetPrintDocument({
                     </div>}
                   </div>)}
                 </div>
-              </DynamicBox>
+              </DynamicBox>}
 
               <section className="ft-flex-two">
                 {machines.length > 0 && <DynamicBox title="MÁQUINAS POR OPERAÇÃO">
