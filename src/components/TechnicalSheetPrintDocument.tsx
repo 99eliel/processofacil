@@ -1,4 +1,3 @@
-import { Fragment } from 'react'
 import { createPortal } from 'react-dom'
 import {
   CheckCircle2,
@@ -218,33 +217,30 @@ export default function TechnicalSheetPrintDocument({
                 <p className="ft-flex-long-text">{revision.construcao}</p>
               </DynamicBox>}
 
-              {(fabricRows.length > 0 || linkedMaterials.length > 0) && (
-                <section className="ft-flex-two">
-                  {fabricRows.length > 0 && <DynamicBox title="DADOS DO TECIDO">
-                    <KeyValueRows rows={fabricRows} />
-                  </DynamicBox>}
-                  {linkedMaterials.length > 0 && <DynamicBox title="MATERIAIS DO PRODUTO" allowSplit>
-                    <table className="ft-flex-table ft-materials-table">
-                      <thead><tr><th>CÓDIGO</th><th>DESCRIÇÃO</th><th>FORNECEDOR</th><th>CONSUMO / PEÇA</th></tr></thead>
-                      <tbody>{linkedMaterials.map(({line}) => <Fragment key={line.id}>
-                        <tr>
-                          <td>{line.codigoSnapshot}</td>
-                          <td>{line.descricaoSnapshot}</td>
-                          <td>{line.fornecedorSnapshot || '—'}</td>
-                          <td>{formatNumber(line.consumo)} {line.unidade}</td>
-                        </tr>
-                        <tr className="ft-material-details-row"><td colSpan={4}>
-                          <div className="ft-material-details">
-                            {buildMaterialPrintDetails(line).map((detail)=><span key={detail.label}>
-                              <b>{detail.label}</b> {detail.value}
-                            </span>)}
-                          </div>
-                        </td></tr>
-                      </Fragment>)}</tbody>
-                    </table>
-                  </DynamicBox>}
-                </section>
-              )}
+              {fabricRows.length > 0 && <DynamicBox title="DADOS DO TECIDO">
+                <KeyValueRows rows={fabricRows} />
+              </DynamicBox>}
+
+              {linkedMaterials.length > 0 && <DynamicBox title="MATERIAIS DO PRODUTO" allowSplit>
+                <table className="ft-flex-table ft-materials-table">
+                  <thead><tr><th>CÓDIGO</th><th>DESCRIÇÃO</th><th>FORNECEDOR</th><th>CONSUMO / PEÇA</th></tr></thead>
+                  {linkedMaterials.map(({line}) => <tbody className="ft-material-group" key={line.id}>
+                    <tr>
+                      <td>{line.codigoSnapshot}</td>
+                      <td>{line.descricaoSnapshot}</td>
+                      <td>{line.fornecedorSnapshot || '—'}</td>
+                      <td>{formatNumber(line.consumo)} {line.unidade}</td>
+                    </tr>
+                    <tr className="ft-material-details-row"><td colSpan={4}>
+                      <div className="ft-material-details">
+                        {buildMaterialPrintDetails(line).map((detail)=><span key={detail.label}>
+                          <b>{detail.label}</b> {detail.value}
+                        </span>)}
+                      </div>
+                    </td></tr>
+                  </tbody>)}
+                </table>
+              </DynamicBox>}
 
               {(revision.medidas.length > 0 || technicalDrawing?.url) && (
                 <section className="ft-flex-two ft-print-page-one-bottom">
