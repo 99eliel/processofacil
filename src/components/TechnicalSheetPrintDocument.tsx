@@ -1,10 +1,10 @@
+import { Fragment } from 'react'
 import { createPortal } from 'react-dom'
 import {
   CheckCircle2,
   FileText,
   Play,
   Printer,
-  QrCode,
   X,
 } from 'lucide-react'
 import type {
@@ -14,6 +14,7 @@ import type {
   TechnicalProductImage,
   TechnicalRevision,
 } from '../domain/types'
+import { buildConsumptionPrintRows, buildMaterialPrintDetails } from '../domain/technicalPrintModel'
 
 type Props = {
   revision: TechnicalRevision
@@ -54,14 +55,6 @@ function getPhoto(images: TechnicalProductImage[], type: TechnicalProductImage['
   return images.find((image) => image.tipo === type) ?? images[legacyIndex]
 }
 
-function QrVisual() {
-  return <div className="ft-flex-qr" aria-label="QR Code de acesso rápido">
-    {Array.from({ length: 81 }).map((_, index) => (
-      <i key={index} className={(index * 17 + Math.floor(index / 9) * 7 + index % 5) % 4 !== 0 ? 'on' : ''} />
-    ))}
-  </div>
-}
-
 export default function TechnicalSheetPrintDocument({
   revision,
   product: _product,
@@ -70,7 +63,7 @@ export default function TechnicalSheetPrintDocument({
   responsibleName,
   onClose,
 }: Props) {
-  const linkedMaterials = revision.bom.map((line) => ({
+  const linkedMaterials = (revision.blocos.bom ? revision.bom : []).map((line) => ({
     line,
     material: materials.find((item) => item.id === line.materialId),
   }))
@@ -85,23 +78,19 @@ export default function TechnicalSheetPrintDocument({
 
   const perfectPhoto = getPhoto(images, 'peca_perfeita', 4)
 
-  const machines = Array.from(new Map(
-    revision.operacoes
-      .filter((operation) => operation.maquina.trim())
-      .map((operation) => [operation.maquina.trim(), operation]),
-  ).values())
-
-  const machineAccessories = revision.operacoes.filter(
+  const orderedOperations = [...revision.operacoes].sort((a,b)=>a.ordem-b.ordem)
+  const machines = orderedOperations.filter((operation) => operation.maquina.trim())
+  const machineAccessories = orderedOperations.filter(
     (operation) => hasText(operation.ferramenta, operation.regulagem),
   )
 
-  const calculatedTime = revision.operacoes.reduce(
+  const calculatedTime = orderedOperations.reduce(
     (sum, operation) => sum + Number(operation.tempoPadraoMin ?? 0),
     0,
   )
   const totalTime = revision.dnaProduto.tempoPadraoMin ?? (calculatedTime > 0 ? calculatedTime : null)
 
-  const primaryVideo = revision.operacoes
+  const primaryVideo = orderedOperations
     .flatMap((operation) => operation.midias.map((media) => ({ operation, media })))
     .find(({ media }) => media.tipo === 'video')
 
@@ -130,22 +119,16 @@ export default function TechnicalSheetPrintDocument({
     ['SOLIDEZ DA COR', revision.dadosTecido.solidezCor],
   ].filter(([, value]) => hasText(value))
 
-  const cuttingRows = [
-    ['MODELO', revision.processoCorte.encaixe],
-    ['GRADE ENCAIXADA', revision.processoCorte.consumoTecido],
-    ['COMPRIMENTO DO RISCO', revision.processoCorte.comprimentoRisco],
-    ['CONSUMO', revision.processoCorte.alturaEnfesto],
-    ['LARGURA DO TECIDO', revision.processoCorte.numeroFolhas],
-    ['APROVEITAMENTO', revision.processoCorte.perdasPercentual],
-  ].filter(([, value]) => hasText(value))
-
-  const hasQualityFile = activeAttachments.some((item) => item.tipo === 'qualidade')
+  const cuttingRows = buildConsumptionPrintRows(revision.processoCorte)
+  const printChecklist = revision.blocos.checklist ? revision.checklist : []
+  const operationDetails = orderedOperations.filter((operation) =>
+    Boolean(operation.descricao?.trim()) || (operation.midias ?? []).some((media)=>Boolean(media.url)) || Boolean(operation.dificuldade),
+  )
 
   const hasDna = Boolean(
     perfectPhoto?.url
     || primaryVideo
     || totalTime != null
-    || activeAttachments.find((item) => item.tipo === 'video')
     || revision.dnaProduto.nivelDificuldade,
   )
 
@@ -158,7 +141,8 @@ export default function TechnicalSheetPrintDocument({
     Boolean(technicalDrawing?.url),
     revision.operacoes.length > 0,
     revision.agulhasLinhas.length > 0,
-    hasQualityFile,
+    Boolean(revision.construcao?.trim()),
+    printChecklist.length > 0,
     cuttingRows.length > 0,
     activeAttachments.length > 0,
     hasDna,
@@ -167,7 +151,7 @@ export default function TechnicalSheetPrintDocument({
   const hasSecondPage = Boolean(
     revision.operacoes.length > 0
     || revision.agulhasLinhas.length > 0
-    || hasQualityFile
+    || printChecklist.length > 0
     || cuttingRows.length > 0
     || activeAttachments.length > 0
     || hasDna,
@@ -230,20 +214,33 @@ export default function TechnicalSheetPrintDocument({
                 </section>
               )}
 
+              {revision.construcao?.trim() && <DynamicBox title="CONSTRUÇÃO / PROCESSO" allowSplit>
+                <p className="ft-flex-long-text">{revision.construcao}</p>
+              </DynamicBox>}
+
               {(fabricRows.length > 0 || linkedMaterials.length > 0) && (
                 <section className="ft-flex-two">
                   {fabricRows.length > 0 && <DynamicBox title="DADOS DO TECIDO">
                     <KeyValueRows rows={fabricRows} />
                   </DynamicBox>}
-                  {linkedMaterials.length > 0 && <DynamicBox title="AVIAMENTOS E MATERIAIS">
+                  {linkedMaterials.length > 0 && <DynamicBox title="MATERIAIS DO PRODUTO" allowSplit>
                     <table className="ft-flex-table ft-materials-table">
                       <thead><tr><th>CÓDIGO</th><th>DESCRIÇÃO</th><th>FORNECEDOR</th><th>CONSUMO / PEÇA</th></tr></thead>
-                      <tbody>{linkedMaterials.map(({ line }) => <tr key={line.id}>
-                        <td>{line.codigoSnapshot}</td>
-                        <td>{line.descricaoSnapshot}</td>
-                        <td>{line.fornecedorSnapshot || ''}</td>
-                        <td>{formatNumber(line.consumo)} {line.unidade}</td>
-                      </tr>)}</tbody>
+                      <tbody>{linkedMaterials.map(({line}) => <Fragment key={line.id}>
+                        <tr>
+                          <td>{line.codigoSnapshot}</td>
+                          <td>{line.descricaoSnapshot}</td>
+                          <td>{line.fornecedorSnapshot || '—'}</td>
+                          <td>{formatNumber(line.consumo)} {line.unidade}</td>
+                        </tr>
+                        <tr className="ft-material-details-row"><td colSpan={4}>
+                          <div className="ft-material-details">
+                            {buildMaterialPrintDetails(line).map((detail)=><span key={detail.label}>
+                              <b>{detail.label}</b> {detail.value}
+                            </span>)}
+                          </div>
+                        </td></tr>
+                      </Fragment>)}</tbody>
                     </table>
                   </DynamicBox>}
                 </section>
@@ -288,11 +285,11 @@ export default function TechnicalSheetPrintDocument({
               </div>
             </div>
 
-            {revision.operacoes.length > 0 && <>
+            {orderedOperations.length > 0 && <>
               <DynamicBox title="SEQUÊNCIA OPERACIONAL">
                 <table className="ft-flex-table ft-operations-table">
                   <thead><tr><th>Nº</th><th>OPERAÇÃO</th><th>MÁQUINA</th><th>ACESSÓRIO</th><th>REGULAGEM</th><th>TEMPO</th></tr></thead>
-                  <tbody>{revision.operacoes.map((operation) => <tr key={operation.id}>
+                  <tbody>{orderedOperations.map((operation) => <tr key={operation.id}>
                     <td>{operation.codigo || operation.ordem * 10}</td>
                     <td>{operation.nome}</td>
                     <td>{operation.maquina}</td>
@@ -305,7 +302,7 @@ export default function TechnicalSheetPrintDocument({
               </DynamicBox>
 
               <section className="ft-flex-two">
-                {machines.length > 0 && <DynamicBox title="MÁQUINAS NECESSÁRIAS">
+                {machines.length > 0 && <DynamicBox title="MÁQUINAS POR OPERAÇÃO">
                   <table className="ft-flex-table ft-machines-table"><thead><tr><th>OPERAÇÃO</th><th>MÁQUINA</th></tr></thead><tbody>
                     {machines.map((operation) => <tr key={operation.id}><td>{operation.nome}</td><td>{operation.maquina}</td></tr>)}
                   </tbody></table>
@@ -375,8 +372,10 @@ function Meta({ label, value, approved = false }: { label: string; value: string
   return <div><span>{label}</span><strong className={approved ? 'approved' : ''}>{approved && <CheckCircle2 size={10} />} {value}</strong></div>
 }
 
-function DynamicBox({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="ft-flex-box">
+function DynamicBox({ title, children, allowSplit = false }: {
+  title: string; children: React.ReactNode; allowSplit?: boolean
+}) {
+  return <section className={`ft-flex-box${allowSplit ? ' ft-flex-allow-split' : ''}`}>
     <div className="ft-flex-section-title">{title}</div>
     <div className="ft-flex-box-body">{children}</div>
   </section>
