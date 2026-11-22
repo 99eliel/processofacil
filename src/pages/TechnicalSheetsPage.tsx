@@ -44,6 +44,8 @@ import {
   uploadTechnicalSheetImage,
 } from '../firebase/storageRepository'
 import TechnicalOperationsEditor from '../components/TechnicalOperationsEditor'
+import BomMaterialPicker from '../components/BomMaterialPicker'
+import QuickMaterialModal from '../components/QuickMaterialModal'
 import TechnicalSheetPrintDocument from '../components/TechnicalSheetPrintDocument'
 import type { BomLine, Material, MaterialSupplier, Product, ProductMeasurementTemplate, TechnicalRevision, TechnicalSheetSummary } from '../domain/types'
 
@@ -91,6 +93,7 @@ export default function TechnicalSheetsPage({
   const [history, setHistory] = useState<TechnicalRevision[]>([])
   const [busy, setBusy] = useState(false)
   const [materialToAdd, setMaterialToAdd] = useState('')
+  const [quickMaterialOpen, setQuickMaterialOpen] = useState(false)
   const [newSize, setNewSize] = useState('')
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imageUploadError, setImageUploadError] = useState('')
@@ -355,10 +358,22 @@ export default function TechnicalSheetsPage({
 
   const addMaterial = () => {
     if (!editor || !editable) return
-    const material = materials.find((item) => item.id === materialToAdd)
+    const material = materials.find((item) => item.id === materialToAdd && item.ativo)
     if (!material) return
-    setEditor({ ...editor, bom: [...editor.bom, createBomLine(material)] })
+    setEditor((current) => current && current.status === 'rascunho'
+      ? { ...current, bom: [...current.bom, createBomLine(material)] }
+      : current)
     setMaterialToAdd('')
+    notify('Material adicionado à BOM. Salve o rascunho da Ficha Técnica para registrar as alterações.')
+  }
+
+  const quickMaterialCreated = (material: Material) => {
+    setEditor((current) => current && current.status === 'rascunho'
+      ? { ...current, bom: [...current.bom, createBomLine(material)] }
+      : current)
+    setMaterialToAdd('')
+    setQuickMaterialOpen(false)
+    notify('Material cadastrado e adicionado à BOM. Salve a Ficha Técnica para gravar a composição.')
   }
 
   const updateBom = (id: string, patch: Partial<BomLine>) => {
@@ -1076,9 +1091,25 @@ export default function TechnicalSheetsPage({
         onError={setLocalError}
       />
 
+      {quickMaterialOpen && editable && <QuickMaterialModal
+        onClose={() => setQuickMaterialOpen(false)}
+        onCreated={quickMaterialCreated}
+      />}
+
       {editor.blocos.bom && <section className="panel">
         <div className="panel-head"><div><span className="section-kicker">Composição</span><h3>BOM — Lista de materiais</h3></div><span className="count-badge">{editor.bom.length}</span></div>
-        {editable && <div className="inline-form bom-add"><select value={materialToAdd} onChange={(e) => setMaterialToAdd(e.target.value)}><option value="">Selecione um material ativo</option>{materials.filter((item) => item.ativo).map((material) => <option key={material.id} value={material.id}>{material.codigo} — {material.descricao}</option>)}</select><button className="secondary-button compact" type="button" onClick={addMaterial} disabled={!materialToAdd}><PackagePlus size={16} /> Adicionar à BOM</button></div>}
+        {editable && <div className="ft-bom-chooser print-hidden">
+          <BomMaterialPicker materials={materials} selectedId={materialToAdd} onChange={setMaterialToAdd} disabled={busy}/>
+          <div className="ft-bom-chooser-actions">
+            <button className="secondary-button compact" type="button" onClick={addMaterial} disabled={!materialToAdd || busy}>
+              <PackagePlus size={16}/> Adicionar à BOM
+            </button>
+            <button className="primary-button compact" type="button" disabled={busy}
+              onClick={() => { setQuickMaterialOpen(true); setLocalError('') }}>
+              <Plus size={16}/> Novo material
+            </button>
+          </div>
+        </div>}
         {editor.bom.length === 0 ? <div className="empty-state small-empty"><PackagePlus size={28} /><strong>BOM vazia</strong><span>Adicione os materiais que compõem este produto.</span></div> :
           <div className="table-wrap"><table className="bom-table"><thead><tr><th>Material</th><th>Fornecedor</th><th>Consumo</th><th>Unidade</th><th>Perda %</th><th>Cor</th><th>Observação</th>{editable && <th></th>}</tr></thead><tbody>{editor.bom.map((line) => <tr key={line.id}><td><strong>{line.codigoSnapshot}</strong><small className="table-sub">{line.descricaoSnapshot}</small></td><td>{editable ? (() => {
           const material = materials.find((item) => item.id === line.materialId)

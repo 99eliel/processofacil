@@ -1,0 +1,37 @@
+/* Ficha Técnica: seletor pesquisável e cadastro rápido de materiais */
+.ft-bom-chooser{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;margin:0 0 14px;position:relative}
+.ft-bom-chooser .ft-bom-picker{flex:1 1 370px;min-width:220px}
+.ft-bom-chooser .ft-bom-chooser-actions{display:flex;flex:0 0 auto;flex-wrap:wrap;gap:8px}
+.ft-bom-picker{position:relative;z-index:5}
+.ft-bom-search-field{border:1px solid #dce5ec;border-radius:11px;background:#fff;display:flex;align-items:center;min-height:43px;padding:0 9px 0 13px;color:#678395;gap:9px}
+.ft-bom-search-field.is-open{border-color:#23888a;box-shadow:0 0 0 3px rgba(28,142,139,.1)}
+.ft-bom-search-field>input{outline:none!important;border:0!important;background:transparent!important;width:100%;flex:1;font-size:13px;padding:10px 0!important;min-width:0;min-height:41px}
+.ft-bom-search-field>input::-webkit-search-cancel-button{display:none}
+.ft-bom-search-field>button{border:0;background:transparent;cursor:pointer;color:#688496;display:grid;place-items:center;padding:6px;border-radius:6px}
+.ft-bom-search-field>button:hover{color:#176f75;background:#eff7f7}
+.ft-bom-selected{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#217c78;margin:6px 1px 0}
+.ft-bom-search-dropdown{position:absolute;z-index:55;top:calc(100% + 7px);left:0;right:0;border:1px solid #d7e5e8;border-radius:12px;background:white;box-shadow:0 18px 36px rgba(31,58,73,.16);max-height:310px;overflow-y:auto}
+.ft-bom-search-heading{position:sticky;top:0;z-index:1;background:#f6fafb;border-bottom:1px solid #e7edf0;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 13px;color:#44667a;font-size:12px;font-weight:800}
+.ft-bom-search-heading small{font-size:10px;color:#78909f;font-weight:500}
+.ft-bom-search-option{width:100%;text-align:left;display:flex;align-items:center;gap:10px;justify-content:space-between;border:0;border-bottom:1px solid #f1f4f6;background:white;padding:11px 13px;color:#25485f;cursor:pointer}
+.ft-bom-search-option:hover,.ft-bom-search-option.is-active{background:#eff9f7}
+.ft-bom-search-option>span{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0}
+.ft-bom-search-option>span strong{font-size:12px}
+.ft-bom-search-option>span span{font-size:12px;color:#526d7e;white-space:normal}
+.ft-bom-search-option>small{font-size:10px;color:#8497a4;text-align:right;flex-shrink:0;max-width:35%}
+.ft-bom-search-empty,.ft-bom-search-foot{font-size:12px;line-height:1.5;padding:11px 13px;color:#6a8292;margin:0}
+.ft-bom-search-foot{font-size:10px;background:#f7fafb;border-top:1px solid #edf2f4}
+.ft-quick-material-backdrop{z-index:1200!important}
+.ft-quick-material-modal{width:min(660px,calc(100vw - 30px));max-height:90vh;overflow-y:auto}
+.ft-quick-material-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px;row-gap:15px;margin:20px 0}
+.ft-quick-material-fields>label,.ft-quick-category-editor label{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:12px;color:#496575;font-weight:700}
+.ft-quick-material-fields input,.ft-quick-material-fields select{width:100%;border:1px solid #dce4ea;border-radius:9px;background:white;padding:10px 11px;min-height:41px;color:#26475b;font-size:13px}
+.ft-quick-material-fields input:focus,.ft-quick-material-fields select:focus{border-color:#238b88;outline:2px solid #d9f2ee}
+.ft-category-create-link{display:flex;align-items:center;gap:5px;align-self:flex-start;padding:4px 0;border:0;background:transparent;color:#197d80;font-size:11px;font-weight:800;cursor:pointer;text-align:left}
+.ft-category-create-link:hover{text-decoration:underline}
+.ft-quick-category-editor{grid-column:1/-1;display:flex;gap:12px;align-items:flex-end;padding:12px;background:#f3f9fa;border-radius:11px;border:1px solid #dcebed}
+.ft-quick-category-editor label{flex:1}
+.ft-quick-category-editor button{flex:0 0 auto}
+.ft-quick-material-note{display:flex;gap:9px;align-items:flex-start;font-size:11px;color:#4d7280;background:#f2faf9;padding:12px;border-radius:9px;line-height:1.5}
+.ft-quick-material-note svg{flex:0 0 auto;color:#24867e}
+@media(max-width:700px){.ft-bom-chooser .ft-bom-picker{flex-basis:100%}.ft-bom-chooser .ft-bom-chooser-actions{width:100%}.ft-bom-chooser-actions>button{flex:1}.ft-quick-material-fields{grid-template-columns:1fr}.ft-bom-search-dropdown{max-height:260px}.ft-quick-category-editor{flex-direction:column;align-items:stretch}.ft-quick-material-modal{width:calc(100vw - 24px)}}
