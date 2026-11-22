@@ -1923,3 +1923,11 @@
   .ft-flex-instruction-item p {font-size:2.45mm !important}
   .ft-flex-footer {font-size:2.2mm !important}
 }
+
+/* Mantém cada material com seus detalhes ao atravessar a quebra de página. */
+@media print {
+  .ft-materials-table tbody.ft-material-group {
+    break-inside:avoid !important;
+    page-break-inside:avoid !important;
+  }
+}

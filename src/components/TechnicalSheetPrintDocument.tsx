@@ -156,7 +156,25 @@ export default function TechnicalSheetPrintDocument({
     || hasDna,
   )
 
-  const print = () => window.setTimeout(() => window.print(), 60)
+  const print = () => {
+    const images = [...document.querySelectorAll<HTMLImageElement>('.ft-print-preview-overlay img')]
+    const ready = images.filter((img) => !img.complete).map((img) => new Promise<void>((resolve) => {
+      let finished = false
+      const finish = () => {
+        if (finished) return
+        finished = true
+        window.clearTimeout(timeout)
+        img.removeEventListener('load', finish)
+        img.removeEventListener('error', finish)
+        resolve()
+      }
+      const timeout = window.setTimeout(finish, 3500)
+      img.addEventListener('load', finish)
+      img.addEventListener('error', finish)
+      if (img.complete) finish()
+    }))
+    void Promise.all(ready).then(() => window.setTimeout(() => window.print(), 60))
+  }
 
   return createPortal(
     <div className="ft-print-preview-overlay">
