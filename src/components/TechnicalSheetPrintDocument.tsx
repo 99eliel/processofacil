@@ -51,7 +51,10 @@ function hasText(...values: Array<string | undefined | null>) {
 }
 
 function getPhoto(images: TechnicalProductImage[], type: TechnicalProductImage['tipo'], legacyIndex: number) {
-  return images.find((image) => image.tipo === type) ?? images[legacyIndex]
+  const named = images.find((image) => image.tipo === type)
+  if (named) return named
+  // Compatibilidade com imagens antigas, sem tipo. Evita rotular outra foto como "Peça perfeita".
+  return images.every((image) => !image.tipo) ? images[legacyIndex] : undefined
 }
 
 export default function TechnicalSheetPrintDocument({
@@ -118,6 +121,7 @@ export default function TechnicalSheetPrintDocument({
     ['SOLIDEZ DA COR', revision.dadosTecido.solidezCor],
   ].filter(([, value]) => hasText(value))
 
+  const printMeasures = revision.blocos.medidas ? revision.medidas : []
   const cuttingRows = buildConsumptionPrintRows(revision.processoCorte)
   const printChecklist = revision.blocos.checklist ? revision.checklist : []
   const operationDetails = orderedOperations.filter((operation) =>
@@ -136,7 +140,7 @@ export default function TechnicalSheetPrintDocument({
     identityRows.length > 0,
     fabricRows.length > 0,
     linkedMaterials.length > 0,
-    revision.medidas.length > 0,
+    printMeasures.length > 0,
     Boolean(technicalDrawing?.url),
     revision.operacoes.length > 0,
     revision.agulhasLinhas.length > 0,
@@ -260,13 +264,13 @@ export default function TechnicalSheetPrintDocument({
                 </table>
               </DynamicBox>}
 
-              {(revision.medidas.length > 0 || technicalDrawing?.url) && (
+              {(printMeasures.length > 0 || technicalDrawing?.url) && (
                 <section className="ft-flex-two ft-print-page-one-bottom">
-                  {revision.medidas.length > 0 && <DynamicBox title="TABELA DE MEDIDAS">
+                  {printMeasures.length > 0 && <DynamicBox title="TABELA DE MEDIDAS">
                     <div className="ft-flex-table-scroll">
                       <table className="ft-flex-table ft-measures-table centered">
                         <thead><tr><th>MEDIDA</th><th>TOL.</th>{revision.tamanhos.map((size) => <th key={size}>{size}</th>)}</tr></thead>
-                        <tbody>{revision.medidas.map((row) => <tr key={row.id}>
+                        <tbody>{printMeasures.map((row) => <tr key={row.id}>
                           <td>{row.ponto}</td>
                           <td>± {formatNumber(row.tolerancia)}</td>
                           {revision.tamanhos.map((size) => <td key={size}>{row.valores.find((value) => value.tamanho === size)?.valor ?? ''}</td>)}
