@@ -132,12 +132,12 @@ export default function TechnicalSheetPrintDocument({
   ].filter(([, value]) => hasText(value))
 
   const cuttingRows = [
-    ['ENCAIXE', revision.processoCorte.encaixe],
-    ['CONSUMO DE TECIDO', revision.processoCorte.consumoTecido],
+    ['MODELO', revision.processoCorte.encaixe],
+    ['GRADE ENCAIXADA', revision.processoCorte.consumoTecido],
     ['COMPRIMENTO DO RISCO', revision.processoCorte.comprimentoRisco],
-    ['ALTURA DO ENFESTO', revision.processoCorte.alturaEnfesto],
-    ['Nº DE FOLHAS', revision.processoCorte.numeroFolhas],
-    ['PERDAS (%)', revision.processoCorte.perdasPercentual],
+    ['CONSUMO', revision.processoCorte.alturaEnfesto],
+    ['LARGURA DO TECIDO', revision.processoCorte.numeroFolhas],
+    ['APROVEITAMENTO', revision.processoCorte.perdasPercentual],
   ].filter(([, value]) => hasText(value))
 
   const hasQualityFile = activeAttachments.some((item) => item.tipo === 'qualidade')
@@ -327,7 +327,7 @@ export default function TechnicalSheetPrintDocument({
             </DynamicBox>}
 
             {cuttingRows.length > 0 && <section className="ft-flex-two">
-              <DynamicBox title="PROCESSO DE CORTE">
+              <DynamicBox title="DADOS DE CONSUMO">
                 <KeyValueRows rows={cuttingRows} />
               </DynamicBox>
             </section>}

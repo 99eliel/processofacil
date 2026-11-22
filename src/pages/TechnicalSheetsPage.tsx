@@ -902,14 +902,14 @@ export default function TechnicalSheetsPage({
         </div>
 
         <div className="ft-complete-subsection">
-          <h4>Processo de corte</h4>
+          <h4>Dados de consumo</h4>
           <div className="form-grid">
-            <label><span>Encaixe</span><input disabled={!editable} value={editor.processoCorte.encaixe} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, encaixe: e.target.value } })} /></label>
-            <label><span>Consumo de tecido</span><input disabled={!editable} value={editor.processoCorte.consumoTecido} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, consumoTecido: e.target.value } })} /></label>
+            <label><span>Modelo</span><input disabled={!editable} value={editor.processoCorte.encaixe} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, encaixe: e.target.value } })} /></label>
+            <label><span>Grade encaixada</span><input disabled={!editable} value={editor.processoCorte.consumoTecido} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, consumoTecido: e.target.value } })} /></label>
             <label><span>Comprimento do risco</span><input disabled={!editable} value={editor.processoCorte.comprimentoRisco} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, comprimentoRisco: e.target.value } })} /></label>
-            <label><span>Altura do enfesto</span><input disabled={!editable} value={editor.processoCorte.alturaEnfesto} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, alturaEnfesto: e.target.value } })} /></label>
-            <label><span>Nº de folhas</span><input disabled={!editable} value={editor.processoCorte.numeroFolhas} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, numeroFolhas: e.target.value } })} /></label>
-            <label><span>Perdas (%)</span><input disabled={!editable} value={editor.processoCorte.perdasPercentual} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, perdasPercentual: e.target.value } })} /></label>
+            <label><span>Consumo</span><input disabled={!editable} value={editor.processoCorte.alturaEnfesto} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, alturaEnfesto: e.target.value } })} /></label>
+            <label><span>Largura do tecido</span><input disabled={!editable} value={editor.processoCorte.numeroFolhas} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, numeroFolhas: e.target.value } })} /></label>
+            <label><span>Aproveitamento</span><input disabled={!editable} value={editor.processoCorte.perdasPercentual} onChange={(e) => setEditor({ ...editor, processoCorte: { ...editor.processoCorte, perdasPercentual: e.target.value } })} /></label>
           </div>
         </div>
 
