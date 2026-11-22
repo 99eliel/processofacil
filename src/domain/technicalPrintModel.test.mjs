@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildConsumptionPrintRows, buildMaterialPrintDetails, materialColorPrintValue } from './technicalPrintModel.ts'
+import { buildConsumptionPrintRows, buildMaterialPrintDetails, materialColorPrintValue, formatMaterialConsumption } from './technicalPrintModel.ts'
 
 test('impressão reflete todos os nomes novos dos Dados de consumo preservando valores legados', () => {
   const rows=buildConsumptionPrintRows({
@@ -34,4 +34,9 @@ test('linhas antigas sem observação ou consumo novo permanecem imprimíveis',(
   assert.deepEqual(rows,[['APROVEITAMENTO','8%']])
   const meta=buildMaterialPrintDetails({corRegra:'nao_aplica',perdaPercentual:0})
   assert.equal(meta.find(x=>x.label==='PERDA')?.value,'0%')
+})
+
+test('consumo pequeno não é arredondado para zero na impressão',()=>{
+  assert.equal(formatMaterialConsumption(0.0001,'kg'),'0,0001 kg')
+  assert.equal(formatMaterialConsumption(1.2555,'m'),'1,2555 m')
 })

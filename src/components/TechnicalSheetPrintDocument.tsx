@@ -13,7 +13,7 @@ import type {
   TechnicalProductImage,
   TechnicalRevision,
 } from '../domain/types'
-import { buildConsumptionPrintRows, buildMaterialPrintDetails } from '../domain/technicalPrintModel'
+import { buildConsumptionPrintRows, buildMaterialPrintDetails, formatMaterialConsumption } from '../domain/technicalPrintModel'
 
 type Props = {
   revision: TechnicalRevision
@@ -251,7 +251,7 @@ export default function TechnicalSheetPrintDocument({
                       <td>{line.codigoSnapshot}</td>
                       <td>{line.descricaoSnapshot}</td>
                       <td>{line.fornecedorSnapshot || '—'}</td>
-                      <td>{formatNumber(line.consumo)} {line.unidade}</td>
+                      <td>{formatMaterialConsumption(line.consumo, line.unidade)}</td>
                     </tr>
                     <tr className="ft-material-details-row"><td colSpan={4}>
                       <div className="ft-material-details">

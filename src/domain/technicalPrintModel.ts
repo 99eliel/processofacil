@@ -31,3 +31,13 @@ export function buildMaterialPrintDetails(line: BomLine): PrintMaterialDetail[] 
   ]
   return details.filter((item) => item.value.length > 0)
 }
+
+
+/** O cadastro aceita até quatro casas decimais; imprimir apenas duas pode arredondar consumo para zero. */
+export function formatMaterialConsumption(value: number, unit: string): string {
+  const amount = Number(value)
+  const text = Number.isFinite(amount)
+    ? amount.toLocaleString('pt-BR', { maximumFractionDigits: 4 })
+    : '—'
+  return (text + ' ' + (unit || '')).trim()
+}
