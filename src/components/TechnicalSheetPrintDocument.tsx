@@ -301,6 +301,29 @@ export default function TechnicalSheetPrintDocument({
                 </table>
               </DynamicBox>
 
+              {operationDetails.length > 0 && <DynamicBox title="INSTRUÇÕES DAS OPERAÇÕES" allowSplit>
+                <div className="ft-flex-operation-instructions">
+                  {operationDetails.map((operation) => <div className="ft-flex-instruction-item" key={operation.id}>
+                    <div className="ft-flex-instruction-title">
+                      <strong>{operation.codigo || operation.ordem * 10} · {operation.nome}</strong>
+                      {operation.dificuldade && <span>Dificuldade: {difficultyLabel(operation.dificuldade)}</span>}
+                    </div>
+                    {operation.descricao?.trim() && <p>{operation.descricao}</p>}
+                    {(operation.midias ?? []).some((media) => media.url) && <div className="ft-flex-operation-media">
+                      {operation.midias.filter((media) => media.url).map((media) =>
+                        media.tipo === 'imagem'
+                          ? <figure key={media.id}>
+                              <img src={media.url} alt={media.legenda || 'Foto da operação'}/>
+                              <figcaption>{media.legenda || 'Foto de referência'}</figcaption>
+                            </figure>
+                          : <a key={media.id} href={media.url} target="_blank" rel="noreferrer">
+                              Vídeo: {media.legenda || 'Abrir referência da operação'}</a>,
+                      )}
+                    </div>}
+                  </div>)}
+                </div>
+              </DynamicBox>
+
               <section className="ft-flex-two">
                 {machines.length > 0 && <DynamicBox title="MÁQUINAS POR OPERAÇÃO">
                   <table className="ft-flex-table ft-machines-table"><thead><tr><th>OPERAÇÃO</th><th>MÁQUINA</th></tr></thead><tbody>
@@ -327,25 +350,29 @@ export default function TechnicalSheetPrintDocument({
               </DynamicBox>
             </section>}
 
-            <section className="ft-flex-two">
-              <DynamicBox title="ACESSO RÁPIDO">
-                <div className="ft-flex-quick"><QrCode size={20} /><p>QR de acesso ao Passaporte Digital.</p><QrVisual /></div>
-              </DynamicBox>
-              {activeAttachments.length > 0 && <DynamicBox title="ANEXOS">
-                <div className="ft-flex-attachments">
-                  {activeAttachments.map((attachment) => <div key={attachment.id}>
-                    <FileText size={18} />
-                    <strong>{attachment.nome}</strong>
-                  </div>)}
-                </div>
-              </DynamicBox>}
-            </section>
+            {printChecklist.length > 0 && <DynamicBox title="CHECKLIST TÉCNICO" allowSplit>
+              <div className="ft-flex-checklist">
+                {printChecklist.map((item) => <div key={item.id}>
+                  <span>{item.descricao}</span>{item.obrigatorio && <small>Obrigatório</small>}
+                </div>)}
+              </div>
+            </DynamicBox>}
+
+            {activeAttachments.length > 0 && <DynamicBox title="ANEXOS" allowSplit>
+              <div className="ft-flex-attachments">
+                {activeAttachments.map((attachment) => <div key={attachment.id}>
+                  <FileText size={18}/>
+                  {attachment.url ? <a href={attachment.url} target="_blank" rel="noreferrer">{attachment.nome}</a>
+                    : <strong>{attachment.nome}</strong>}
+                </div>)}
+              </div>
+            </DynamicBox>
 
             {hasDna && <section className="ft-flex-dna">
               <div className="ft-flex-section-title">DNA DO PRODUTO <small>INFORMAÇÃO QUE GERA QUALIDADE E PRODUTIVIDADE</small></div>
               <div className="ft-flex-dna-grid">
                 {perfectPhoto?.url && <div><strong>PEÇA PERFEITA</strong><img src={perfectPhoto.url} alt="Peça perfeita" /></div>}
-                {primaryVideo && <div><strong>VÍDEO DE MONTAGEM</strong><div className="ft-flex-video"><Play size={22} /><span>{primaryVideo.operation.nome}</span></div></div>}
+                {primaryVideo && <div><strong>VÍDEO DE MONTAGEM</strong><div className="ft-flex-video"><Play size={22}/><span>{primaryVideo.operation.nome}</span><a href={primaryVideo.media.url} target="_blank" rel="noreferrer">Abrir vídeo original</a></div></div>}
                 {totalTime != null && <div className="stats">
                   <p><span>TEMPO PADRÃO</span><b>{formatNumber(totalTime)} min</b></p>
                 </div>}
