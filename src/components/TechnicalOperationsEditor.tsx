@@ -161,6 +161,7 @@ export default function TechnicalOperationsEditor({
 
     <p className="helper-text">
       Cada operação concentra máquina, regulagem, tempo, instrução principal, fotos e vídeo.
+      Para alterar o nome, clique no lápis ao lado do título. A equipe pode ser definida no Planejamento.
     </p>
 
     {editor.operacoes.length === 0 ? (
