@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { CheckCircle2, FileText, HelpCircle, ShieldAlert, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Bell, BookOpen, CheckCircle2, ClipboardCheck, ClipboardList, Factory, FileText, HelpCircle, Home, Lock, ScanLine, Search, ShieldAlert, Star, Users, X } from 'lucide-react'
 import { useSystem } from './system/SystemProvider'
 import TechnicalSheetsPage from './pages/TechnicalSheetsPage'
 import { PROJECT_ROADMAP } from './domain/projectRoadmap'
@@ -20,11 +20,28 @@ import './ficha-only.css'
  * versionados no repositório para reconstrução posterior, sem exclusão dos
  * registros já existentes no Firebase.
  */
+const moduleIcons = [FileText, BookOpen, Factory, ClipboardList, Users, ClipboardCheck, ScanLine, Search, Star, Bell] as const
+const moduleDescriptions = [
+  'Produtos, materiais, medidas e operações.',
+  'Procedimentos operacionais padrão.',
+  'Cadastro e organização de oficinas.',
+  'Controle das ordens de produção.',
+  'Planejamento da capacidade produtiva.',
+  'Inspeções e controle de qualidade.',
+  'Orientações visuais no processo.',
+  'Localize documentos e informações.',
+  'Acesso rápido aos itens salvos.',
+  'Comunicados e novidades do sistema.',
+] as const
+
 export default function App() {
   const system = useSystem()
   const [toast, setToast] = useState('')
   const [helpOpen, setHelpOpen] = useState(false)
-  const [roadmapOpen, setRoadmapOpen] = useState(false)
+  const [page, setPage] = useState<'home' | 'ficha'>('home')
+  const [sheetVisited, setSheetVisited] = useState(false)
+  const openSheet = () => { setSheetVisited(true); setPage('ficha'); window.scrollTo(0, 0) }
+  const openHome = () => { setPage('home'); window.scrollTo(0, 0) }
   const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => () => {
@@ -40,15 +57,15 @@ export default function App() {
   return <div className="app-shell pf-shell pf-ft-only-shell">
     <div className="pf-app-layout">
       <header className="pf-global-header pf-ft-only-header">
-        <div className="pf-brand pf-ft-only-brand">
+        <button type="button" className="pf-brand pf-ft-only-brand pf-menu-brand-button" onClick={openHome} aria-label="Página inicial do Processo Fácil">
           <span className="pf-brand-symbol"><FileText size={22}/></span>
           <span>
             <strong>Processo Fácil</strong>
-            <small>{system.activeCompany?.nomeFantasia || 'Ficha Técnica'}</small>
+            <small>{system.activeCompany?.nomeFantasia || 'Gestão de processos'}</small>
           </span>
-        </div>
+        </button>
         <div className="pf-ft-only-header-actions">
-          <span className="pf-ft-only-active-label"><CheckCircle2 size={15}/> Ficha Técnica</span>
+          <button type="button" className="pf-menu-home-link" onClick={openHome} aria-current={page === 'home' ? 'page' : undefined}><Home size={17}/> Início</button>
           <button type="button" className="pf-settings-link" onClick={() => setHelpOpen(true)}
             title="Ajuda da Ficha Técnica" aria-label="Ajuda da Ficha Técnica">
             <HelpCircle size={19}/>
@@ -57,23 +74,42 @@ export default function App() {
       </header>
 
       <main className="pf-content pf-ft-only-content">
-        <div className="pf-ft-only-intro">
-          <div>
-            <span className="pf-ft-only-stage">ETAPA 1 · MÓDULO PRINCIPAL</span>
-            <h1>Ficha Técnica</h1>
-            <p>Cadastre e organize produtos, materiais, medidas, operações e revisões em um só lugar.</p>
+        {page === 'home' && <section className="pf-module-home" aria-labelledby="pf-module-home-title">
+          <div className="pf-module-heading">
+            <div><span className="pf-ft-only-stage">PROCESSO FÁCIL</span>
+              <h1 id="pf-module-home-title">Módulos do sistema</h1>
+              <p>Selecione um módulo para acessar suas funcionalidades.</p></div>
           </div>
-          <div className="pf-ft-only-state"><FileText size={19}/><span>Único módulo ativo</span></div>
-        </div>
-
-        <div className="pf-ft-roadmap-strip">
-          <div className="pf-ft-roadmap-current"><strong>1 · Ficha Técnica</strong><small>Etapa atual</small></div>
-          <span className="pf-ft-roadmap-separator" aria-hidden="true">→</span>
-          <div className="pf-ft-roadmap-next"><strong>2 · POP</strong><small>Próximo módulo a construir juntos</small></div>
-          <button type="button" onClick={() => setRoadmapOpen(true)}>Ver roteiro completo</button>
-        </div>
-
-        <TechnicalSheetsPage notify={notify}/>
+          <div className="pf-module-grid">
+            {PROJECT_ROADMAP.map((stage, index) => {
+              const Icon = moduleIcons[index]
+              const active = stage.status === 'atual'
+              const next = stage.status === 'proxima'
+              return <button key={stage.id} type="button" disabled={!active}
+                className={`pf-module-card pf-module-card-${stage.status}`}
+                onClick={active ? openSheet : undefined}>
+                <div className="pf-module-card-top">
+                  <span className="pf-module-icon"><Icon size={26}/></span>
+                  <span className="pf-module-number">{String(index + 1).padStart(2, '0')}</span>
+                </div>
+                <strong>{stage.title}</strong>
+                <p>{moduleDescriptions[index]}</p>
+                <div className="pf-module-card-foot">
+                  <span>{active ? 'Disponível' : next ? 'Próximo módulo' : 'Em breve'}</span>
+                  {active ? <ArrowRight size={18}/> : <Lock size={15}/>}
+                </div>
+              </button>
+            })}
+          </div>
+        </section>}
+        {sheetVisited && <div hidden={page !== 'ficha'} className="pf-sheet-module">
+          <button type="button" className="pf-module-back" onClick={openHome}><ArrowLeft size={17}/> Voltar aos módulos</button>
+          <div className="pf-ft-only-intro">
+            <div><span className="pf-ft-only-stage">MÓDULO 01</span><h1>Ficha Técnica</h1>
+              <p>Cadastre e organize produtos, materiais, medidas, operações e revisões em um só lugar.</p></div>
+          </div>
+          <TechnicalSheetsPage notify={notify}/>
+        </div>}
       </main>
     </div>
 
@@ -98,31 +134,6 @@ export default function App() {
           <p className="pf-ft-only-security"><ShieldAlert size={16}/>
             O ambiente principal de testes ainda não possui autenticação individual segura. Não utilize dados confidenciais.</p>
           <button type="button" className="primary-button" onClick={() => setHelpOpen(false)}>Entendi</button>
-        </div>
-      </section>
-    </div>}
-
-    {roadmapOpen && <div className="pf-search-backdrop" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) setRoadmapOpen(false)
-    }}>
-      <section className="pf-search-dialog pf-roadmap-dialog" role="dialog" aria-modal="true" aria-label="Roteiro oficial do Processo Fácil">
-        <div className="pf-search-input-row">
-          <FileText size={20}/><strong>Roteiro do Processo Fácil</strong>
-          <button type="button" onClick={() => setRoadmapOpen(false)} aria-label="Fechar roteiro"><X size={19}/></button>
-        </div>
-        <div className="pf-roadmap-dialog-content">
-          <p>Construiremos cada módulo por etapas. Por enquanto, só a Ficha Técnica está disponível.</p>
-          <ol className="pf-roadmap-list">
-            {PROJECT_ROADMAP.map((stage) => <li key={stage.id} className={`pf-roadmap-step pf-roadmap-step-${stage.status}`}>
-              <span className="pf-roadmap-index">{PROJECT_ROADMAP.indexOf(stage) + 1}</span>
-              <strong>{stage.title}</strong>
-              {stage.status === 'atual' && <small>Etapa atual</small>}
-              {stage.status === 'proxima' && <small>Próxima etapa</small>}
-              {stage.status === 'planejada' && <small>Planejada</small>}
-            </li>)}
-          </ol>
-          <p className="pf-roadmap-note">O POP será definido a partir das operações e instruções já registradas na Ficha Técnica, sem duplicar cadastros desnecessariamente.</p>
-          <button type="button" className="primary-button" onClick={() => setRoadmapOpen(false)}>Voltar à Ficha Técnica</button>
         </div>
       </section>
     </div>}

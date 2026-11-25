@@ -77,3 +77,37 @@
   .pf-roadmap-step strong{font-size:11px}
 }
 @media print{.pf-ft-roadmap-strip{display:none!important}}
+
+/* Página inicial de módulos: ordem oficial, sem reativar funções futuras. */
+.pf-menu-brand-button{border:0;background:none;text-align:left;cursor:pointer;padding:0;font:inherit}
+.pf-menu-home-link,.pf-module-back{display:inline-flex;align-items:center;gap:8px;border:1px solid #dbe5eb;background:#fff;color:#234b60;border-radius:9px;padding:9px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.pf-menu-home-link:hover,.pf-module-back:hover{background:#edf7f7}
+.pf-menu-home-link[aria-current="page"]{background:#e8f5f3;color:#086b62;border-color:#cbe8e3}
+.pf-module-home{max-width:1300px;margin:0 auto;padding:14px 0 34px}
+.pf-module-heading{margin-bottom:25px;padding:9px 0}
+.pf-module-heading h1{font-size:clamp(27px,4vw,38px);letter-spacing:-.8px;line-height:1.15;color:#17394e;margin:8px 0}
+.pf-module-heading p{margin:0;font-size:14px;color:#526a7a;line-height:1.5}
+.pf-module-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
+.pf-module-card{display:flex;flex-direction:column;align-items:stretch;text-align:left;min-width:0;min-height:192px;padding:18px;border:1px solid #dde5ec;border-radius:14px;background:#fff;color:#284458;font:inherit;box-shadow:0 3px 10px #17394e08}
+.pf-module-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.pf-module-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:12px;background:#eef2f6;color:#527084}
+.pf-module-number{color:#7e919f;font-size:12px;font-weight:800;letter-spacing:.5px}
+.pf-module-card strong{font-size:16px;line-height:1.3;color:#234458}
+.pf-module-card p{font-size:12px;line-height:1.45;color:#607789;margin:7px 0 17px}
+.pf-module-card-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto;padding-top:11px;border-top:1px solid #e8edf1;font-size:11px;font-weight:700;color:#677e8e}
+.pf-module-card:disabled{opacity:1;cursor:not-allowed}
+.pf-module-card-atual{border-color:#78bcb3;background:#fff;cursor:pointer;box-shadow:0 5px 18px #16857c12}
+.pf-module-card-atual .pf-module-icon{background:#dff3ef;color:#08776d}
+.pf-module-card-atual .pf-module-card-foot{color:#08776d}
+.pf-module-card-atual:hover{border-color:#16857c;box-shadow:0 7px 22px #16857c25;transform:translateY(-2px)}
+.pf-module-card-atual:focus-visible,.pf-menu-brand-button:focus-visible,.pf-module-back:focus-visible,.pf-menu-home-link:focus-visible{outline:3px solid #2b9890;outline-offset:3px}
+.pf-module-card-proxima{border-color:#c3dce8;background:#f8fbfd}
+.pf-module-card-proxima .pf-module-icon{color:#326d93;background:#e6eff8}
+.pf-module-card-proxima .pf-module-card-foot{color:#326d93}
+.pf-module-card-planejada{background:#fafbfd}
+.pf-module-back{margin-bottom:18px}
+.pf-sheet-module[hidden]{display:none!important}
+@media(max-width:1200px){.pf-module-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:720px){.pf-module-home{padding:7px 0 24px}.pf-module-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.pf-module-card{padding:13px;min-height:183px}.pf-module-card strong{font-size:14px}.pf-module-card p{font-size:11px}.pf-module-heading{margin-bottom:16px}.pf-menu-home-link{padding:8px;font-size:12px}}
+@media(max-width:360px){.pf-module-grid{grid-template-columns:1fr}}
+@media print{.pf-module-home,.pf-module-back{display:none!important}}
