@@ -3,6 +3,7 @@ import { doc, runTransaction, serverTimestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from './config'
 import { validatePop, popReference, type PopRecord } from '../domain/popModel'
+import { demoPops } from '../domain/demoPops'
 import type { TechnicalOperation } from '../domain/types'
 
 const popDoc = (company:string,id:string) => doc(db,'empresas',company,'pops',id)
@@ -63,5 +64,17 @@ export async function linkPopToDraft(company:string,uid:string,p:PopRecord,produ
     if(!ops.some(o=>o.id===operationId)) throw new Error('Operação não encontrada.')
     tx.update(target,{operacoes:ops.map(o=>o.id===operationId?{...o,pop:popReference(ps.data() as PopRecord)}:o),alteradoEm:serverTimestamp(),alteradoPor:uid})
     tx.update(summary,{alteradoEm:serverTimestamp(),alteradoPor:uid})
+  })
+}
+
+/** Create missing demo records only; never replace a user's edits. */
+export async function importDemoPops(company:string):Promise<number> {
+  const examples=demoPops()
+  return runTransaction(db,async tx=>{
+    const entries=examples.map(p=>({p,target:popDoc(company,p.id)}))
+    const snaps=await Promise.all(entries.map(e=>tx.get(e.target)))
+    let count=0
+    entries.forEach((entry,i)=>{if(!snaps[i].exists()){tx.set(entry.target,entry.p);count++}})
+    return count
   })
 }

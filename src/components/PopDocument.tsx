@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { youtubeId, type PopRecord } from '../domain/popModel'
+import { isDemoPop } from '../domain/demoPops'
 export function popUrl(id:string) {return window.location.origin+window.location.pathname+'#/pop/'+encodeURIComponent(id)}
 function Section({title,children}:{title:string;children:React.ReactNode}) {return <section className="pop-doc-section"><h3>{title}</h3><div>{children}</div></section>}
 function Text({value}:{value:string}) {return <p className="pop-doc-text">{value||'Não informado'}</p>}
@@ -19,7 +20,7 @@ export default function PopDocument({record,history,onClose}:{record:PopRecord;h
     <style>{'@page { size: '+(paper==='a3'?'A3 landscape':'A4 portrait')+'; margin: 10mm; }'}</style>
     <article className={'pop-document-paper '+(paper==='a3'?'pop-paper-wide':'')}>
       <header><div><b>PROCESSO FÁCIL</b><h1>POP — Procedimento Operacional Padrão</h1><small>PADRONIZAÇÃO · QUALIDADE · PRODUTIVIDADE</small></div><div><strong>{record.code}</strong><span>REV {record.version} · {record.status==='published'?'PUBLICADO':'RASCUNHO'}</span><span>{date(record.publishedAt||record.updatedAt)}</span></div></header>
-      <div className="pop-doc-title"><h2>{record.name}</h2>{record.origin&&<p>Produto de origem: {record.origin.productCode} — {record.origin.productName} · Ficha Técnica REV {record.origin.sheetRevision} · Operação {record.origin.operationCode} — {record.origin.operationName}</p>}<p>Máquina: {record.machine||'—'} · Tempo padrão: {record.time||'—'} · Habilidade: {record.skill||'—'}</p></div>
+      <div className="pop-doc-title">{isDemoPop(record)&&<p><strong>DEMONSTRAÇÃO — dados fictícios, não utilizar como instrução de produção.</strong></p>}<h2>{record.name}</h2>{record.origin&&<p>Produto de origem: {record.origin.productCode} — {record.origin.productName} · Ficha Técnica REV {record.origin.sheetRevision} · Operação {record.origin.operationCode} — {record.origin.operationName}</p>}<p>Máquina: {record.machine||'—'} · Tempo padrão: {record.time||'—'} · Habilidade: {record.skill||'—'}</p></div>
       <div className="pop-doc-columns">
         <div><Section title="Objetivo"><Text value={record.objective}/></Section><Section title="Materiais e aviamentos"><Text value={record.materials}/></Section><Section title="Máquina e acessórios"><Text value={[record.machine,record.tools].filter(Boolean).join('\n')}/></Section><Section title="Agulhas, linhas e fios"><Text value={record.needles}/></Section><Section title="Critérios de qualidade"><Text value={record.quality}/></Section><Section title="Defeitos não aceitos"><Text value={record.defects}/></Section><Section title="Segurança"><Text value={record.safety}/></Section></div>
         <div><Section title="Passo a passo">{record.steps.length?record.steps.map((s,i)=><div className="pop-doc-step" key={s.id}>{s.image&&<img src={s.image} alt={s.title||'Etapa '+(i+1)}/>}<div><b>{i+1}. {s.title||'Etapa'}</b><Text value={s.text}/></div></div>):<Text value=""/>}</Section></div>
