@@ -6,7 +6,7 @@ import { validatePop, popReference, type PopRecord } from '../domain/popModel'
 import type { TechnicalOperation } from '../domain/types'
 
 const popDoc = (company:string,id:string) => doc(db,'empresas',company,'pops',id)
-export async function savePop(company:string, p:PopRecord, publish:boolean, actor:string):Promise<PopRecord> {
+export async function savePop(company:string, p:PopRecord, publish:boolean, actor:string, uid:string):Promise<PopRecord> {
   validatePop(p,publish)
   const next:PopRecord={...p,code:p.code.trim(),name:p.name.trim(),status:publish?'published':'draft',updatedAt:new Date().toISOString(),publishedAt:publish?new Date().toISOString():'',approver:publish?actor:p.approver}
   await runTransaction(db,async tx=>{
@@ -15,6 +15,21 @@ export async function savePop(company:string, p:PopRecord, publish:boolean, acto
       const old=snap.data() as PopRecord
       if(old.status!=='draft') throw new Error('POP publicado é imutável. Crie uma nova revisão.')
       if(old.updatedAt!==p.updatedAt) throw new Error('O POP foi alterado em outra sessão. Reabra o documento.')
+    }
+    // A primeira publicação grava o POP e o vínculo na mesma transação.
+    // Novas versões permanecem independentes até uma vinculação explícita.
+    if(publish && next.version===1 && next.origin) {
+      const origin=next.origin
+      const sheetRef=doc(db,'empresas',company,'produtos',origin.productCode,'revisoes',String(origin.sheetRevision).padStart(3,'0'))
+      const summaryRef=doc(db,'empresas',company,'fichas',origin.productCode)
+      const [sheet,summary]=await Promise.all([tx.get(sheetRef),tx.get(summaryRef)])
+      if(!sheet.exists()||sheet.data().status!=='rascunho'||!summary.exists()||summary.data().revisaoRascunho!==origin.sheetRevision) throw new Error('A ficha de origem não está mais em rascunho. A publicação não foi concluída; escolha novamente o produto e a operação.')
+      const ops=(sheet.data().operacoes??[]) as TechnicalOperation[]
+      const op=ops.find(o=>o.id===origin.operationId)
+      if(!op) throw new Error('A operação de origem foi removida. Selecione novamente a operação antes de publicar.')
+      if((op.pop?.id??null)!==origin.previousPopId) throw new Error('O vínculo da operação mudou. Selecione novamente a operação antes de publicar.')
+      tx.update(sheetRef,{operacoes:ops.map(o=>o.id===origin.operationId?{...o,pop:popReference(next)}:o),alteradoEm:serverTimestamp(),alteradoPor:uid})
+      tx.update(summaryRef,{alteradoEm:serverTimestamp(),alteradoPor:uid})
     }
     tx.set(target,next)
   })

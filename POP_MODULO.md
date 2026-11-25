@@ -6,3 +6,6 @@ Biblioteca independente por empresa; documentos em empresas/{empresaId}/pops/{gr
 - Vincular em uma operação de ficha em rascunho, salvar e reabrir a ficha.
 - Testar impressão, leitura de QR e vídeo no celular; testar nova revisão sem alterar a anterior.
 - Regras do repositório foram atualizadas; a publicação no Firebase é uma etapa separada. O ambiente de teste atual é aberto e não deve receber conteúdo confidencial. Para produção, usar autenticação e regras privadas. Vídeos não listados não são privados.
+
+## Criação por produto
+Novos POPs começam pela seleção de produto e operação em ficha técnica em rascunho. O produto de origem é persistido no POP e exibido no documento. Dados técnicos existentes são sugeridos. A primeira publicação cria o vínculo na mesma transação; revisões posteriores e outros produtos continuam com vínculo explícito. Uma ficha publicada só recebe POP por nova revisão em rascunho.

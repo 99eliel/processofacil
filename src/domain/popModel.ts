@@ -1,7 +1,10 @@
+import type { TechnicalOperation, TechnicalRevision } from './types'
 
 export type PopStep = { id: string; title: string; text: string; image: string }
 export type PopVideo = { id: string; title: string; url: string }
+export type PopOrigin = { productCode: string; productName: string; sheetRevision: number; operationId: string; operationCode: string; operationName: string; previousPopId: string | null }
 export type PopRecord = {
+  origin?: PopOrigin;
   id: string; groupId: string; version: number; status: 'draft' | 'published';
   code: string; name: string; objective: string; materials: string; machine: string;
   tools: string; needles: string; time: string; skill: string; settings: string;
@@ -38,4 +41,19 @@ export function validatePop(p: PopRecord, publish = false) {
   if (!p.name.trim() || !p.code.trim()) throw new Error('Informe o código e o nome do POP.')
   if (p.videos.some(v=>v.url.trim() && !youtubeId(v.url))) throw new Error('Informe links válidos do YouTube.')
   if (publish && (!p.objective.trim() || !p.steps.some(s=>s.text.trim() || s.title.trim()))) throw new Error('Para publicar, informe o objetivo e pelo menos uma etapa.')
+}
+
+export function popFromOperation(author: string, sheet: TechnicalRevision, operation: TechnicalOperation): PopRecord {
+  if (sheet.status !== 'rascunho') throw new Error('Selecione uma Ficha Técnica em rascunho.')
+  if (!sheet.operacoes.some(o=>o.id===operation.id)) throw new Error('Operação não pertence à ficha selecionada.')
+  return {
+    ...emptyPop(author),
+    origin: {productCode:sheet.produtoCodigo, productName:sheet.produtoDescricao, sheetRevision:sheet.numero, operationId:operation.id, operationCode:operation.codigo, operationName:operation.nome, previousPopId:operation.pop?.id??null},
+    code: [sheet.produtoCodigo,operation.codigo||String(operation.ordem)].join('-'),
+    name: operation.nome, objective: operation.descricao, machine: operation.maquina, tools:operation.ferramenta,
+    time: operation.tempoPadraoMin == null ? '' : String(operation.tempoPadraoMin)+' min',
+    skill: ({facil:'Fácil',medio:'Médio',dificil:'Difícil'} as const)[operation.dificuldade]||'',
+    settings: operation.regulagem, critical:(operation.pontosCriticos??[]).join('\n'),
+    steps:(operation.instrucoes??[]).filter(x=>x.trim()).map(text=>({id:crypto.randomUUID(),title:'',text,image:''})),
+  }
 }
