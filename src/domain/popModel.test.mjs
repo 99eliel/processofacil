@@ -28,3 +28,10 @@ test('cria POP a partir de produto e operação da ficha em rascunho',()=>{
  assert.equal(p.steps[0].text,'Posicionar gola')
  assert.throws(()=>popFromOperation('Teste',{...sheet,status:'padrao'},op))
 })
+
+test('POP independente pode ser publicado sem produto de origem',()=>{
+ const p={...emptyPop('Teste'),code:'POP-001',name:'Fechar ombro',objective:'Unir ombros',steps:[{id:'1',title:'Posicionar',text:'Alinhar as peças',image:''}]}
+ assert.equal(p.origin,undefined)
+ assert.doesNotThrow(()=>validatePop(p,true))
+ assert.equal(popReference(p).id,p.id)
+})

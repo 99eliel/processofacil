@@ -8,4 +8,6 @@ Biblioteca independente por empresa; documentos em empresas/{empresaId}/pops/{gr
 - Regras do repositório foram atualizadas; a publicação no Firebase é uma etapa separada. O ambiente de teste atual é aberto e não deve receber conteúdo confidencial. Para produção, usar autenticação e regras privadas. Vídeos não listados não são privados.
 
 ## Criação por produto
-Novos POPs começam pela seleção de produto e operação em ficha técnica em rascunho. O produto de origem é persistido no POP e exibido no documento. Dados técnicos existentes são sugeridos. A primeira publicação cria o vínculo na mesma transação; revisões posteriores e outros produtos continuam com vínculo explícito. Uma ficha publicada só recebe POP por nova revisão em rascunho.
+Ao criar um POP, o usuário escolhe entre um procedimento independente (sem produto obrigatório) e a criação a partir de produto e operação em ficha técnica em rascunho. POPs independentes são publicados na biblioteca e podem ser vinculados posteriormente a várias peças. O produto de origem é persistido no POP e exibido no documento. Dados técnicos existentes são sugeridos. A primeira publicação cria o vínculo na mesma transação; revisões posteriores e outros produtos continuam com vínculo explícito. Uma ficha publicada só recebe POP por nova revisão em rascunho.
+
+- Validar as duas opções de criação: independente, sem origem obrigatória; e a partir de uma ficha em rascunho, com vínculo automático na primeira publicação.
