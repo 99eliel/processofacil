@@ -1,0 +1,42 @@
+/* Processo Fácil — Etapa 1: interface exclusiva da Ficha Técnica. */
+.pf-ft-only-shell {background:#f5f7fb;min-height:100vh}
+.pf-ft-only-header {min-height:76px;height:auto;gap:15px}
+.pf-ft-only-brand {cursor:default}
+.pf-ft-only-header-actions {display:flex;align-items:center;gap:14px}
+.pf-ft-only-active-label {
+  display:inline-flex;align-items:center;gap:7px;
+  background:#eef8f6;color:#0a756e;border:1px solid #cee9e4;
+  padding:9px 12px;border-radius:9px;font-size:12px;font-weight:800;
+}
+.pf-ft-only-content {max-width:1600px;padding-top:25px}
+.pf-ft-only-intro {
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+  padding:21px 26px;margin-bottom:25px;
+  border:1px solid #dde8ec;border-radius:15px;
+  background:linear-gradient(120deg,#fff 0%,#f1f8f8 100%);
+}
+.pf-ft-only-intro h1 {margin:5px 0 7px;color:#17394e;font-size:clamp(24px,3vw,32px);line-height:1.2}
+.pf-ft-only-intro p {margin:0;color:#526a7a;font-size:13px;line-height:1.5}
+.pf-ft-only-stage {font-size:10px;letter-spacing:1.2px;color:#25818b;font-weight:900}
+.pf-ft-only-state {
+  display:flex;align-items:center;gap:8px;flex:0 0 auto;
+  color:#406e79;background:white;border:1px solid #dcebef;
+  border-radius:11px;padding:12px 14px;font-size:12px;font-weight:800;
+}
+.pf-ft-only-security {
+  display:flex;align-items:flex-start;gap:8px;
+  background:#fff7ed;border:1px solid #f2e0c5;border-radius:9px;
+  padding:10px;color:#825b24;font-size:12px;line-height:1.5;
+}
+.pf-ft-only-security svg {flex:none;margin-top:1px}
+@media (max-width:720px) {
+  .pf-ft-only-header {padding:13px 17px}
+  .pf-ft-only-header-actions {gap:7px}
+  .pf-ft-only-active-label {display:none}
+  .pf-ft-only-content {padding:14px 13px 50px}
+  .pf-ft-only-intro {padding:17px;align-items:flex-start}
+  .pf-ft-only-state {display:none}
+}
+@media print {
+  .pf-ft-only-header,.pf-ft-only-intro {display:none!important}
+}
