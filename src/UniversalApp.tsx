@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Bell, BookOpen, CheckCircle2, ClipboardCheck, ClipboardList, Factory, FileText, HelpCircle, Home, Lock, ScanLine, Search, ShieldAlert, Star, Users, X } from 'lucide-react'
+import { ArrowLeft, Check, CheckCircle2, ChevronRight, FileText, HelpCircle, Home, Lock, ShieldAlert, X } from 'lucide-react'
 import { useSystem } from './system/SystemProvider'
 import TechnicalSheetsPage from './pages/TechnicalSheetsPage'
 import { PROJECT_ROADMAP } from './domain/projectRoadmap'
@@ -20,20 +20,6 @@ import './ficha-only.css'
  * versionados no repositório para reconstrução posterior, sem exclusão dos
  * registros já existentes no Firebase.
  */
-const moduleIcons = [FileText, BookOpen, Factory, ClipboardList, Users, ClipboardCheck, ScanLine, Search, Star, Bell] as const
-const moduleDescriptions = [
-  'Produtos, materiais, medidas e operações.',
-  'Procedimentos operacionais padrão.',
-  'Cadastro e organização de oficinas.',
-  'Controle das ordens de produção.',
-  'Planejamento da capacidade produtiva.',
-  'Inspeções e controle de qualidade.',
-  'Orientações visuais no processo.',
-  'Localize documentos e informações.',
-  'Acesso rápido aos itens salvos.',
-  'Comunicados e novidades do sistema.',
-] as const
-
 export default function App() {
   const system = useSystem()
   const [toast, setToast] = useState('')
@@ -54,9 +40,9 @@ export default function App() {
     toastTimeout.current = setTimeout(() => setToast(''), 4200)
   }
 
-  return <div className="app-shell pf-shell pf-ft-only-shell">
+  return <div className={`app-shell pf-shell pf-ft-only-shell${page === 'home' ? ' pf-reference-home-shell' : ''}`}>
     <div className="pf-app-layout">
-      <header className="pf-global-header pf-ft-only-header">
+      {page === 'ficha' && <header className="pf-global-header pf-ft-only-header">
         <button type="button" className="pf-brand pf-ft-only-brand pf-menu-brand-button" onClick={openHome} aria-label="Página inicial do Processo Fácil">
           <span className="pf-brand-symbol"><FileText size={22}/></span>
           <span>
@@ -71,36 +57,39 @@ export default function App() {
             <HelpCircle size={19}/>
           </button>
         </div>
-      </header>
+      </header>}
 
-      <main className="pf-content pf-ft-only-content">
-        {page === 'home' && <section className="pf-module-home" aria-labelledby="pf-module-home-title">
-          <div className="pf-module-heading">
-            <div><span className="pf-ft-only-stage">PROCESSO FÁCIL</span>
-              <h1 id="pf-module-home-title">Módulos do sistema</h1>
-              <p>Selecione um módulo para acessar suas funcionalidades.</p></div>
+      <main className={`pf-content pf-ft-only-content${page === 'home' ? ' pf-reference-content' : ''}`}>
+        {page === 'home' && <section className="pf-reference-home" aria-labelledby="pf-module-home-title">
+          <button type="button" className="pf-reference-help" onClick={() => setHelpOpen(true)} aria-label="Ajuda da Ficha Técnica" title="Ajuda"><HelpCircle size={21}/></button>
+          <div className="pf-reference-heading">
+            <div className="pf-reference-logo" aria-hidden="true">
+              <svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="46" stroke="currentColor" strokeWidth="0.8" opacity=".5"/>
+                <path d="M26 67V29h19c12 0 15 18 0 18H26M53 67V29h25M53 47h19" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>PROCESSOS</span>
+            </div>
+            <div className="pf-reference-brand">
+              <h1 id="pf-module-home-title">PROCESSO<br/>FÁCIL</h1>
+              <button type="button" className="pf-reference-enter" onClick={openSheet} aria-label="Abrir Ficha Técnica" title="Abrir Ficha Técnica"><ChevronRight size={25}/></button>
+            </div>
           </div>
-          <div className="pf-module-grid">
-            {PROJECT_ROADMAP.map((stage, index) => {
-              const Icon = moduleIcons[index]
+          <nav className="pf-reference-menu" aria-label="Módulos do Processo Fácil">
+            {PROJECT_ROADMAP.map(stage => {
               const active = stage.status === 'atual'
               const next = stage.status === 'proxima'
+              const status = active ? 'Disponível' : next ? 'Próximo módulo' : 'Em breve'
               return <button key={stage.id} type="button" disabled={!active}
-                className={`pf-module-card pf-module-card-${stage.status}`}
+                className={`pf-reference-item pf-reference-item-${stage.status}`}
+                title={stage.title + ' — ' + status}
+                aria-label={stage.title + ' — ' + status}
                 onClick={active ? openSheet : undefined}>
-                <div className="pf-module-card-top">
-                  <span className="pf-module-icon"><Icon size={26}/></span>
-                  <span className="pf-module-number">{String(index + 1).padStart(2, '0')}</span>
-                </div>
-                <strong>{stage.title}</strong>
-                <p>{moduleDescriptions[index]}</p>
-                <div className="pf-module-card-foot">
-                  <span>{active ? 'Disponível' : next ? 'Próximo módulo' : 'Em breve'}</span>
-                  {active ? <ArrowRight size={18}/> : <Lock size={15}/>}
-                </div>
+                <span className="pf-reference-circle" aria-hidden="true">{active ? <Check size={29} strokeWidth={3.5}/> : <Lock size={18} strokeWidth={2}/>}</span>
+                <span className="pf-reference-label">{stage.id === 'carga' ? 'Carga Máq. e M.O.' : stage.title}</span>
               </button>
             })}
-          </div>
+          </nav>
+          <p className="pf-reference-note">Ficha Técnica disponível <span>·</span> POP em breve</p>
         </section>}
         {sheetVisited && <div hidden={page !== 'ficha'} className="pf-sheet-module">
           <button type="button" className="pf-module-back" onClick={openHome}><ArrowLeft size={17}/> Voltar aos módulos</button>
