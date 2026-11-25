@@ -1,0 +1,66 @@
+/* Identidade visual compartilhada, sem afetar a impressão ou a prévia PDF externa. */
+@media screen {
+:root{--pf-bg:#031325;--pf-panel:#0a223b;--pf-raised:#102f4e;--pf-field:#071d33;--pf-border:#355873;--pf-text:#eef6ff;--pf-muted:#b1c7da;--pf-accent:#76e0d7;--pf-blue:#97cfff}
+body{background:var(--pf-bg)}
+#root .pf-ft-only-shell{background:var(--pf-bg);color:var(--pf-text);color-scheme:dark}
+#root .pf-ft-only-shell:not(.pf-reference-home-shell) .pf-app-layout{background:linear-gradient(180deg,#031325ed,#061b31ef),url('./reference-network.svg') center/cover fixed no-repeat}
+#root .pf-ft-only-shell:not(.pf-reference-home-shell) .pf-global-header{background:#061a30;border-bottom:1px solid var(--pf-border);box-shadow:0 6px 25px #0003}
+#root .pf-ft-only-shell :is(.pf-brand,.pf-ft-only-intro h1,.pf-help-dialog .pf-search-input-row strong){color:var(--pf-text)}
+#root .pf-ft-only-shell :is(.pf-brand small,.pf-ft-only-intro p,.pf-help-content p,.pf-help-content li){color:var(--pf-muted)}
+#root .pf-ft-only-shell :is(.pf-brand-symbol,.sheet-icon,.passport-thumb,.count-badge,.operation-order,.check-index,.pop-step-row>span,.revision-diff-category,.quick-product-step>span,.sheet-tags span){background:#133956;color:var(--pf-accent);border-color:var(--pf-border)}
+#root .pf-ft-only-shell :is(.pf-ft-only-intro){background:linear-gradient(125deg,#0d2d4a,#0b2239);border-color:var(--pf-border)}
+#root .pf-ft-only-shell :is(.pf-ft-only-stage,.section-kicker,.op-number,.ft-revision-tool-title>svg,.empty-state>svg,.ft-bom-selected,.ft-category-create-link){color:var(--pf-accent)}
+#root .pf-ft-only-shell :is(.panel,.passport-header,.sheet-card,.modal-card,.pf-search-dialog,.loading-panel){background:var(--pf-panel);color:var(--pf-text);border:1px solid var(--pf-border)!important;box-shadow:0 8px 24px #0003;border-radius:14px}
+#root .pf-ft-only-shell :is(.sheet-card-button:hover){border-color:var(--pf-accent)!important;box-shadow:0 0 18px #65d9d418}
+#root .pf-ft-only-shell :is(.ft-revision-tool,.ft-revision-tool.copy-tool,.revision-diff-list>div,.measurement-template-toolbar,.quick-product-step,.operation-editor-card,.operation-editor-body,.ft-image-card,.pop-media-card,.technical-checklist-row,.ft-quick-category-editor){background:var(--pf-raised);color:var(--pf-text);border-color:var(--pf-border)}
+#root .pf-ft-only-shell :is(.ft-complete-subsection,.panel-head,.modal-head,.modal-actions,.pop-section,.operation-editor-body,.pf-search-input-row,.operation-editor-summary,.ft-create-product-divider){border-color:var(--pf-border)}
+#root .pf-ft-only-shell .pf-sheet-module :is(h1,h2,h3,h4,h5,h6,strong,.ft-complete-subhead,.ft-complete-subsection h4,.ft-editor-attachment strong,.ft-revision-tool-title strong,.revision-diff-list>div>strong,.measurement-template-toolbar>div>strong,.quick-product-step strong,.technical-checklist-row>strong,.empty-state strong,.pop-section-head>div){color:var(--pf-text)}
+#root .pf-ft-only-shell .pf-sheet-module :is(p,small,.helper-text,.table-sub,.operation-footnote,.editor-label>span,.form-grid label>span,.form-field>span,.ft-needle-field>span,.ft-copy-grid label>span,.ft-revision-tool-title span,.ft-revision-tool-controls>span,.ft-editor-attachment span,.quality-file-helper,.ft-image-card figcaption span,.pop-media-card figcaption span,.revision-no-diff,.copy-warning,.ft-create-product-divider,.passport-meta>span:not(.status),.empty-state,.operation-title-button small,.ft-quick-material-fields>label,.ft-quick-category-editor label){color:var(--pf-muted)}
+#root .pf-ft-only-shell :is(.primary-button){background:linear-gradient(110deg,#176db0,#0b5892);color:#fff;border:1px solid #408ac0;border-radius:10px;box-shadow:0 4px 14px #0003}
+#root .pf-ft-only-shell :is(.secondary-button,.icon-button,.pf-menu-home-link,.pf-module-back,.pf-settings-link,.modal-close,.operation-title-edit-button,.operation-order-actions button,.size-chip button,.pf-search-input-row button){background:#103452;color:#e1f2ff;border:1px solid #315674;border-radius:9px;box-shadow:none}
+#root .pf-ft-only-shell :is(.back-link,.ft-category-create-link,.ft-bom-search-field>button,.operation-title-button){color:var(--pf-blue)}
+#root .pf-ft-only-shell :is(.primary-button:hover,.secondary-button:hover,.icon-button:hover,.pf-menu-home-link:hover,.pf-module-back:hover,.pf-settings-link:hover,.operation-title-edit-button:hover){filter:brightness(1.18);border-color:var(--pf-accent)}
+#root .pf-ft-only-shell :is(button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible){outline:2px solid var(--pf-accent);outline-offset:2px}
+#root .pf-ft-only-shell .pf-sheet-module :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea){background:var(--pf-field);color:var(--pf-text);border:1px solid var(--pf-border);caret-color:var(--pf-accent)}
+#root .pf-ft-only-shell .pf-sheet-module :is(input::placeholder,textarea::placeholder){color:#92aabd;opacity:1}
+#root .pf-ft-only-shell .pf-sheet-module :is(input:focus,select:focus,textarea:focus){border-color:var(--pf-accent);box-shadow:0 0 0 3px #65d9d423}
+#root .pf-ft-only-shell .pf-sheet-module :is(input:disabled,select:disabled,textarea:disabled){background:#132a40;color:#9db5c9;opacity:1}
+#root .pf-ft-only-shell .pf-sheet-module :is(option){background:#0b2640;color:var(--pf-text)}
+#root .pf-ft-only-shell .pf-sheet-module :is(input[type="checkbox"],input[type="radio"]){accent-color:#46c7be;color-scheme:dark}
+#root .pf-ft-only-shell .pf-sheet-module :is(table,.table-wrap){color:var(--pf-text);border-color:var(--pf-border)}
+#root .pf-ft-only-shell .pf-sheet-module :is(th){background:#103452;color:#c5e2f5;border-color:var(--pf-border)}
+#root .pf-ft-only-shell .pf-sheet-module :is(td){background:var(--pf-panel);color:var(--pf-text);border-color:var(--pf-border)}
+#root .pf-ft-only-shell .pf-sheet-module :is(tr:nth-child(even) td){background:#0d2944}
+#root .pf-ft-only-shell .pf-sheet-module :is(tbody tr:hover td){background:#123553}
+#root .pf-ft-only-shell :is(.block-toggles button,.revision-list button,.passport-tabs button,.size-chip,.revision-diff-list>div>div span){background:var(--pf-raised);color:#c3d9ea;border-color:var(--pf-border)}
+#root .pf-ft-only-shell :is(.block-toggles button.active,.revision-list button.active,.passport-tabs button.active){background:#12485b;color:#a0fff0;border-color:#53c9bf;box-shadow:none}
+#root .pf-ft-only-shell :is(.revision-list button strong){color:var(--pf-text)}
+#root .pf-ft-only-shell :is(.revision-list button small,.revision-list button span){color:var(--pf-muted)}
+#root .pf-ft-only-shell :is(.image-upload-button,.operation-media-upload,.ft-editor-attachment,.quality-info-upload,.pop-media-empty){background:#0b2c48;color:#a7d9f5;border-color:#527c97}
+#root .pf-ft-only-shell :is(.ft-editor-attachment.filled,.quality-info-upload.filled,.info-banner,.ft-quick-material-note,.page-message){background:#103c42;color:#a8f0d9;border-color:#347c77}
+#root .pf-ft-only-shell :is(.info-banner span,.ft-quick-material-note svg){color:#a8f0d9}
+#root .pf-ft-only-shell :is(.ft-image-card img,.pop-media-card img,.pop-media-card video){background:#06182a}
+#root .pf-ft-only-shell :is(.ft-bom-search-field){background:var(--pf-field);color:var(--pf-muted);border-color:var(--pf-border)}
+#root .pf-ft-only-shell :is(.ft-bom-search-field.is-open){border-color:var(--pf-accent);box-shadow:0 0 0 3px #65d9d423}
+#root .pf-ft-only-shell :is(.ft-bom-search-dropdown,.ft-bom-search-option){background:#0d2944;color:var(--pf-text);border-color:var(--pf-border)}
+#root .pf-ft-only-shell :is(.ft-bom-search-heading,.ft-bom-search-foot){background:#133956;color:#c0d9ea;border-color:var(--pf-border)}
+#root .pf-ft-only-shell :is(.ft-bom-search-heading small,.ft-bom-search-option>span span,.ft-bom-search-option>small,.ft-bom-search-empty){color:var(--pf-muted)}
+#root .pf-ft-only-shell :is(.ft-bom-search-option:hover,.ft-bom-search-option.is-active,.ft-bom-search-field>button:hover){background:#17485c;color:var(--pf-accent)}
+#root .pf-ft-only-shell :is(.ft-bom-search-dropdown){box-shadow:0 15px 36px #0008}
+#root .pf-ft-only-shell :is(.modal-backdrop,.pf-search-backdrop){background:#010b17c9}
+#root .pf-ft-only-shell :is(.pf-ft-only-security){background:#392d1d;color:#ffe0ad;border-color:#7b603a}
+#root .pf-ft-only-shell :is(.form-error,.ft-upload-feedback.error,.danger-icon,.status-red){background:#4a2635;color:#ffb7b7;border-color:#8d4a5b}
+#root .pf-ft-only-shell :is(.ft-upload-feedback.loading,.status-blue){background:#133956;color:#b9e2ff;border-color:var(--pf-border)}
+#root .pf-ft-only-shell :is(.status-green){background:#15473d;color:#a1f6d1}
+#root .pf-ft-only-shell :is(.status-amber){background:#49381f;color:#ffe0a1}
+#root .pf-ft-only-shell :is(.status-slate){background:#29445c;color:#d1e1ef}
+#root .pf-ft-only-shell :is(.required-check){color:#ffe0a1}
+#root .pf-ft-only-shell :is(.toast){background:#113d55;color:#e9faff;border:1px solid #438da0}
+#root :is(.system-boot-screen,.fatal-error-screen){background:linear-gradient(180deg,#031325e0,#061b31db),url('./reference-network.svg') center/cover no-repeat;color:var(--pf-text)}
+#root :is(.system-boot-card,.fatal-error-card){background:var(--pf-panel);border-color:var(--pf-border);color:var(--pf-text);box-shadow:0 24px 70px #0006;color-scheme:dark}
+#root :is(.system-boot-card p,.system-boot-card small,.fatal-error-card p){color:var(--pf-muted)}
+#root :is(.system-boot-card .boot-logo){background:#133956;color:var(--pf-accent)}
+#root :is(.system-boot-card .boot-logo.error,.fatal-error-card>span,.fatal-error-card code,.system-boot-card .form-error){background:#4a2635;color:#ffb7b7;border-color:#8d4a5b}
+#root :is(.system-boot-card button,.fatal-error-card button){background:#176db0;color:#fff;border:1px solid #408ac0}
+@media(max-width:720px){#root .pf-ft-only-shell:not(.pf-reference-home-shell) .pf-app-layout{background-attachment:scroll}}
+}
