@@ -3,6 +3,8 @@
 > **Etapa atual (25/11/2026):** o sistema exibe **somente a Ficha Técnica**. Os demais módulos ficaram fora da navegação, preservados no GitHub e Firebase, para reconstrução gradual. Veja [FOCO_FICHA_TECNICA.md](./FOCO_FICHA_TECNICA.md).
 
 
+A ordem oficial de desenvolvimento está em [ROTEIRO_OFICIAL.md](./ROTEIRO_OFICIAL.md): **Ficha Técnica primeiro, POP em segundo**. O roteiro não ativa os demais módulos.
+
 O **Processo Fácil** é uma plataforma universal e configurável para padronização, Ficha Técnica, fluxo operacional, produção e qualidade.
 
 A planilha da Koleni foi o caso real que originou a ideia e continua servindo apenas como **referência/template de confecção**. Nenhuma regra específica daquele processo é obrigatória para os demais clientes.
