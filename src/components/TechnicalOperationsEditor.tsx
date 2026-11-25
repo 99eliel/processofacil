@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useTenantCollection } from '../hooks/useTenantCollection'
+import { popReference, type PopRecord } from '../domain/popModel'
 import {
   Camera,
   ChevronDown,
@@ -52,6 +54,8 @@ export default function TechnicalOperationsEditor({
   notify,
   onError,
 }: Props) {
+  const {items: pops, error: popError} = useTenantCollection<PopRecord>(empresaId, 'pops', 'name')
+  const publishedPops = pops.filter(p => p.status === 'published')
   const [expanded, setExpanded] = useState<string | null>(editor.operacoes[0]?.id ?? null)
   const [editingTitle, setEditingTitle] = useState<{ id: string; original: string } | null>(null)
   const [uploading, setUploading] = useState('')
@@ -250,6 +254,13 @@ export default function TechnicalOperationsEditor({
                 <label className="span-2"><span>Objetivo / instrução principal *</span><textarea rows={3} value={operation.descricao} disabled={!editable} onChange={(event) => update(operation.id, { descricao: event.target.value })} placeholder="Explique o que deve ser feito nesta operação." /></label>
               </div>
 
+              <div className="pop-operation-link">
+                <strong>POP vinculado à operação</strong>
+                {popError && <p className="helper-text">{popError}</p>}
+                {editable && <label className="editor-label"><span>Selecionar revisão publicada da biblioteca</span><select value={operation.pop?.id || ''} onChange={e=>{const p=publishedPops.find(x=>x.id===e.target.value);update(operation.id,{pop:p?popReference(p):null})}}><option value="">Sem vínculo</option>{operation.pop&&!publishedPops.some(p=>p.id===operation.pop?.id)&&<option value={operation.pop.id}>{operation.pop.name} — REV {operation.pop.version} (vínculo existente)</option>}{publishedPops.map(p=><option key={p.id} value={p.id}>{p.code} — {p.name} · REV {p.version}</option>)}</select></label>}
+                {operation.pop ? <a href={'#/pop/'+encodeURIComponent(operation.pop.id)}>Consultar / imprimir {operation.pop.name} — REV {operation.pop.version}</a> : <span className="helper-text">Nenhum POP vinculado.</span>}
+                {editable && <span className="helper-text">Salve a Ficha Técnica para confirmar o vínculo.</span>}
+              </div>
               <div className="pop-section">
                 <div className="pop-section-head"><div><Camera size={17} /><strong>Fotos e vídeo do POP</strong></div></div>
                 {editable && <label className="operation-media-upload">

@@ -199,6 +199,7 @@ export type TechnicalMedia = {
 }
 
 export type TechnicalOperation = {
+  pop?: import('./popModel').PopReference | null
   id: string
   ordem: number
   codigo: string

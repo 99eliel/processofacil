@@ -17,7 +17,7 @@ service cloud.firestore {
     function admin(companyId) { return hasRole(companyId, 'admin'); }
     function writable(companyId, coll) {
       return admin(companyId) ||
-        ((coll in ['produtos','fichas','materiais','fornecedores','categorias','measurementTemplates','templatesMedidas']) &&
+        ((coll in ['produtos','fichas','materiais','fornecedores','categorias','measurementTemplates','templatesMedidas','pops']) &&
           hasRole(companyId,'engenharia')) ||
         ((coll in ['ordensProducao','programacoes','programacaoOperacoes','configuracoesCapacidade',
           'colaboradores','indisponibilidadesRecursos','estudosTempos']) && hasRole(companyId,'pcp')) ||
@@ -66,15 +66,21 @@ service cloud.firestore {
         allow update: if writable(companyId,'produtos') && revisionTransition();
         allow delete: if false;
       }
+      match /pops/{popId} {
+        allow read: if isMember(companyId);
+        allow create: if writable(companyId,'pops') && request.resource.data.status in ['draft','published'];
+        allow update: if writable(companyId,'pops') && resource.data.status == 'draft' && request.resource.data.status in ['draft','published'] && request.resource.data.groupId == resource.data.groupId && request.resource.data.version == resource.data.version;
+        allow delete: if false;
+      }
       match /{coll}/{docId} {
         allow read: if isMember(companyId) && coll != 'membros';
-        allow create, update: if coll != 'membros' && coll != 'auditoria' && coll != 'inspecoes' &&
+        allow create, update: if coll != 'membros' && coll != 'auditoria' && coll != 'inspecoes' && coll != 'pops' &&
           writable(companyId,coll);
         allow delete: if false;
       }
       match /{coll}/{docId}/{nested=**} {
         allow read: if isMember(companyId) && coll != 'membros';
-        allow create, update: if coll != 'membros' && coll != 'produtos' &&
+        allow create, update: if coll != 'membros' && coll != 'produtos' && coll != 'pops' &&
           writable(companyId,coll);
         allow delete: if false;
       }

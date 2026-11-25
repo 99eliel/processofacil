@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Check, CheckCircle2, ChevronRight, FileText, HelpCircle, Home, Lock, ShieldAlert, X } from 'lucide-react'
 import { useSystem } from './system/SystemProvider'
 import TechnicalSheetsPage from './pages/TechnicalSheetsPage'
+import PopPage from './pages/PopPage'
+import { useLocation, useNavigate } from 'react-router-dom'
+import './pop.css'
 import { PROJECT_ROADMAP } from './domain/projectRoadmap'
 import './remap.css'
 import './production-upgrades.css'
@@ -24,10 +27,15 @@ export default function App() {
   const system = useSystem()
   const [toast, setToast] = useState('')
   const [helpOpen, setHelpOpen] = useState(false)
-  const [page, setPage] = useState<'home' | 'ficha'>('home')
+  const [page, setPage] = useState<'home' | 'ficha' | 'pop'>('home')
   const [sheetVisited, setSheetVisited] = useState(false)
-  const openSheet = () => { setSheetVisited(true); setPage('ficha'); window.scrollTo(0, 0) }
-  const openHome = () => { setPage('home'); window.scrollTo(0, 0) }
+  const location = useLocation()
+  const navigate = useNavigate()
+  const focusId = location.pathname.startsWith('/pop/') ? location.pathname.slice(5) : ''
+  useEffect(() => { if (location.pathname === '/pop' || location.pathname.startsWith('/pop/')) setPage('pop'); else if (location.pathname === '/ficha') { setSheetVisited(true); setPage('ficha') } else setPage('home') }, [location.pathname])
+  const openPop = () => { setPage('pop'); navigate('/pop'); window.scrollTo(0, 0) }
+  const openSheet = () => { setSheetVisited(true); setPage('ficha'); navigate('/ficha'); window.scrollTo(0, 0) }
+  const openHome = () => { setPage('home'); navigate('/'); window.scrollTo(0, 0) }
   const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => () => {
@@ -42,7 +50,7 @@ export default function App() {
 
   return <div className={`app-shell pf-shell pf-ft-only-shell${page === 'home' ? ' pf-reference-home-shell' : ''}`}>
     <div className="pf-app-layout">
-      {page === 'ficha' && <header className="pf-global-header pf-ft-only-header">
+      {page !== 'home' && <header className="pf-global-header pf-ft-only-header">
         <button type="button" className="pf-brand pf-ft-only-brand pf-menu-brand-button" onClick={openHome} aria-label="Página inicial do Processo Fácil">
           <span className="pf-brand-symbol"><FileText size={22}/></span>
           <span>
@@ -83,13 +91,13 @@ export default function App() {
                 className={`pf-reference-item pf-reference-item-${stage.status}`}
                 title={stage.title + ' — ' + status}
                 aria-label={stage.title + ' — ' + status}
-                onClick={active ? openSheet : undefined}>
+                onClick={active ? (stage.id === 'pop' ? openPop : openSheet) : undefined}>
                 <span className="pf-reference-circle" aria-hidden="true">{active ? <Check size={29} strokeWidth={3.5}/> : <Lock size={18} strokeWidth={2}/>}</span>
                 <span className="pf-reference-label">{stage.id === 'carga' ? 'Carga Máq. e M.O.' : stage.title}</span>
               </button>
             })}
           </nav>
-          <p className="pf-reference-note">Ficha Técnica disponível <span>·</span> POP em breve</p>
+          <p className="pf-reference-note">Ficha Técnica <span>·</span> POP disponíveis</p>
         </section>}
         {sheetVisited && <div hidden={page !== 'ficha'} className="pf-sheet-module">
           <button type="button" className="pf-module-back" onClick={openHome}><ArrowLeft size={17}/> Voltar aos módulos</button>
@@ -99,6 +107,7 @@ export default function App() {
           </div>
           <TechnicalSheetsPage notify={notify}/>
         </div>}
+        {page === 'pop' && <><button type="button" className="pf-module-back" onClick={openHome}><ArrowLeft size={17}/> Voltar aos módulos</button><PopPage key={focusId || 'library'} notify={notify} focusId={focusId} onLinked={()=>setSheetVisited(false)}/></>}
       </main>
     </div>
 
@@ -112,7 +121,7 @@ export default function App() {
           <button type="button" onClick={() => setHelpOpen(false)} aria-label="Fechar ajuda"><X size={19}/></button>
         </div>
         <div className="pf-help-content">
-          <p>A Ficha Técnica é a única parte ativa do Processo Fácil nesta etapa. As demais funções serão reconstruídas posteriormente.</p>
+          <p>Ficha Técnica e POP são os módulos ativos nesta etapa. As demais funções serão reconstruídas posteriormente.</p>
           <ol>
             <li><strong>Criar:</strong> selecione um produto existente ou clique em Cadastrar novo produto. A primeira revisão será aberta automaticamente.</li>
             <li><strong>Preencher:</strong> informe materiais, medidas, dados de consumo, operações, fotos e instruções. Novos materiais podem ser cadastrados dentro da ficha.</li>
