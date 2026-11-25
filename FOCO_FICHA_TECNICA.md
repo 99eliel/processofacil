@@ -32,3 +32,7 @@ O cadastro de produtos e o de materiais continuam acessíveis **dentro da Ficha 
 ## Próximas fases
 
 Cada módulo será planejado, implementado e testado separadamente, a partir das necessidades do usuário. Nenhum módulo novo será exposto na interface antes de estar aprovado.
+
+## Ordem oficial dos módulos
+
+A referência atual para a evolução é [ROTEIRO_OFICIAL.md](./ROTEIRO_OFICIAL.md): **Ficha Técnica → POP → Oficinas → Ordem de Produção → Carga Máquina e Mão de Obra → Qualidade → Realidade Aumentada → Busca Avançada → Favoritos → Atualizações**. Essa sequência é apenas de desenvolvimento; nenhum módulo futuro foi reativado.

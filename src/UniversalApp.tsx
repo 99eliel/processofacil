@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, FileText, HelpCircle, ShieldAlert, X } from 'lucide-react'
 import { useSystem } from './system/SystemProvider'
 import TechnicalSheetsPage from './pages/TechnicalSheetsPage'
+import { PROJECT_ROADMAP } from './domain/projectRoadmap'
 import './remap.css'
 import './production-upgrades.css'
 import './diagnostics.css'
@@ -23,6 +24,7 @@ export default function App() {
   const system = useSystem()
   const [toast, setToast] = useState('')
   const [helpOpen, setHelpOpen] = useState(false)
+  const [roadmapOpen, setRoadmapOpen] = useState(false)
   const toastTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => () => {
@@ -64,6 +66,13 @@ export default function App() {
           <div className="pf-ft-only-state"><FileText size={19}/><span>Único módulo ativo</span></div>
         </div>
 
+        <div className="pf-ft-roadmap-strip">
+          <div className="pf-ft-roadmap-current"><strong>1 · Ficha Técnica</strong><small>Etapa atual</small></div>
+          <span className="pf-ft-roadmap-separator" aria-hidden="true">→</span>
+          <div className="pf-ft-roadmap-next"><strong>2 · POP</strong><small>Próximo módulo a construir juntos</small></div>
+          <button type="button" onClick={() => setRoadmapOpen(true)}>Ver roteiro completo</button>
+        </div>
+
         <TechnicalSheetsPage notify={notify}/>
       </main>
     </div>
@@ -89,6 +98,31 @@ export default function App() {
           <p className="pf-ft-only-security"><ShieldAlert size={16}/>
             O ambiente principal de testes ainda não possui autenticação individual segura. Não utilize dados confidenciais.</p>
           <button type="button" className="primary-button" onClick={() => setHelpOpen(false)}>Entendi</button>
+        </div>
+      </section>
+    </div>}
+
+    {roadmapOpen && <div className="pf-search-backdrop" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) setRoadmapOpen(false)
+    }}>
+      <section className="pf-search-dialog pf-roadmap-dialog" role="dialog" aria-modal="true" aria-label="Roteiro oficial do Processo Fácil">
+        <div className="pf-search-input-row">
+          <FileText size={20}/><strong>Roteiro do Processo Fácil</strong>
+          <button type="button" onClick={() => setRoadmapOpen(false)} aria-label="Fechar roteiro"><X size={19}/></button>
+        </div>
+        <div className="pf-roadmap-dialog-content">
+          <p>Construiremos cada módulo por etapas. Por enquanto, só a Ficha Técnica está disponível.</p>
+          <ol className="pf-roadmap-list">
+            {PROJECT_ROADMAP.map((stage) => <li key={stage.id} className={`pf-roadmap-step pf-roadmap-step-${stage.status}`}>
+              <span className="pf-roadmap-index">{PROJECT_ROADMAP.indexOf(stage) + 1}</span>
+              <strong>{stage.title}</strong>
+              {stage.status === 'atual' && <small>Etapa atual</small>}
+              {stage.status === 'proxima' && <small>Próxima etapa</small>}
+              {stage.status === 'planejada' && <small>Planejada</small>}
+            </li>)}
+          </ol>
+          <p className="pf-roadmap-note">O POP será definido a partir das operações e instruções já registradas na Ficha Técnica, sem duplicar cadastros desnecessariamente.</p>
+          <button type="button" className="primary-button" onClick={() => setRoadmapOpen(false)}>Voltar à Ficha Técnica</button>
         </div>
       </section>
     </div>}
