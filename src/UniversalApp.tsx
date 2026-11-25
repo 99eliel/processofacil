@@ -51,7 +51,7 @@ export default function App() {
           </span>
         </button>
         <div className="pf-ft-only-header-actions">
-          <button type="button" className="pf-menu-home-link" onClick={openHome} aria-current={page === 'home' ? 'page' : undefined}><Home size={17}/> Início</button>
+          <button type="button" className="pf-menu-home-link" onClick={openHome}><Home size={17}/> Início</button>
           <button type="button" className="pf-settings-link" onClick={() => setHelpOpen(true)}
             title="Ajuda da Ficha Técnica" aria-label="Ajuda da Ficha Técnica">
             <HelpCircle size={19}/>
