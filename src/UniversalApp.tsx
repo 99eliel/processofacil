@@ -15,7 +15,7 @@ import './easy-ux.css'
 import './pcp-upgrades.css'
 import './technical-bom-upgrades.css'
 import './ficha-only.css'
-import companyLogo from './company-logo.webp'
+import companyLogo from './company-logo.svg'
 
 /**
  * Etapa 1 do Processo Fácil.
