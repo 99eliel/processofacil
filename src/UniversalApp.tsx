@@ -15,6 +15,7 @@ import './easy-ux.css'
 import './pcp-upgrades.css'
 import './technical-bom-upgrades.css'
 import './ficha-only.css'
+import companyLogo from './company-logo.webp'
 
 /**
  * Etapa 1 do Processo Fácil.
@@ -52,7 +53,7 @@ export default function App() {
     <div className="pf-app-layout">
       {page !== 'home' && <header className="pf-global-header pf-ft-only-header">
         <button type="button" className="pf-brand pf-ft-only-brand pf-menu-brand-button" onClick={openHome} aria-label="Página inicial do Processo Fácil">
-          <span className="pf-brand-symbol"><FileText size={22}/></span>
+          <span className="pf-brand-symbol pf-company-brand-symbol"><img src={companyLogo} alt="MA Consultoria"/></span>
           <span>
             <strong>Processo Fácil</strong>
             <small>{system.activeCompany?.nomeFantasia || 'Gestão de processos'}</small>
@@ -71,12 +72,7 @@ export default function App() {
         {page === 'home' && <section className="pf-reference-home" aria-labelledby="pf-module-home-title">
           <button type="button" className="pf-reference-help" onClick={() => setHelpOpen(true)} aria-label="Ajuda da Ficha Técnica" title="Ajuda"><HelpCircle size={21}/></button>
           <div className="pf-reference-heading">
-            <div className="pf-reference-logo" aria-hidden="true">
-              <svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="46" stroke="currentColor" strokeWidth="0.8" opacity=".5"/>
-                <path d="M26 67V29h19c12 0 15 18 0 18H26M53 67V29h25M53 47h19" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span>PROCESSOS</span>
-            </div>
+            <div className="pf-reference-logo"><img src={companyLogo} alt="MA Consultoria" /></div>
             <div className="pf-reference-brand">
               <h1 id="pf-module-home-title">PROCESSO<br/>FÁCIL</h1>
               <button type="button" className="pf-reference-enter" onClick={openSheet} aria-label="Abrir Ficha Técnica" title="Abrir Ficha Técnica"><ChevronRight size={25}/></button>
